@@ -1,0 +1,12 @@
+{
+    "taxonomies": [
+        {
+            "name": "Categories de realisation",
+            "singular_name": "Categorie de realisation",
+            "slug": "portfolio-category",
+            "post_types": ["portfolio"],
+            "hierarchical": true,
+            "show_in_rest": true
+        }
+    ]
+}
