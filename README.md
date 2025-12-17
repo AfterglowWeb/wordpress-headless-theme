@@ -277,4 +277,3 @@ See [LICENSE](http://www.gnu.org/licenses/gpl-2.0.html) for more details.
 
 - [WordPress REST API Handbook](https://developer.wordpress.org/rest-api/)
 - [WordPress Application Passwords](https://make.wordpress.org/core/2020/11/05/application-passwords-integration-guide/)
-- [Headless WordPress Best Practices](https://developer.wordpress.org/news/2023/04/headless-wordpress-best-practices/)
