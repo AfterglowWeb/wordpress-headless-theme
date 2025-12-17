@@ -246,9 +246,7 @@ add_filter('blank_rest_api_user_id', function($user_id) {
 });
 ```
 
-**Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data. return $menus;
-});
-```
+**Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
 
 ## Contributing
 
