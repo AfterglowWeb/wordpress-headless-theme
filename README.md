@@ -31,8 +31,10 @@ git clone https://github.com/AfterglowWeb/wordpress-headless-theme.git blank
 
 ## Authentication
 
-The theme provides **one custom REST API endpoint** (`/blank/v1/data`) protected by Bearer token authentication using **WordPress Application Passwords**. Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
-
+The theme provides **2 custom REST API endpoint**
+  `/blank/v1/data`,
+  `/blank/v1/images/%post_type`,
+protected by Bearer token authentication using **WordPress Application Passwords**. 
 By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator). You can customize this using the `blank_rest_api_user_id` filter (see Filters section).
 
 ### Setting up Bearer Token Authentication:
@@ -60,7 +62,7 @@ curl -H "Authorization: Bearer|abcdefghijklmnop" \
 
 ### GET /wp-json/blank/v1/data
 
-Retrieves site identity data and menu configurations.
+Retrieves site identity data and menu items.
 
 **Authentication:** Required (Bearer token)
 
@@ -75,39 +77,62 @@ Retrieves site identity data and menu configurations.
     "name": "Site Name",
     "description": "Site Description",
     "url": "https://your-site.com",
-    "favicon": "https://your-site.com/favicon.ico"
+    "favicon": "https://your-site.com/favicon.ico",
+    {..."acf_fields"}
   }
 }
 ```
 
+### GET /wp-json/blank/v1/images/{post_type}
+
+**Description:**  
+Returns a flat array of image objects for the specified post type.
+all published posts of a given post type will be explored for:
+wordpress featured image, ACF image and gallery fields
+
+Is intended to bulk serve images in a minimal secured way so you can easyly launch async workers from a middelware to sync them in your application.
+
+*! It does not handle limiting.*
+*! It does not hide images from default Wordpress endpoints.*
+Your are free to handle this aspects your way.
+
+The images src are filtered out to remove wordpress domain and upload folder. Up to you to reconstruct your assets path inside your server application.
+The image props are filtered out to keep the minimal: id, src, alt, width, height, mime_type
+
+You can use the filter `blank_allowed_post_types_bulk_images` to control wich post_type images to expose.
+
+You can use the filter `blank_rest_image_props` to control wich image props you want to expose.
+
+**Authentication:**  
+Requires Bearer token (see above).
+
+**Parameters:**
+- `post_type` (string, required): The slug of the WordPress post type (e.g. `portfolio`, `post`, `page`). Must be 2–20 characters, only letters, numbers, underscores, or hyphens.
+
+**Example Request:**
+
+```http
+GET /wp-json/blank/v1/images/portfolio
+Authorization: Bearer|yourtoken
+```
+
+**Response**
+```
+[
+  {
+    "id": 123,
+    "src": "2025/01/image.jpg",
+    "alt": "Image alt text",
+    "width": 1200,
+    "height": 800,
+    "mime_type": "image/jpeg",
+  },
+  ...
+]
+```
+
 ### Standard WordPress REST API
-
-All standard WordPress REST endpoints remain available **without authentication**:
-- `/wp-json/wp/v2/posts`
-- `/wp-json/wp/v2/pages`
-- `/wp-json/wp/v2/media`
-- `/wp-json/wp/v2/{custom-post-type}`
-
-## Project Structure
-
-```
-blank/
-├── config/                    # ACF field groups and configurations (git-ignored)
-│   ├── custom_menus.json
-│   ├── custom_posts.json
-│   └── custom_taxonomies.json
-├── inc/                       # Theme classes
-│   ├── Acf.php               # ACF configuration
-│   ├── CustomPosts.php       # Custom post types and taxonomies
-│   ├── DisableComments.php   # Disable WordPress comments
-│   ├── RestExtend.php        # REST API extensions and authentication
-│   └── Theme.php             # Core theme setup
-├── functions.php             # Theme initialization
-├── index.php                 # Minimal template (headless usage only)
-├── style.css                 # Theme metadata
-├── .gitignore
-└── README.md
-```
+Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
 
 ## Configuration
 
@@ -166,43 +191,18 @@ Define taxonomies in `config/custom_taxonomies.json`:
 }
 ```
 
-## Advanced Custom Fields Integration (Optional)
-
-ACF is **optional** but recommended for managing custom fields easily through the WordPress admin interface.
-
-### Default Behavior
+## Advanced Custom Fields Integration
 
 By default, the site identity data (`/blank/v1/data` endpoint) includes:
 - Basic WordPress site info (name, description, URL, favicon)
-- **If ACF is installed:** All fields from the ACF Options Page (using `get_fields('options')`)
 - Any additional data added via the `blank_rest_site_identity` filter
+- **If ACF is installed:** All fields from the ACF Options Page (using `get_fields('options')`)
 
-### Using ACF
-
-1. Install and activate Advanced Custom Fields plugin
-
-2. Create an ACF Options Page in your `functions.php`:
-
-```php
-if (function_exists('acf_add_options_page')) {
-    acf_add_options_page([
-        'page_title' => 'Site Identity',
-        'menu_title' => 'Site Identity',
-        'menu_slug'  => 'site-identity',
-        'capability' => 'edit_posts',
-    ]);
-}
-```
-
-3. Create field groups in ACF admin and assign them to the Options Page
-
-4. The theme automatically:
+The theme automatically:
    - Saves ACF field groups as JSON in `/config` directory
    - Loads field groups from `/config` directory
-   - Exposes all Options Page fields through `/blank/v1/data` endpoint
-## Filters
 
-The theme provides filters to extend functionality without modifying core files.
+## Filters
 
 ### `blank_rest_site_identity`
 
@@ -247,6 +247,40 @@ add_filter('blank_rest_api_user_id', function($user_id) {
 ```
 
 **Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
+
+
+### `blank_disable_comments`
+
+```php
+// Enable comments, by default comments are removed from the admin.
+add_filter('blank_disable_comments', function(true) {
+  return false;
+}, 10, 1);
+```
+### `blank_rest_menu_item`
+
+```php
+add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
+    return [
+      'id' => (int) sanitize_text_field( $wp_menu_item->ID ),
+      'title' => (string) sanitize_text_field( $item->title ),
+			'url'      => (string) esc_url( $item->url ),
+      //...
+    ]
+}, 10, 2);
+```
+
+### `blank_allowed_post_types_bulk_images`
+
+### `blank_rest_image_props`
+
+```php
+//Return full src
+add_filters('blank_rest_image_props', function($filtered_image, $img_id) {
+   return wp_get_attachment_url($img_id);
+}, 10, 2);
+
+```
 
 ## Contributing
 
