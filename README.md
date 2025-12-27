@@ -32,8 +32,9 @@ git clone https://github.com/AfterglowWeb/wordpress-headless-theme.git blank
 ## Authentication
 
 The theme provides **2 custom REST API endpoint**
-  `/blank/v1/data`,
-  `/blank/v1/images/%post_type`,
+  - `/blank/v1/data`
+  - `/blank/v1/images/<post_type>`
+
 protected by Bearer token authentication using **WordPress Application Passwords**. 
 By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator). You can customize this using the `blank_rest_api_user_id` filter (see Filters section).
 
@@ -86,22 +87,23 @@ Retrieves site identity data and menu items.
 ### GET /wp-json/blank/v1/images/{post_type}
 
 **Description:**  
-Returns a flat array of image objects for the specified post type.
+Returns a flat array of image objects attached to post belonging to the `post_type` parameter.
 all published posts of a given post type will be explored for:
-wordpress featured image, ACF image and gallery fields
+- WordPress featured image, 
+- ACF image and gallery fields
 
-Is intended to bulk serve images in a minimal secured way so you can easyly launch async workers from a middelware to sync them in your application.
+This endpoint is intended to bulk serve images in a minimal and secured way so you can easyly launch async workers from a middelware to copy them in your application.
 
 *! It does not handle limiting.*
 *! It does not hide images from default Wordpress endpoints.*
-Your are free to handle this aspects your way.
+Your may want to handle these aspects yourself.
 
 The images src are filtered out to remove wordpress domain and upload folder. Up to you to reconstruct your assets path inside your server application.
 The image props are filtered out to keep the minimal: id, src, alt, width, height, mime_type
 
 You can use the filter `blank_allowed_post_types_bulk_images` to control wich post_type images to expose.
-
 You can use the filter `blank_rest_image_props` to control wich image props you want to expose.
+See Filters section.
 
 **Authentication:**  
 Requires Bearer token (see above).
@@ -130,11 +132,26 @@ Authorization: Bearer|yourtoken
   ...
 ]
 ```
+[
+  {
+    "id": 123,
+    "src": "2025/01/image.jpg",
+    "alt": "Image alt text",
+    "width": 1200,
+    "height": 800,
+    "mime_type": "image/jpeg",
+  },
+  ...
+]
+```
 
 ### Standard WordPress REST API
 Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
 
-## Configuration
+### Standard WordPress REST API
+Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
+
+## Post Types, Menus and Taxonomies Configuration
 
 ### Custom Post Types
 
@@ -191,7 +208,7 @@ Define taxonomies in `config/custom_taxonomies.json`:
 }
 ```
 
-## Advanced Custom Fields Integration
+## ACF (Advanced Custom Fields) Plugin Integration
 
 By default, the site identity data (`/blank/v1/data` endpoint) includes:
 - Basic WordPress site info (name, description, URL, favicon)
@@ -202,7 +219,11 @@ The theme automatically:
    - Saves ACF field groups as JSON in `/config` directory
    - Loads field groups from `/config` directory
 
-## Filters
+## Disable Comments
+
+By default, the theme disables comments support through posts and and comments admin screens. You can enable theme by using the filter `blank_disable_comments`.
+
+## Available Filters
 
 ### `blank_rest_site_identity`
 
@@ -251,6 +272,8 @@ add_filter('blank_rest_api_user_id', function($user_id) {
 
 ### `blank_disable_comments`
 
+Toggle Wordpress comments support.
+
 ```php
 // Enable comments, by default comments are removed from the admin.
 add_filter('blank_disable_comments', function(true) {
@@ -258,6 +281,8 @@ add_filter('blank_disable_comments', function(true) {
 }, 10, 1);
 ```
 ### `blank_rest_menu_item`
+
+Filter the menu items props exposed in the `/wp-json/blank/v1/data` endpoint
 
 ```php
 add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
@@ -272,11 +297,19 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 
 ### `blank_allowed_post_types_bulk_images`
 
+Filter the images exposed in the `/wp-json/blank/v1/images/<post_type>` endpoint by the post types they are attached to.
+
+```php
+add_filter('blank_allowed_post_types_bulk_images', function($post_types) {
+  return (array) ['my_post_type'];
+});
+
+```
 ### `blank_rest_image_props`
 
 ```php
 //Return full src
-add_filters('blank_rest_image_props', function($filtered_image, $img_id) {
+add_filter('blank_rest_image_props', function($filtered_image, $img_id) {
    return wp_get_attachment_url($img_id);
 }, 10, 2);
 
