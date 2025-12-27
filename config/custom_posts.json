@@ -1,8 +1,8 @@
 {
   "custom_posts": [
     {
-      "name": "Réalisations",
-      "singular_name": "Réalisation",
+      "name": "Projets",
+      "singular_name": "Projet",
       "slug": "portfolio",
       "rewrite": "realisations",
       "taxonomies": ["portfolio-category"],
