@@ -132,6 +132,21 @@ Authorization: Bearer|yourtoken
   ...
 ]
 ```
+[
+  {
+    "id": 123,
+    "src": "2025/01/image.jpg",
+    "alt": "Image alt text",
+    "width": 1200,
+    "height": 800,
+    "mime_type": "image/jpeg",
+  },
+  ...
+]
+```
+
+### Standard WordPress REST API
+Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
 
 ### Standard WordPress REST API
 Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
