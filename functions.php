@@ -45,11 +45,16 @@ add_action(
 	}
 );
 
-include_once realpath(__DIR__ . '/inc/Theme.php');
-include_once realpath(__DIR__ . '/inc/CustomPosts.php');
-include_once realpath(__DIR__ . '/inc/DisableComments.php');
-include_once realpath(__DIR__ . '/inc/Acf.php');
-include_once realpath(__DIR__ . '/inc/RestExtend.php');
+//May run without Composer.
+if (file_exists(get_stylesheet_directory() . '/vendor/autoload.php')) {
+	require_once realpath(get_stylesheet_directory() . '/vendor/autoload.php');
+} else {
+	include_once realpath(__DIR__ . '/inc/Theme.php');
+	include_once realpath(__DIR__ . '/inc/CustomPosts.php');
+	include_once realpath(__DIR__ . '/inc/DisableComments.php');
+	include_once realpath(__DIR__ . '/inc/Acf.php');
+	include_once realpath(__DIR__ . '/inc/RestExtend.php');
+}
 
 Theme::get_instance();
 Acf::get_instance();

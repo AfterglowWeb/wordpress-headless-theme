@@ -32,5 +32,4 @@ class Acf {
 		$paths[] = get_stylesheet_directory() . '/config';
 		return $paths;
 	}
-
 }

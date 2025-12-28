@@ -7,10 +7,6 @@ class Theme {
 
 	protected static $instance = null;
 
-	private function __construct() {
-		$this->initTheme();
-	}
-
 	public static function get_instance() {
 		if ( null === static::$instance ) {
 			static::$instance = new static();
@@ -18,7 +14,7 @@ class Theme {
 		return static::$instance;
 	}
 
-	public function initTheme(): void {
+	private function __construct() {
 		add_action( 'after_setup_theme', array( $this, 'theme_lang' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_menus' ) );
@@ -113,41 +109,41 @@ class Theme {
 		}
 
 		$theme_lang_dir = realpath( get_template_directory() . '/languages' );
+		if ( false === is_admin() || false === defined( 'WP_LANG_DIR' ) ) {
+			return;
+		}
 
-		try {
-			if ( false === is_readable( $theme_lang_dir ) ) {
-				return;
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		global $wp_filesystem;
+		if ( ! $wp_filesystem ) {
+			WP_Filesystem();
+		}
+
+		if ( ! $wp_filesystem || ! $wp_filesystem->is_dir( $theme_lang_dir ) ) {
+			return;
+		}
+
+		$extensions        = array( 'mo', 'po', 'json' );
+		$source_lang_files = array();
+		foreach ( $extensions as $ext ) {
+			$files = glob( $theme_lang_dir . '/*.' . $ext );
+			if ( is_array( $files ) && ! empty( $files ) ) {
+				$source_lang_files = array_merge( $source_lang_files, $files );
 			}
-			$extensions        = array( 'mo', 'po', 'json' );
-			$source_lang_files = array();
-			foreach ( $extensions as $ext ) {
-				$files = glob( $theme_lang_dir . '/*.' . $ext );
-				if ( is_array( $files ) && ! empty( $files ) ) {
-					$source_lang_files = array_merge( $source_lang_files, $files );
+		}
+		if ( empty( $source_lang_files ) ) {
+			return;
+		}
+
+		$target_lang_dir = WP_LANG_DIR . '/themes';
+		if ( $wp_filesystem->is_writable( $target_lang_dir ) ) {
+			foreach ( $source_lang_files as $file ) {
+				$filename    = basename( $file );
+				$target_file = $target_lang_dir . '/' . $filename;
+				if ( ! $wp_filesystem->is_readable( $target_file ) || filemtime( $file ) > filemtime( $target_file ) ) {
+					$wp_filesystem->copy( $file, $target_file );
 				}
 			}
-			if ( empty( $source_lang_files ) ) {
-				return;
-			}
-
-			$target_lang_dir = WP_LANG_DIR . '/themes';
-			if ( is_writable( $target_lang_dir ) ) {
-				foreach ( $source_lang_files as $file ) {
-					$filename    = basename( $file );
-					$target_file = $target_lang_dir . '/' . $filename;
-					if ( false === is_readable( $target_file ) || filemtime( $file ) > filemtime( $target_file ) ) {
-						if ( copy( $file, $target_file ) ) {
-							error_log( 'Copied language file: ' . $filename );
-						} else {
-							error_log( 'Failed to copy language file: ' . $filename );
-						}
-					}
-				}
-			} else {
-				error_log( 'Target languages directory does not exist: ' . $target_lang_dir );
-			}
-		} catch ( \Exception $e ) {
-			error_log( 'Error copying theme language files: ' . $e->getMessage() );
 		}
 	}
 
