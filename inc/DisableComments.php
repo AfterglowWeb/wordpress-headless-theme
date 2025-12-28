@@ -14,7 +14,7 @@ class DisableComments {
 	}
 
 	private function __construct() {
-		if(apply_filters( 'blank_disable_comments', '__return_true' ) ) {
+		if ( apply_filters( 'blank_disable_comments', '__return_true' ) ) {
 			add_action( 'admin_init', array( $this, 'disable_comments' ) );
 		}
 	}

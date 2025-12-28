@@ -19,7 +19,6 @@ class CustomPosts {
 		add_action( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg' ), 10, 2 );
 		add_action( 'init', array( $this, 'disable_tags' ) );
 
-		
 		$this->add_admin_column(
 			'Image',
 			array( 'portfolio' ),
@@ -33,7 +32,6 @@ class CustomPosts {
 				}
 			}
 		);
-
 	}
 
 	public function disable_tags(): void {
@@ -268,11 +266,10 @@ class CustomPosts {
 	}
 
 	public function disable_gutenberg( $current_status, $post_type ) {
-		if ( in_array($post_type, array('portfolio', 'page', 'post'), true ) ) {
+		if ( in_array( $post_type, array( 'portfolio', 'page', 'post' ), true ) ) {
 			return false;
 		}
 
 		return $current_status;
 	}
-
 }

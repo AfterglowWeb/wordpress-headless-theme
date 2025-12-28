@@ -1,14 +1,7 @@
 <?php namespace cmk\blank;
 
 defined( 'ABSPATH' ) || exit;
-/*
-@version 1.0.1
-@changelog log
-- Added filter on menu items 'blank_rest_menu_item' to allow modification of individual menu items before returning in REST API.
-- Added endpoint '/images/{post_type}' to fetch flattened list of images used in specified post type.
-- Changed filter name from 'cmk_blank_allowed_post_types' to 'blank_allowed_post_types_bulk_images' for consistency.
-- Added filter 'blank_rest_image_props' to allow modification of image properties before returning in REST API.
-*/
+
 class RestExtend {
 
 	protected static $instance = null;
@@ -30,43 +23,67 @@ class RestExtend {
 					'/data',
 					array(
 						'methods'             => 'GET',
-						'callback'            => 'cmk\blank\RestExtend::fetch_data',
-						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token'
+						'callback'            => 'cmk\blank\RestExtend::site_data',
+						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
 					)
 				);
 			}
 		);
 
+		add_action(
+			'rest_api_init',
+			function (): void {
+				register_rest_route(
+					'blank/v1',
+					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})/images',
+					array(
+						'methods'             => 'GET',
+						'callback'            => 'cmk\blank\RestExtend::images_flat',
+						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
+						'args'                => array(
+							'post_type' => array(
+								'required'          => true,
+								'type'              => 'string',
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+						),
+					)
+				);
+			}
+		);
 
 		add_action(
-			'rest_api_init', 
-			function (): void  {
-			register_rest_route('blank/v1', '/images/(?P<post_type>[a-zA-Z0-9_-]{2,20})', [
-				'methods'  => 'GET',
-				'callback' => 'cmk\blank\RestExtend::images_flat',
-				'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
-				'args'     => [
-					'post_type' => [
-						'required' => true,
-						'type'     => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-					],
-				],
-			]);
-		});
-
-
+			'rest_api_init',
+			function (): void {
+				register_rest_route(
+					'blank/v1',
+					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})',
+					array(
+						'methods'             => 'GET',
+						'callback'            => 'cmk\blank\RestExtend::posts_flat',
+						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
+						'args'                => array(
+							'post_type' => array(
+								'required'          => true,
+								'type'              => 'string',
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+						),
+					)
+				);
+			}
+		);
 	}
 
 	public static function validate_bearer_token( \WP_REST_Request $request ): bool {
 		$auth_header = $request->get_header( 'Authorization' );
-		
+
 		if ( empty( $auth_header ) ) {
 			return false;
 		}
 
 		$token_parts = explode( '|', $auth_header );
-		if ( count( $token_parts ) !== 2 || $token_parts[0] !== 'Bearer' ) {
+		if ( 2 !== count( $token_parts ) || 'Bearer' !== $token_parts[0] ) {
 			return false;
 		}
 
@@ -91,7 +108,7 @@ class RestExtend {
 			if ( ! isset( $password_data['password'] ) ) {
 				continue;
 			}
-			
+
 			if ( \WP_Application_Passwords::check_password( $received_token, $password_data['password'] ) ) {
 				return true;
 			}
@@ -100,12 +117,9 @@ class RestExtend {
 		return false;
 	}
 
-	public static function fetch_data(): \WP_REST_Response {
+	public static function site_data(): \WP_REST_Response {
 
-		$data = array(
-			'menus'     => self::menus_flat(),
-			'identity'  => self::site_identity(),
-		);
+		$data = self::site_data_flat();
 
 		if ( empty( $data ) ) {
 			return new \WP_REST_Response(
@@ -136,7 +150,139 @@ class RestExtend {
 		return $response;
 	}
 
-	private static function site_identity(): array {
+	public static function images_flat( \WP_REST_Request $request ): \WP_REST_Response {
+
+		$post_type = $request->get_param( 'post_type' );
+
+		if ( ! post_type_exists( $post_type ) ) {
+			return new \WP_REST_Response(
+				array(
+					'status'  => 'error',
+					'message' => 'Invalid post type',
+				),
+				400
+			);
+		}
+
+		$allowed_post_types = (array) apply_filters( 'blank_allowed_post_types_bulk_images', array( 'portfolio', 'post', 'page' ) );
+
+		if ( ! in_array( $post_type, $allowed_post_types, true ) ) {
+			return new \WP_REST_Response(
+				array(
+					'status'  => 'error',
+					'message' => 'Post type not allowed',
+				),
+				403
+			);
+		}
+
+		$args   = array(
+			'post_type'      => $post_type,
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+		);
+		$query  = new \WP_Query( $args );
+		$images = array();
+
+		foreach ( $query->posts as $post ) {
+			$images = array_merge( $images, self::post_images_flat( $post ) );
+		}
+
+		$images = array_filter( $images );
+		$images = array_values(
+			array_reduce(
+				$images,
+				function ( $carry, $img ) {
+					$carry[ $img['id'] ] = $img;
+					return $carry;
+				},
+				array()
+			)
+		);
+
+		return rest_ensure_response( $images );
+	}
+
+	public static function posts_flat( \WP_REST_Request $request ): \WP_REST_Response {
+
+		$post_type = $request->get_param( 'post_type' );
+
+		if ( ! post_type_exists( $post_type ) ) {
+			return new \WP_REST_Response(
+				array(
+					'status'  => 'error',
+					'message' => 'Invalid post type',
+				),
+				400
+			);
+		}
+
+		$args  = array(
+			'post_type'      => $post_type,
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+		);
+		$query = new \WP_Query( $args );
+		$posts = array();
+
+		foreach ( $query->posts as $post ) {
+
+			$post_images = self::post_images_flat( $post );
+
+			// Prepare ACF image field keys to exclude from ACF fields.
+			$acf_image_keys = $post_images ? array_map(
+				function ( $img ) {
+					return $img['field_key'];
+				},
+				$post_images
+			) : array();
+
+			// Filter ACF fields to exclude image fields.
+			add_filter(
+				'blank_rest_post_acf',
+				function ( $acf_fields ) use ( $acf_image_keys ) {
+					foreach ( $acf_fields as $key => $value ) {
+						if ( in_array( $key, $acf_image_keys, true ) ) {
+							unset( $acf_fields[ $key ] );
+						}
+					}
+					return $acf_fields;
+				},
+				10,
+				1
+			);
+
+			$filtered_post = array(
+				'id'       => (int) $post->ID,
+				'type'     => (string) sanitize_text_field( $post->post_type ),
+				'title'    => (string) sanitize_text_field( $post->post_title ),
+				'slug'     => (string) sanitize_text_field( $post->post_name ),
+				'date'     => (string) get_the_date( 'c', $post->ID ),
+				'modified' => (string) get_the_modified_date( 'c', $post->ID ),
+				'link'     => (string) esc_url( get_permalink( $post->ID ) ),
+				'content'  => (string) apply_filters( 'the_content', $post->post_content ),
+				'excerpt'  => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
+				'terms'    => array_map(
+					function ( $taxonomy ) use ( $post ) {
+						$terms = get_the_terms( $post->ID, $taxonomy );
+						if ( is_wp_error( $terms ) || empty( $terms ) ) {
+							return array();
+						}
+						return array_map( array( self::class, 'filter_term_props' ), $terms );
+					},
+					get_object_taxonomies( $post_type, 'names' )
+				),
+				'images'   => $post_images,
+				'acf'      => apply_filters( 'blank_rest_post_acf', function_exists( 'get_fields' ) ? (array) get_fields( $post->ID ) : array(), $post->ID ),
+			);
+
+			$posts[] = apply_filters( 'blank_rest_post', $filtered_post, $post );
+		}
+
+		return rest_ensure_response( $posts );
+	}
+
+	private static function site_data_flat(): array {
 
 		$default_options = array(
 			'name'        => (string) sanitize_text_field( get_bloginfo( 'name' ) ),
@@ -146,48 +292,28 @@ class RestExtend {
 		);
 
 		$fields = array();
-		
-		// Optional: Populate with ACF options page fields if ACF is active.
+
 		if ( function_exists( 'get_fields' ) ) {
 			$fields = get_fields( 'options' );
-			
-			// Remove duplicate contact fields from root level
-			$contact_fields = array(
-				'adresse',
-				'zip',
-				'city',
-				'region',
-				'country',
-				'phone',
-				'phone_link',
-				'email',
-				'facebook',
-				'latitude',
-				'longitude',
-				'gmap_apikey',
-			);
-			
-			foreach ( $contact_fields as $field ) {
-				if ( isset( $fields[ $field ] ) && isset( $fields['contact'][ $field ] ) ) {
-					unset( $fields[ $field ] );
-				}
-			}
 		}
-	
-		$identity_data = array_merge(
-			$default_options,
-			$fields
+
+		$data = array(
+			'menus'    => self::menus_flat(),
+			'identity' => array_merge(
+				$default_options,
+				$fields
+			),
 		);
 
 		/**
 		 * Filter the site identity data before returning to REST API.
 		 *
-		 * @param array $identity_data The site identity data array.
+		 * @param array $options_data The site identity data array.
 		 * @return array Modified identity data.
 		 */
-		$filtered_identity_data = (array) apply_filters( 'blank_rest_site_identity', $identity_data );
+		$filtered_options_data = (array) apply_filters( 'blank_rest_site_data', $data );
 
-		return $filtered_identity_data;
+		return $filtered_options_data;
 	}
 
 	private static function menus_flat(): array {
@@ -226,7 +352,7 @@ class RestExtend {
 			return array();
 		}
 
-		$menu    = wp_get_nav_menu_items( $menu_id );
+		$menu = wp_get_nav_menu_items( $menu_id );
 
 		if ( ! is_array( $menu ) || empty( $menu ) ) {
 			return array();
@@ -235,14 +361,14 @@ class RestExtend {
 		$menu_map = array();
 		foreach ( $menu as $item ) {
 			$menu_map[ $item->ID ] = array(
-				'id'          => (int) sanitize_text_field( $item->ID ),
-				'title'       => (string) sanitize_text_field( $item->title ),
-				'url'         => (string) esc_url( $item->url ),
-				'type'        => (string) sanitize_key( $item->type ),
-				'parent'      => (int) sanitize_text_field( $item->menu_item_parent ),
-				'classes'     => (array) $item->classes,
-				'target'      => (string) sanitize_text_field( $item->target ),
-				'attr_title'  => (string) sanitize_text_field( $item->attr_title ),
+				'id'         => (int) sanitize_text_field( $item->ID ),
+				'title'      => (string) sanitize_text_field( $item->title ),
+				'url'        => (string) esc_url( $item->url ),
+				'type'       => (string) sanitize_key( $item->type ),
+				'parent'     => (int) sanitize_text_field( $item->menu_item_parent ),
+				'classes'    => (array) $item->classes,
+				'target'     => (string) sanitize_text_field( $item->target ),
+				'attr_title' => (string) sanitize_text_field( $item->attr_title ),
 			);
 
 			$menu_map[ $item->ID ] = apply_filters( 'blank_rest_menu_item', $menu_map[ $item->ID ], $item );
@@ -260,99 +386,85 @@ class RestExtend {
 		return $hierarchical_menu;
 	}
 
-	public static function images_flat(\WP_REST_Request $request): \WP_REST_Response {
-	
-		$post_type = $request->get_param('post_type');
+	private static function post_image_ids( $post ): array {
+		$image_ids = array();
 
-		if(!post_type_exists($post_type)) {
-			return new \WP_REST_Response(
-				array(
-					'status'  => 'error',
-					'message' => 'Invalid post type',
-				),
-				400
-			);
+		$thumb_id = get_post_thumbnail_id( $post->ID );
+		if ( $thumb_id ) {
+			$image_ids[] = $thumb_id;
 		}
 
-		$allowed_post_types = (array) apply_filters('blank_allowed_post_types_bulk_images', ['portfolio', 'post', 'page']);
-
-		if(!in_array($post_type, $allowed_post_types, true)) {
-			return new \WP_REST_Response(
-				array(
-					'status'  => 'error',
-					'message' => 'Post type not allowed',
-				),
-				403
-			);
-		}
-
-		$args = [
-			'post_type'      => $post_type,
-			'posts_per_page' => -1,
-			'post_status'    => 'publish',
-		];
-		$query = new \WP_Query($args);
-		$images = [];
-
-		foreach ($query->posts as $post) {
-			$thumb_id = get_post_thumbnail_id($post->ID);
-			if ($thumb_id) {
-				$images[] = self::filter_image_props($thumb_id);
-			}
-
-			if (function_exists('get_fields')) {
-				$fields = get_fields($post->ID);
-				foreach ($fields as $key => $value) {
-					if (is_numeric($value) && get_post_mime_type($value)) {
-						$images[] = self::filter_image_props($value);
-					} elseif (is_array($value) && isset($value['ID']) && is_numeric($value['ID']) && get_post_mime_type($value['ID'])) {
-						$images[] = self::filter_image_props($value['ID']);
-					}
-
-					if (is_array($value)) {
-						foreach ($value as $index => $img_id) {
-							if (is_numeric($img_id) && get_post_mime_type($img_id)) {
-								$images[] = self::filter_image_props($img_id);
-							} elseif (is_array($value) && isset($value['ID']) && is_numeric($value['ID']) && get_post_mime_type($value['ID'])) {
-								$images[] = self::filter_image_props($value['ID']);
-							}
+		if ( function_exists( 'get_fields' ) ) {
+			$fields = get_fields( $post->ID );
+			foreach ( $fields as $field_key => $value ) {
+				if ( is_numeric( $value ) && get_post_mime_type( $value ) ) {
+					$image_ids[] = $value;
+				} elseif ( is_array( $value ) && ! empty( $value ) ) {
+					foreach ( $value as $sub_value ) {
+						if ( is_numeric( $sub_value ) && get_post_mime_type( $sub_value ) ) {
+							$image_ids[] = $sub_value;
+						} elseif ( is_array( $sub_value ) && isset( $sub_value['ID'] ) && get_post_mime_type( $sub_value['ID'] ) ) {
+							$image_ids[] = $sub_value['ID'];
 						}
 					}
 				}
 			}
 		}
 
-		$images = array_filter($images);
-		$images = array_values(array_reduce($images, function($carry, $img) {
-			$carry[$img['id']] = $img;
-			return $carry;
-		}, []));
+		$image_ids = array_filter( $image_ids );
 
-		return rest_ensure_response($images);
+		return $image_ids;
 	}
 
-private static function filter_image_props($img_id) {
-    
-	$src = wp_get_attachment_image_url($img_id, 'full');
-    if (!$src) return null;
-	
-	$relative_src = wp_make_link_relative($src);
-	$relative_src = str_replace('/wp-content/uploads/', '', $relative_src);
-    $meta = wp_get_attachment_metadata($img_id);
-    $alt = get_post_meta($img_id, '_wp_attachment_image_alt', true);
-    $mime = get_post_mime_type($img_id);
-    $title = get_the_title($img_id);
+	private static function post_images_flat( $post ): array {
+		$images    = array();
+		$image_ids = self::post_image_ids( $post );
+		foreach ( $image_ids as $index => $image_id ) {
+			$field_key = 1 === $index ? 'featured_image' : 'gallery';
+			$images[]  = self::filter_image_props( $image_id, $post->ID, $field_key );
+		}
 
-    $filtered_image = [
-        'id'        => (int)$img_id,
-        'src'       => $relative_src,
-        'alt'       => $alt ?: $title,
-        'width'     => isset($meta['width']) ? (int)$meta['width'] : null,
-        'height'    => isset($meta['height']) ? (int)$meta['height'] : null,
-        'mime_type' => $mime,
-    ];
+		$images = array_filter( $images );
+		return $images;
+	}
 
-	return (array) apply_filters('blank_rest_image_props', $filtered_image, $img_id);
-}
+	private static function filter_image_props( $img_id, $post_id = null, $field_key = '' ): array {
 
+		$src = wp_get_attachment_image_url( $img_id, 'full' );
+		if ( ! $src ) {
+			return null;
+		}
+
+		$src   = get_post_meta( $img_id, '_wp_attached_file', true );// The attribute is called 'file' on attachment post, we use it as the relative src.
+		$meta  = wp_get_attachment_metadata( $img_id );
+		$alt   = get_post_meta( $img_id, '_wp_attachment_image_alt', true );
+		$mime  = get_post_mime_type( $img_id );
+		$title = get_the_title( $img_id );
+
+		$filtered_image = array(
+			'id'        => (int) $img_id,
+			'src'       => $src,
+			'alt'       => $alt ?: $title,
+			'width'     => isset( $meta['width'] ) ? (int) $meta['width'] : null,
+			'height'    => isset( $meta['height'] ) ? (int) $meta['height'] : null,
+			'mime_type' => $mime,
+			'post_id'   => $post_id ? (int) $post_id : null,
+			'field_key' => $field_key,
+		);
+
+		return (array) apply_filters( 'blank_rest_image', $filtered_image, $img_id );
+	}
+
+	private static function filter_term_props( $term ): array {
+		$filtered_term = array(
+			'id'          => (int) $term->term_id,
+			'name'        => (string) sanitize_text_field( $term->name ),
+			'slug'        => (string) sanitize_text_field( $term->slug ),
+			'description' => (string) sanitize_text_field( $term->description ),
+			'count'       => (int) $term->count,
+			'acf'         => apply_filters( 'blank_rest_term_acf', function_exists( 'get_fields' ) ? (array) get_fields( $term ) : array(), $term->term_id ),
+		);
+
+		return (array) apply_filters( 'blank_rest_term', $filtered_term, $term );
+	}
 }
