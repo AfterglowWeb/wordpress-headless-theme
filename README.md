@@ -31,9 +31,10 @@ git clone https://github.com/AfterglowWeb/wordpress-headless-theme.git blank
 
 ## Authentication
 
-The theme provides **2 custom REST API endpoint**
+The theme provides **3 custom REST API endpoint**
   - `/blank/v1/data`
-  - `/blank/v1/images/<post_type>`
+  - `/blank/v1/<post_type>`
+  - `/blank/v1/<post_type>/images`
 
 protected by Bearer token authentication using **WordPress Application Passwords**. 
 By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator). You can customize this using the `blank_rest_api_user_id` filter (see Filters section).
@@ -84,7 +85,7 @@ Retrieves site identity data and menu items.
 }
 ```
 
-### GET /wp-json/blank/v1/images/{post_type}
+### GET /wp-json/blank/v1/{post_type}/images
 
 **Description:**  
 Returns a flat array of image objects attached to post belonging to the `post_type` parameter.
@@ -128,25 +129,12 @@ Authorization: Bearer|yourtoken
     "width": 1200,
     "height": 800,
     "mime_type": "image/jpeg",
+    "post_id": 122,
+    "field_key": "featured_image"
   },
   ...
 ]
 ```
-[
-  {
-    "id": 123,
-    "src": "2025/01/image.jpg",
-    "alt": "Image alt text",
-    "width": 1200,
-    "height": 800,
-    "mime_type": "image/jpeg",
-  },
-  ...
-]
-```
-
-### Standard WordPress REST API
-Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
 
 ### Standard WordPress REST API
 Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
@@ -222,9 +210,6 @@ The theme automatically:
 ## Disable Comments
 
 By default, the theme disables comments support through posts and and comments admin screens. You can enable theme by using the filter `blank_disable_comments`.
-
-## Available Filters
-
 
 ## Available Filters (Hooks)
 
