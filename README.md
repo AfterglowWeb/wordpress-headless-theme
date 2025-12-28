@@ -6,7 +6,7 @@ A minimal WordPress theme designed exclusively for **headless CMS** usage with e
 
 This theme is **not intended for traditional WordPress front-end rendering**. It serves as a secure data layer for headless architectures, providing:
 
-- Custom REST API endpoint with Bearer token authentication
+- Custom REST API endpoints with Bearer token authentication
 - Advanced Custom Fields (ACF) integration (optional)
 - Custom post types and taxonomies management via JSON configuration
 - Custom menus via JSON configuration
@@ -102,7 +102,7 @@ The images src are filtered out to remove wordpress domain and upload folder. Up
 The image props are filtered out to keep the minimal: id, src, alt, width, height, mime_type
 
 You can use the filter `blank_allowed_post_types_bulk_images` to control wich post_type images to expose.
-You can use the filter `blank_rest_image_props` to control wich image props you want to expose.
+You can use the filter `blank_rest_image` to control wich image props you want to expose.
 See Filters section.
 
 **Authentication:**  
@@ -225,95 +225,240 @@ By default, the theme disables comments support through posts and and comments a
 
 ## Available Filters
 
-### `blank_rest_site_identity`
 
-Modify site identity data before it's returned by the REST API:
+## Available Filters (Hooks)
 
+Below are all the filters (hooks) available in this theme's REST API extension, with their arguments and expected usage. All filters follow WordPress best practices for extensibility and security.
+
+### `blank_rest_post`
+**Description:** Filter the REST API response for each post before it is returned.
+
+**Arguments:**
+- `$filtered_post` *(array)*: The associative array of post data to be returned.
+- `$post` *(WP_Post)*: The original WP_Post object.
+
+**Default props in `$filtered_post`:**
+  - `id` (int)
+  - `type` (string)
+  - `title` (string)
+  - `slug` (string)
+  - `date` (string, ISO8601)
+  - `modified` (string, ISO8601)
+  - `link` (string, permalink)
+  - `content` (string, HTML)
+  - `excerpt` (string, HTML)
+  - `terms` (array)
+  - `images` (array)
+  - `acf` (array)
+
+**Example:**
 ```php
-add_filter('blank_rest_site_identity', function($identity_data) {
-    $identity_data['custom_field'] = 'Custom Value';
-    $identity_data['contact'] = [
-        'email' => 'contact@example.com',
-        'phone' => '+1234567890'
-    ];
-    return $identity_data;
-});
+add_filter('blank_rest_post', function($filtered_post, $post) {
+  $filtered_post['custom_prop'] = 'value';
+  return $filtered_post;
+}, 10, 2);
+```
+
+### `blank_rest_post_acf`
+**Description:** Filter the ACF fields array for a post before it is returned in the REST API.
+
+**Arguments:**
+- `$acf_fields` *(array)*: The ACF fields for the post.
+- `$post_id` *(int)*: The post ID.
+
+**Example:**
+```php
+add_filter('blank_rest_post_acf', function($acf_fields, $post_id) {
+  unset($acf_fields['secret_field']);
+  return $acf_fields;
+}, 10, 2);
+```
+
+### `blank_rest_term`
+**Description:** Filter the REST API response for each taxonomy term before it is returned.
+
+**Arguments:**
+- `$filtered_term` *(array)*: The associative array of term data to be returned.
+- `$term` *(WP_Term)*: The original WP_Term object.
+
+**Default props in `$filtered_term`:**
+  - `id` (int)
+  - `name` (string)
+  - `slug` (string)
+  - `description` (string)
+  - `count` (int)
+  - `acf` (array)
+
+**Example:**
+```php
+add_filter('blank_rest_term', function($filtered_term, $term) {
+  $filtered_term['icon'] = get_term_meta($term->term_id, 'icon', true);
+  return $filtered_term;
+}, 10, 2);
+```
+
+### `blank_rest_term_acf`
+**Description:** Filter the ACF fields array for a term before it is returned in the REST API.
+
+**Arguments:**
+- `$acf_fields` *(array)*: The ACF fields for the term.
+- `$term_id` *(int)*: The term ID.
+
+**Example:**
+```php
+add_filter('blank_rest_term_acf', function($acf_fields, $term_id) {
+  unset($acf_fields['internal_note']);
+  return $acf_fields;
+}, 10, 2);
+```
+
+### `blank_rest_site_data`
+**Description:** Filter the site identity and menu data returned by the `/blank/v1/data` endpoint.
+
+**Arguments:**
+- `$data` *(array)*: The full data array containing `menus` and `identity`.
+
+**Default props in `$data['identity']`:**
+  - `name` (string)
+  - `description` (string)
+  - `url` (string)
+  - `favicon` (string)
+  - ...ACF options fields
+
+**Example:**
+```php
+add_filter('blank_rest_site_data', function($data) {
+  $data['identity']['custom_field'] = 'Custom Value';
+  return $data;
+}, 10, 1);
 ```
 
 ### `blank_rest_menus`
+**Description:** Filter the menus array before it is returned by the REST API.
 
-Modify menu data before it's returned by the REST API:
+**Arguments:**
+- `$flattened_menus` *(array)*: The associative array of menus by location.
 
+**Example:**
 ```php
 add_filter('blank_rest_menus', function($menus) {
-    // Add custom properties to menu items
-    foreach ($menus as $location => &$menu_items) {
-        foreach ($menu_items as &$item) {
-            $item['custom_icon'] = get_post_meta($item['id'], 'menu_icon', true);
-        }
+  // Add custom properties to menu items
+  foreach ($menus as $location => &$menu_items) {
+    foreach ($menu_items as &$item) {
+      $item['custom_icon'] = get_post_meta($item['id'], 'menu_icon', true);
     }
-    return $menus;
+  }
+  return $menus;
 });
 ```
 
-### `blank_rest_api_user_id`
-
-Change which user's Application Passwords are validated for Bearer token authentication. By default, the theme uses User ID 1.
-
-```php
-// Use a different user for token validation
-add_filter('blank_rest_api_user_id', function($user_id) {
-    return 2; // Use User ID 2 instead
-});
-```
-
-**Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
-
-
-### `blank_disable_comments`
-
-Toggle Wordpress comments support.
-
-```php
-// Enable comments, by default comments are removed from the admin.
-add_filter('blank_disable_comments', function(true) {
-  return false;
-}, 10, 1);
-```
 ### `blank_rest_menu_item`
+**Description:** Filter the properties of each menu item before it is returned in the REST API.
 
-Filter the menu items props exposed in the `/wp-json/blank/v1/data` endpoint
+**Arguments:**
+- `$blank_menu_item` *(array)*: The associative array of menu item data.
+- `$wp_menu_item` *(WP_Post)*: The original menu item object.
 
+**Default props in `$blank_menu_item`:**
+  - `id` (int)
+  - `title` (string)
+  - `url` (string)
+  - `type` (string)
+  - `parent` (int)
+  - `classes` (array)
+  - `target` (string)
+  - `attr_title` (string)
+
+**Example:**
 ```php
 add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
-    return [
-      'id' => (int) sanitize_text_field( $wp_menu_item->ID ),
-      'title' => (string) sanitize_text_field( $item->title ),
-			'url'      => (string) esc_url( $item->url ),
-      //...
-    ]
+  $blank_menu_item['icon'] = get_post_meta($wp_menu_item->ID, 'icon', true);
+  return $blank_menu_item;
+}, 10, 2);
+```
+
+### `blank_rest_image`
+**Description:** Filter the properties of each image returned by the `/blank/v1/images/<post_type>` endpoint.
+
+**Arguments:**
+- `$filtered_image` *(array)*: The associative array of image data.
+- `$img_id` *(int)*: The image attachment ID.
+
+**Default props in `$filtered_image`:**
+  - `id` (int)
+  - `src` (string, relative path)
+  - `alt` (string)
+  - `width` (int)
+  - `height` (int)
+  - `mime_type` (string)
+  - `post_id` (int|null)
+  - `field_key` (string)
+
+**Example:**
+```php
+add_filter('blank_rest_image', function($filtered_image, $img_id) {
+  $filtered_image['custom_prop'] = 'value';
+  return $filtered_image;
 }, 10, 2);
 ```
 
 ### `blank_allowed_post_types_bulk_images`
+**Description:** Filter the allowed post types for the `/blank/v1/images/<post_type>` endpoint.
 
-Filter the images exposed in the `/wp-json/blank/v1/images/<post_type>` endpoint by the post types they are attached to.
+**Arguments:**
+- `$post_types` *(array)*: The allowed post type slugs.
 
+**Example:**
 ```php
 add_filter('blank_allowed_post_types_bulk_images', function($post_types) {
-  return (array) ['my_post_type'];
-});
-
+  $post_types[] = 'my_custom_type';
+  return $post_types;
+}, 10, 1);
 ```
-### `blank_rest_image_props`
 
+### `blank_rest_api_user_id`
+**Description:** Filter the user ID used for Bearer token authentication.
+
+**Arguments:**
+- `$user_id` *(int)*: The user ID to validate the token against.
+
+**Example:**
 ```php
-//Return full src
-add_filter('blank_rest_image_props', function($filtered_image, $img_id) {
-   return wp_get_attachment_url($img_id);
-}, 10, 2);
-
+add_filter('blank_rest_api_user_id', function($user_id) {
+  return 2; // Use User ID 2 instead of 1
+}, 10, 1);
 ```
+
+### `blank_disable_comments`
+**Description:** Enable or disable WordPress comments support (default: disabled).
+
+**Arguments:**
+- `$disable` *(bool)*: Whether to disable comments (default: true).
+
+**Example:**
+```php
+add_filter('blank_disable_comments', function($disable) {
+  return false; // Enable comments
+}, 10, 1);
+```
+
+**Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
+
+## ChangeLog
+
+### version 1.0.2b
+
+ - Added Composer support for autoloading and linting.
+ - Fixed issue with copying language files using WP_Filesystem API.
+ - Using '_wp_attached_file' meta key to get the relative src of the image.
+ - Endpoint posts by <post_type> with bearer token and props filtering.
+ 
+### version 1.0.1
+
+ - Added filter on menu items 'blank_rest_menu_item' to allow modification of individual menu items before returning in REST API.
+ - Added endpoint '/images/{post_type}' to fetch flattened list of images used in specified post type.
+ - Changed filter name from 'cmk_blank_allowed_post_types' to 'blank_allowed_post_types_bulk_images' for consistency.
+ - Added filter 'blank_rest_image' to allow modification of image properties before returning in REST API.
 
 ## Contributing
 
