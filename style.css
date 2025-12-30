@@ -3,7 +3,7 @@ Theme Name: Blank Headless Theme
 Theme URI: https://github.com/AfterglowWeb/blank-headless-theme
 Author: Cédric Moris Kelly
 Author URI: https://www.moris-kelly.com
-Version: 1.0.2
+Version: 1.0.3b
 Description: A minimal WordPress theme designed exclusively for headless CMS usage. Provides REST API endpoints with Bearer token authentication to serve content to external front-end applications. Includes Advanced Custom Fields integration, custom post types, and custom menu management. Not intended for traditional WordPress front-end rendering.
 Tested up to: 6.9.0
 Requires PHP: 7.4
@@ -11,5 +11,5 @@ Requires at least: 6.0
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: blank
-Tags: headless, rest-api, acf, custom-post-types, minimal
+Tags: headless, rest-api, webhooks, acf, custom-post-types, minimal
 */

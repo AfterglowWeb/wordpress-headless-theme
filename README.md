@@ -29,15 +29,17 @@ git clone https://github.com/AfterglowWeb/wordpress-headless-theme.git blank
 
 3. Configure custom post types, taxonomies, and menus using JSON files in `/config` directory (see Configuration section)
 
-## Authentication
+## REST API Endpoints
 
 The theme provides **3 custom REST API endpoint**
   - `/blank/v1/data`
   - `/blank/v1/<post_type>`
   - `/blank/v1/<post_type>/images`
 
-protected by Bearer token authentication using **WordPress Application Passwords**. 
-By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator). You can customize this using the `blank_rest_api_user_id` filter (see Filters section).
+## Authentication
+
+The **3 custom REST API endpoints** are protected by a bearer token authentication using **WordPress Application Passwords**. You can setup application tokens on a user based logic in the user profiles.
+By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator) with `rest_api` as the password identifier. You can customize this using the `blank_rest_api_user_id` and the `blank_rest_api_password_key` filters (see Filters section).
 
 ### Setting up Bearer Token Authentication:
 
@@ -60,7 +62,6 @@ curl -H "Authorization: Bearer|abcdefghijklmnop" \
 
 **Token Format:** `Bearer|token` (pipe delimiter, no spaces in token)
 
-## REST API Endpoint
 
 ### GET /wp-json/blank/v1/data
 
@@ -85,17 +86,32 @@ Retrieves site identity data and menu items.
 }
 ```
 
+### GET /wp-json/blank/v1/{post_type}
+
+**Description:**  
+Returns a flat array of all post objects belonging to the `post_type` parameter.
+This endpoint is intended to bulk serve Wordpress posts in a minimal and secured way so you can easyly launch async workers from a middelware to import json objects in your application.
+
+*! It does not handle requests number limiting.*
+Your may want to handle this aspect yourself in your child theme or directly in your server configuration.
+
+**Authentication:**  
+Requires Bearer token (see above).
+
+**Parameters:**
+- `post_type` (string, required): The slug of the WordPress post type (e.g. `portfolio`, `post`, `page`). Must be 2–20 characters, only letters, numbers, underscores, or hyphens.
+
 ### GET /wp-json/blank/v1/{post_type}/images
 
 **Description:**  
-Returns a flat array of image objects attached to post belonging to the `post_type` parameter.
+Returns a flat array of all image objects attached to post belonging to the `post_type` parameter.
 all published posts of a given post type will be explored for:
 - WordPress featured image, 
 - ACF image and gallery fields
 
 This endpoint is intended to bulk serve images in a minimal and secured way so you can easyly launch async workers from a middelware to copy them in your application.
 
-*! It does not handle limiting.*
+*! It does not handle requests number limiting.*
 *! It does not hide images from default Wordpress endpoints.*
 Your may want to handle these aspects yourself.
 
@@ -238,7 +254,7 @@ Below are all the filters (hooks) available in this theme's REST API extension, 
 
 **Example:**
 ```php
-add_filter('blank_rest_post', function($filtered_post, $post) {
+add_filter('blank_rest_post', function( array $filtered_post, \WP_Post $post ): array {
   $filtered_post['custom_prop'] = 'value';
   return $filtered_post;
 }, 10, 2);
@@ -253,7 +269,7 @@ add_filter('blank_rest_post', function($filtered_post, $post) {
 
 **Example:**
 ```php
-add_filter('blank_rest_post_acf', function($acf_fields, $post_id) {
+add_filter('blank_rest_post_acf', function( array $acf_fields, int $post_id ): array {
   unset($acf_fields['secret_field']);
   return $acf_fields;
 }, 10, 2);
@@ -276,7 +292,7 @@ add_filter('blank_rest_post_acf', function($acf_fields, $post_id) {
 
 **Example:**
 ```php
-add_filter('blank_rest_term', function($filtered_term, $term) {
+add_filter('blank_rest_term', function( array $filtered_term, \WP_Term $term ): array {
   $filtered_term['icon'] = get_term_meta($term->term_id, 'icon', true);
   return $filtered_term;
 }, 10, 2);
@@ -291,7 +307,7 @@ add_filter('blank_rest_term', function($filtered_term, $term) {
 
 **Example:**
 ```php
-add_filter('blank_rest_term_acf', function($acf_fields, $term_id) {
+add_filter('blank_rest_term_acf', function( array $acf_fields, int $term_id ): array {
   unset($acf_fields['internal_note']);
   return $acf_fields;
 }, 10, 2);
@@ -312,7 +328,7 @@ add_filter('blank_rest_term_acf', function($acf_fields, $term_id) {
 
 **Example:**
 ```php
-add_filter('blank_rest_site_data', function($data) {
+add_filter('blank_rest_site_data', function( array $data ): array {
   $data['identity']['custom_field'] = 'Custom Value';
   return $data;
 }, 10, 1);
@@ -326,7 +342,7 @@ add_filter('blank_rest_site_data', function($data) {
 
 **Example:**
 ```php
-add_filter('blank_rest_menus', function($menus) {
+add_filter('blank_rest_menus', function( array $menus ): array {
   // Add custom properties to menu items
   foreach ($menus as $location => &$menu_items) {
     foreach ($menu_items as &$item) {
@@ -402,15 +418,80 @@ add_filter('blank_allowed_post_types_bulk_images', function($post_types) {
 ```
 
 ### `blank_rest_api_user_id`
-**Description:** Filter the user ID used for Bearer token authentication.
+**Description:** Filter the user ID used for bearer token authentication.
 
 **Arguments:**
 - `$user_id` *(int)*: The user ID to validate the token against.
 
 **Example:**
 ```php
-add_filter('blank_rest_api_user_id', function($user_id) {
+add_filter('blank_rest_api_user_id', function($user_id): int {
   return 2; // Use User ID 2 instead of 1
+}, 10, 1);
+```
+
+### `blank_rest_api_password_key`
+**Description:**  Setup the password name you previously registered in the user profile for bearer token authentication.
+
+**Arguments:**
+- `$password_key` *(string)*: The name of the password containing the token used on the REST API.
+
+**Example:**
+```php
+add_filter('blank_rest_api_password_key', function( string $password_key ): string {
+  return 'my_password';
+}, 10, 1);
+```
+
+### `blank_application_user_id`
+**Description:** Filter the user ID used to trigger your application webhook.
+
+**Arguments:**
+- `$user_id` *(int)*: The user ID to validate the token against.
+
+**Example:**
+```php
+add_filter('blank_application_user_id', function($user_id): int {
+  return 2; // Use User ID 2 instead of 1
+}, 10, 1);
+```
+
+### `blank_application_password_key`
+**Description:**  Setup the password name you previously registered in the user profile for your application webhook.
+
+**Arguments:**
+- `$password_key` *(string)*: The name of the password containing the token to send to your application webhook.
+
+**Example:**
+```php
+add_filter('blank_application_password_key', function( string $password_key ): string {
+  return 'my_password';
+}, 10, 1);
+```
+
+### `blank_application_host`
+**Description:**  Setup your application host
+
+**Arguments:**
+- `$host` *(string)*: Your application host with protocol and no trailing slash.
+
+**Example:**
+```php
+add_filter('blank_application_host', function( string $host ): string {
+  return 'https://www.my-host.com';
+}, 10, 1);
+```
+
+### `blank_application_cache_route`
+**Description:**  Setup your application cache route.
+
+**Arguments:**
+- `$route` *(string)*: Your application route used to trigger cache flushing.
+
+**Example:**
+```php
+add_filter('blank_application_cache_route', function( string $route ): string {
+  return '/api/flush-cache';
 }, 10, 1);
 ```
 
@@ -422,7 +503,7 @@ add_filter('blank_rest_api_user_id', function($user_id) {
 
 **Example:**
 ```php
-add_filter('blank_disable_comments', function($disable) {
+add_filter('blank_disable_comments', function($disable): bool {
   return false; // Enable comments
 }, 10, 1);
 ```
@@ -430,6 +511,12 @@ add_filter('blank_disable_comments', function($disable) {
 **Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
 
 ## ChangeLog
+
+### version 1.0.3b
+
+ - Added class cmk\blank\Cache to provide a webhook to flush application cache.
+ - Added mandatory password identifier.
+ - Added filters: `blank_application_host`, `blank_application_cache_route`, `blank_application_user_id`, `blank_application_password_key`
 
 ### version 1.0.2b
 
