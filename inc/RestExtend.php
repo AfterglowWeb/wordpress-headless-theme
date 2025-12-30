@@ -38,7 +38,7 @@ class RestExtend {
 					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})/images',
 					array(
 						'methods'             => 'GET',
-						'callback'            => 'cmk\blank\RestExtend::images_flat',
+						'callback'            => 'cmk\blank\RestExtend::images_per_post_type',
 						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
 						'args'                => array(
 							'post_type' => array(
@@ -60,7 +60,7 @@ class RestExtend {
 					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})',
 					array(
 						'methods'             => 'GET',
-						'callback'            => 'cmk\blank\RestExtend::posts_flat',
+						'callback'            => 'cmk\blank\RestExtend::posts_per_post_type',
 						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
 						'args'                => array(
 							'post_type' => array(
@@ -96,25 +96,19 @@ class RestExtend {
 		 * @param int $user_id The user ID to validate the token against.
 		 * @return int Modified user ID.
 		 */
-		$user_id = (int) sanitize_text_field( apply_filters( 'blank_rest_api_user_id', 1 ) );
+		$user_id = (int) sanitize_text_field( apply_filters( 'blank_rest_api_user_id', 1, 10, 1 ) );
 
-		$passwords = \WP_Application_Passwords::get_user_application_passwords( $user_id );
+		/**
+		 * Filter the application password name for Bearer token validation.
+		 * By default, uses 'rest_api' as the password name.
+		 *
+		 * @param string $password_name The application password name.
+		 * @return string Modified password name.
+		 */
+		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_key', 'rest_api', 10, 1 ) );
 
-		if ( empty( $passwords ) || ! is_array( $passwords ) ) {
-			return false;
-		}
 
-		foreach ( $passwords as $password_data ) {
-			if ( ! isset( $password_data['password'] ) ) {
-				continue;
-			}
-
-			if ( \WP_Application_Passwords::check_password( $received_token, $password_data['password'] ) ) {
-				return true;
-			}
-		}
-
-		return false;
+		return Utils::validate_application_password( $received_token, $user_id, $password_name );
 	}
 
 	public static function site_data(): \WP_REST_Response {
@@ -150,7 +144,7 @@ class RestExtend {
 		return $response;
 	}
 
-	public static function images_flat( \WP_REST_Request $request ): \WP_REST_Response {
+	public static function images_per_post_type( \WP_REST_Request $request ): \WP_REST_Response {
 
 		$post_type = $request->get_param( 'post_type' );
 
@@ -203,7 +197,7 @@ class RestExtend {
 		return rest_ensure_response( $images );
 	}
 
-	public static function posts_flat( \WP_REST_Request $request ): \WP_REST_Response {
+	public static function posts_per_post_type( \WP_REST_Request $request ): \WP_REST_Response {
 
 		$post_type = $request->get_param( 'post_type' );
 
@@ -226,57 +220,7 @@ class RestExtend {
 		$posts = array();
 
 		foreach ( $query->posts as $post ) {
-
-			$post_images = self::post_images_flat( $post );
-
-			// Prepare ACF image field keys to exclude from ACF fields.
-			$acf_image_keys = $post_images ? array_map(
-				function ( $img ) {
-					return $img['field_key'];
-				},
-				$post_images
-			) : array();
-
-			// Filter ACF fields to exclude image fields.
-			add_filter(
-				'blank_rest_post_acf',
-				function ( $acf_fields ) use ( $acf_image_keys ) {
-					foreach ( $acf_fields as $key => $value ) {
-						if ( in_array( $key, $acf_image_keys, true ) ) {
-							unset( $acf_fields[ $key ] );
-						}
-					}
-					return $acf_fields;
-				},
-				10,
-				1
-			);
-
-			$filtered_post = array(
-				'id'       => (int) $post->ID,
-				'type'     => (string) sanitize_text_field( $post->post_type ),
-				'title'    => (string) sanitize_text_field( $post->post_title ),
-				'slug'     => (string) sanitize_text_field( $post->post_name ),
-				'date'     => (string) get_the_date( 'c', $post->ID ),
-				'modified' => (string) get_the_modified_date( 'c', $post->ID ),
-				'link'     => (string) esc_url( get_permalink( $post->ID ) ),
-				'content'  => (string) apply_filters( 'the_content', $post->post_content ),
-				'excerpt'  => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
-				'terms'    => array_map(
-					function ( $taxonomy ) use ( $post ) {
-						$terms = get_the_terms( $post->ID, $taxonomy );
-						if ( is_wp_error( $terms ) || empty( $terms ) ) {
-							return array();
-						}
-						return array_map( array( self::class, 'filter_term_props' ), $terms );
-					},
-					get_object_taxonomies( $post_type, 'names' )
-				),
-				'images'   => $post_images,
-				'acf'      => apply_filters( 'blank_rest_post_acf', function_exists( 'get_fields' ) ? (array) get_fields( $post->ID ) : array(), $post->ID ),
-			);
-
-			$posts[] = apply_filters( 'blank_rest_post', $filtered_post, $post );
+			$posts[] = self::filter_post_props( $post );
 		}
 
 		return rest_ensure_response( $posts );
@@ -360,18 +304,7 @@ class RestExtend {
 
 		$menu_map = array();
 		foreach ( $menu as $item ) {
-			$menu_map[ $item->ID ] = array(
-				'id'         => (int) sanitize_text_field( $item->ID ),
-				'title'      => (string) sanitize_text_field( $item->title ),
-				'url'        => (string) esc_url( $item->url ),
-				'type'       => (string) sanitize_key( $item->type ),
-				'parent'     => (int) sanitize_text_field( $item->menu_item_parent ),
-				'classes'    => (array) $item->classes,
-				'target'     => (string) sanitize_text_field( $item->target ),
-				'attr_title' => (string) sanitize_text_field( $item->attr_title ),
-			);
-
-			$menu_map[ $item->ID ] = apply_filters( 'blank_rest_menu_item', $menu_map[ $item->ID ], $item );
+			$menu_map[ $item->ID ] = self::filter_menu_item_props( $item );
 		}
 
 		$hierarchical_menu = array();
@@ -466,5 +399,74 @@ class RestExtend {
 		);
 
 		return (array) apply_filters( 'blank_rest_term', $filtered_term, $term );
+	}
+
+	private static function filter_post_props( $post ): array {
+			
+			$post_images = self::post_images_flat( $post );
+
+			// Prepare ACF image field keys to exclude from ACF fields.
+			$acf_image_keys = $post_images ? array_map(
+				function ( $img ) {
+					return $img['field_key'];
+				},
+				$post_images
+			) : array();
+
+			// Filter ACF fields to exclude image fields.
+			add_filter(
+				'blank_rest_post_acf',
+				function ( $acf_fields ) use ( $acf_image_keys ) {
+					foreach ( $acf_fields as $key => $value ) {
+						if ( in_array( $key, $acf_image_keys, true ) ) {
+							unset( $acf_fields[ $key ] );
+						}
+					}
+					return $acf_fields;
+				},
+				10,
+				1
+			);
+
+			$filtered_post = array(
+				'id'       => (int) $post->ID,
+				'type'     => (string) sanitize_text_field( $post->post_type ),
+				'title'    => (string) sanitize_text_field( $post->post_title ),
+				'slug'     => (string) sanitize_text_field( $post->post_name ),
+				'date'     => (string) get_the_date( 'c', $post->ID ),
+				'modified' => (string) get_the_modified_date( 'c', $post->ID ),
+				'link'     => (string) esc_url( get_permalink( $post->ID ) ),
+				'content'  => (string) apply_filters( 'the_content', $post->post_content ),
+				'excerpt'  => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
+				'terms'    => array_map(
+					function ( $taxonomy ) use ( $post ) {
+						$terms = get_the_terms( $post->ID, $taxonomy );
+						if ( is_wp_error( $terms ) || empty( $terms ) ) {
+							return array();
+						}
+						return array_map( array( self::class, 'filter_term_props' ), $terms );
+					},
+					get_object_taxonomies( (string) sanitize_text_field( $post->post_type ), 'names' )
+				),
+				'images'   => $post_images,
+				'acf'      => apply_filters( 'blank_rest_post_acf', function_exists( 'get_fields' ) ? (array) get_fields( $post->ID ) : array(), $post->ID ),
+			);
+
+			return apply_filters( 'blank_rest_post', $filtered_post, $post );
+	}
+
+	private static function filter_menu_item_props( $menu_item ): array {
+		$filtered_menu_item = array(
+			'id'         => (int) sanitize_text_field( $menu_item->ID ),
+			'title'      => (string) sanitize_text_field( $menu_item->title ),
+			'url'        => (string) esc_url( $menu_item->url ),
+			'type'       => (string) sanitize_key( $menu_item->type ),
+			'parent'     => (int) sanitize_text_field( $menu_item->menu_item_parent ),
+			'classes'    => (array) $menu_item->classes,
+			'target'     => (string) sanitize_text_field( $menu_item->target ),
+			'attr_title' => (string) sanitize_text_field( $menu_item->attr_title ),
+		);
+
+		return (array) apply_filters( 'blank_rest_menu_item', $filtered_menu_item, $menu_item );
 	}
 }
