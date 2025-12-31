@@ -105,7 +105,7 @@ class RestExtend {
 		 * @param string $password_name The application password name.
 		 * @return string Modified password name.
 		 */
-		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_key', 'rest_api', 10, 1 ) );
+		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_name', 'rest_api', 10, 1 ) );
 
 
 		return Utils::validate_application_password( $received_token, $user_id, $password_name );
