@@ -19,7 +19,7 @@ class Theme {
 		add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_menus' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_remove' ) );
-		add_action( 'template_redirect', array( $this, 'redirect_unused_templates' ) );
+		add_action( 'template_redirect', array( $this, 'redirect_front' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
 		add_filter( 'mime_types', array( $this, 'mime_support' ), 10, 1 );
@@ -75,9 +75,6 @@ class Theme {
 				new \WP_Error( 'Invalid custom menus configuration' );
 			}
 
-			$theme_obj = wp_get_theme();
-			$td        = $theme_obj->get( 'TextDomain' );
-
 			$formated_menus = array();
 
 			foreach ( $custom_menus['custom_menus'] as $menu ) {
@@ -98,7 +95,7 @@ class Theme {
 
 			load_theme_textdomain( 'blank', WP_LANG_DIR . '/themes' );
 		} else {
-			load_theme_textdomain( 'blank', get_template_directory() . '/languages' );
+			load_theme_textdomain( 'blank', get_stylesheet_directory() . '/languages' );
 		}
 	}
 
@@ -108,7 +105,7 @@ class Theme {
 			return;
 		}
 
-		$theme_lang_dir = realpath( get_template_directory() . '/languages' );
+		$theme_lang_dir = realpath( get_stylesheet_directory() . '/languages' );
 		if ( false === is_admin() || false === defined( 'WP_LANG_DIR' ) ) {
 			return;
 		}
@@ -147,11 +144,17 @@ class Theme {
 		}
 	}
 
-	public function redirect_unused_templates(): void {
-		if ( is_author() || is_tag() || is_attachment() || is_search() ) {
-			wp_safe_redirect( apply_filters( 'allowed_redirect_hosts', home_url() ) );
-			exit;
+	public function redirect_front(): void {
+
+		if( is_front_page() || is_home() || is_admin() || wp_doing_ajax() ) {
+			return;
 		}
+
+		$redirect_url = esc_url( apply_filters( 'blank_redirect_url', home_url() ) );
+
+		wp_safe_redirect( apply_filters( 'allowed_redirect_hosts', $redirect_url ) );
+		exit;
+		
 	}
 
 	public function remove_empty_p_tags( $content ): string {
@@ -172,7 +175,13 @@ class Theme {
 	}
 
 	public function max_upload_size( $file ) {
-		$max_file_size = 500 * 1024;
+	
+		if( ! isset( $file['type'] ) || ! isset( $file['size'] ) ) {
+			return $file;
+		}
+
+		$max_file_size = apply_filters('blank_max_upload_size', 500 * 1024); // 500 KB.
+
 		if ( strpos( $file['type'], 'image' ) !== false && $file['size'] > $max_file_size ) {
 			$file['error'] = 'Le poids maximum des images est fixé à 500ko. Utilisez le format .webp pour réduire le poids des images.';
 		}

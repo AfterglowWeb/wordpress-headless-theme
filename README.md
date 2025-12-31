@@ -39,7 +39,7 @@ The theme provides **3 custom REST API endpoint**
 ## Authentication
 
 The **3 custom REST API endpoints** are protected by a bearer token authentication using **WordPress Application Passwords**. You can setup application tokens on a user based logic in the user profiles.
-By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator) with `rest_api` as the password identifier. You can customize this using the `blank_rest_api_user_id` and the `blank_rest_api_password_key` filters (see Filters section).
+By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator) with `rest_api` as the password identifier. You can customize this using the `blank_rest_api_user_id` and the `blank_rest_api_password_name` filters (see Filters section).
 
 ### Setting up Bearer Token Authentication:
 
@@ -430,7 +430,7 @@ add_filter('blank_rest_api_user_id', function($user_id): int {
 }, 10, 1);
 ```
 
-### `blank_rest_api_password_key`
+### `blank_rest_api_password_name`
 **Description:**  Setup the password name you previously registered in the user profile for bearer token authentication.
 
 **Arguments:**
@@ -438,7 +438,7 @@ add_filter('blank_rest_api_user_id', function($user_id): int {
 
 **Example:**
 ```php
-add_filter('blank_rest_api_password_key', function( string $password_key ): string {
+add_filter('blank_rest_api_password_name', function( string $password_key ): string {
   return 'my_password';
 }, 10, 1);
 ```
@@ -456,7 +456,7 @@ add_filter('blank_application_user_id', function($user_id): int {
 }, 10, 1);
 ```
 
-### `blank_application_password_key`
+### `blank_application_password_name`
 **Description:**  Setup the password name you previously registered in the user profile for your application webhook.
 
 **Arguments:**
@@ -464,7 +464,7 @@ add_filter('blank_application_user_id', function($user_id): int {
 
 **Example:**
 ```php
-add_filter('blank_application_password_key', function( string $password_key ): string {
+add_filter('blank_application_password_name', function( string $password_key ): string {
   return 'my_password';
 }, 10, 1);
 ```
@@ -508,15 +508,19 @@ add_filter('blank_disable_comments', function($disable): bool {
 }, 10, 1);
 ```
 
+### `blank_max_upload_size`
+
+
 **Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
 
 ## ChangeLog
 
 ### version 1.0.3b
 
+ - Added all front templates redirect to home_url() in cmk\blank\Theme::redirect_front_pages(), can be controlled through `blank_redirect_url`.
  - Added class cmk\blank\Cache to provide a webhook to flush application cache.
- - Added mandatory password identifier.
- - Added filters: `blank_application_host`, `blank_application_cache_route`, `blank_application_user_id`, `blank_application_password_key`
+ - Added filters: `blank_application_host`, `blank_application_cache_route`, `blank_application_user_id`, `blank_application_password_name`
+- Added mandatory password identifier.
 
 ### version 1.0.2b
 
