@@ -508,15 +508,19 @@ add_filter('blank_disable_comments', function($disable): bool {
 }, 10, 1);
 ```
 
+### `blank_max_upload_size`
+
+
 **Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
 
 ## ChangeLog
 
 ### version 1.0.3b
 
+ - Added all front templates redirect to home_url() in cmk\blank\Theme::redirect_front_pages(), can be controlled through `blank_redirect_url`.
  - Added class cmk\blank\Cache to provide a webhook to flush application cache.
- - Added mandatory password identifier.
  - Added filters: `blank_application_host`, `blank_application_cache_route`, `blank_application_user_id`, `blank_application_password_key`
+- Added mandatory password identifier.
 
 ### version 1.0.2b
 

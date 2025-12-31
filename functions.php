@@ -42,6 +42,7 @@ CustomPosts::get_instance();
 DisableComments::get_instance();
 RestExtend::get_instance();
 Cache::get_instance();
+Admin::get_instance();
 
 function is_admin_screen( $screenName ) {
 		if ( ! is_admin() ) {

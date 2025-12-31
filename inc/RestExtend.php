@@ -226,7 +226,7 @@ class RestExtend {
 		return rest_ensure_response( $posts );
 	}
 
-	private static function site_data_flat(): array {
+	public static function site_data_flat(): array {
 
 		$default_options = array(
 			'name'        => (string) sanitize_text_field( get_bloginfo( 'name' ) ),

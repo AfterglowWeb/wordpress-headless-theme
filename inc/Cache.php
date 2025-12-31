@@ -24,7 +24,7 @@ class Cache {
         }
 
         $wp_admin_bar->add_node([
-            'id'    => 'cmk-flush-next-cache',
+            'id'    => 'blank-flush-cache',
             'title' => esc_html__('Flush Application Cache', 'blank'),
             'href'  => '#',
             'meta'  => [
