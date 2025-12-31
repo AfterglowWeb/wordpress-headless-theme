@@ -16,7 +16,7 @@ class Admin {
 		add_action( 'admin_menu', [ $this, 'register_admin_page' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_footer', [ $this, 'print_inline_styles' ], 20 );
-		add_action( 'wp_ajax_blank_theme_admin_options', [ $this, 'ajax_admin_options' ] );
+		add_action( 'wp_ajax_blank_theme_update_options', [ $this, 'update_options' ] );
 	}
 
 	public function register_admin_page() {
@@ -71,7 +71,7 @@ class Admin {
 			'blank-theme-admin',
 			'blankThemeAdminData',
 			array(
-				'nonce'                  => wp_create_nonce( 'blank_theme_admin_nonce' ),
+				'nonce'                  => wp_create_nonce( 'blank_theme_update_options_nonce' ),
 				'ajaxurl'                => admin_url( 'admin-ajax.php' ),
 				'users'             => self::list_users(),
 				'admin_options'          => $this->get_admin_options(),
@@ -91,6 +91,9 @@ class Admin {
 			return;
 		}
 		$custom_css = '
+		body.toplevel_page_blank-theme-admin #wpcontent {
+			padding-left:0;
+		}
 		#blank-theme-admin-page input[type=color], 
 		#blank-theme-admin-page input[type=date], 
 		#blank-theme-admin-page input[type=datetime-local], 
@@ -119,18 +122,19 @@ class Admin {
 		echo '<style type="text/css">' . $custom_css . '</style>';
 	}
 
-	public function ajax_admin_options() {
-		check_ajax_referer( 'blank_theme_admin_nonce', 'nonce' );
+	public function update_options() {
+		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'error' => 'Unauthorized' ], 401 );
 		}
 
-		if ( isset( $_POST['action'] ) && $_POST['action'] === 'blank_theme_admin_options' && isset( $_POST['options'] ) ) {
+		if ( isset( $_POST['action'] ) && $_POST['action'] === 'blank_theme_update_options' && isset( $_POST['options'] ) ) {
 			$options = json_decode( stripslashes( $_POST['options'] ), true );
 			if ( ! is_array( $options ) ) {
 				wp_send_json_error( [ 'error' => 'Invalid options data' ], 400 );
 			}
-			update_option( 'blank_theme_admin_options', $options );
+			error_log( 'update_options: ' . print_r( $options, true ) );
+			update_option( 'blank_theme_update_options', $options );
 			wp_send_json_success( [ 'message' => 'Options saved', 'options' => $options ] );
 		} else {
 			$options = $this->get_admin_options();
@@ -142,16 +146,17 @@ class Admin {
 		$defaults = [
 			'blank_allowed_roles' => [ 'administrator', 'editor' ],
 			'rest_api_user_id' => 1,
-			'rest_api_password_key' => 'rest_api',
+			'rest_api_password_name' => 'rest_api',
 			'application_user_id' => 1,
-			'application_password_key' => 'flush_cache',
+			'application_password_name' => 'flush_cache',
 			'application_host' => 'https://www.my-host.com',
 			'application_cache_route' => '/api/flush-cache',
 			'disable_comments' => true,
 			'max_upload_size' => wp_max_upload_size(),
 		];
-		$options = get_option( 'blank_theme_admin_options', [] );
+		$options = get_option( 'blank_theme_update_options', [] );
 		$options = wp_parse_args( $options, $defaults );
+		error_log( 'get_options: ' . print_r( $options, true ) );
 		return [
 			'blank_allowed_roles' => [
 				'label' => __( 'Allowed Roles', 'blank' ),
@@ -161,17 +166,17 @@ class Admin {
 				'label' => __( 'REST API User ID', 'blank' ),
 				'value' => (int) sanitize_text_field( $options['rest_api_user_id'] ),
 			],
-			'rest_api_password_key' => [
+			'rest_api_password_name' => [
 				'label' => __( 'REST API Password Key', 'blank' ),
-				'value' => (string) sanitize_text_field( $options['rest_api_password_key'] ),
+				'value' => (string) sanitize_text_field( $options['rest_api_password_name'] ),
 			],
 			'application_user_id' => [
 				'label' => __( 'Application User ID', 'blank' ),
 				'value' => (int) sanitize_text_field( $options['application_user_id'] ),
 			],
-			'application_password_key' => [
+			'application_password_name' => [
 				'label' => __( 'Application Password Key', 'blank' ),
-				'value' => (string) sanitize_text_field( $options['application_password_key'] ),
+				'value' => (string) sanitize_text_field( $options['application_password_name'] ),
 			],
 			'application_host' => [
 				'label' => __( 'Application Host', 'blank' ),
@@ -233,8 +238,8 @@ class Admin {
 					$app_passwords = \WP_Application_Passwords::get_user_application_passwords( $user_id );
 					if ( is_array( $app_passwords ) ) {
 						foreach ( $app_passwords as $ap ) {
-							if ( isset( $ap['uuid'] ) && isset( $ap['name'] ) ) {
-								$passwords[ $ap['uuid'] ] = $ap['name'];
+							if ( isset( $ap['name'] ) ) {
+								$passwords[] = $ap['name'];
 							}
 						}
 					}

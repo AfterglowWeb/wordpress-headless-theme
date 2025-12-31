@@ -60,8 +60,8 @@ class Cache {
         }
 
         $application_user = (int) sanitize_text_field( apply_filters('blank_application_user_id', 1 ) );
-        $application_password_key = (int) sanitize_text_field( apply_filters('blank_application_password_key', 'flush_cache' ) );
-        $application_password = Utils::get_application_password($application_user, $application_password_key);
+        $application_password_name = (int) sanitize_text_field( apply_filters('blank_application_password_name', 'flush_cache' ) );
+        $application_password = Utils::get_application_password($application_user, $application_password_name);
 
         if(! $application_password ) {
             wp_send_json_error(['error' => 'Application password is not set'], 401);
