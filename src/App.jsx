@@ -21,12 +21,24 @@ import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Divider from '@mui/material/Divider';
 import { useEffect } from 'react';
+import Slider from '@mui/material/Slider';
+import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 
 export default function App() {
 	const adminData = useAdminData();
 	const [adminDataLoading, setAdminDataLoading] = useState(true);
 	const [users, setUsers] = useState([]);
 	const [adminOptions, setAdminOptions] = useState({});
+	const theme = useTheme();
+
+	function valueLabelFormat(value) {
+		if (value >= 1024) {
+			return (value / 1024) + ' MB';
+		}
+		return value + ' KB';
+	}
+
 	const [form, setForm] = useState({
 		rest_api_user_id: adminOptions?.rest_api_user_id?.value || '',
 		rest_api_password_name: adminOptions?.rest_api_password_name?.value || '',
@@ -35,10 +47,10 @@ export default function App() {
 		application_host: adminOptions?.application_host?.value || '',
 		application_cache_route: adminOptions?.application_cache_route?.value || '',
 		disable_comments: !!adminOptions?.disable_comments?.value,
-		max_upload_size: adminOptions?.max_upload_size?.value || '',
+		max_upload_size: adminOptions?.max_upload_size?.value || 1024, // default 1Mo
+		enable_max_upload_size: !!adminOptions?.enable_max_upload_size?.value,
 	});
 
-	// Dialog and Snackbar states
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -85,11 +97,11 @@ export default function App() {
 				application_host: adminOptions.application_host?.value || '',
 				application_cache_route: adminOptions.application_cache_route?.value || '',
 				disable_comments: !!adminOptions.disable_comments?.value,
-				max_upload_size: adminOptions.max_upload_size?.value || '',
-			});	
+				max_upload_size: adminOptions.max_upload_size?.value || 1024,
+				enable_max_upload_size: !!adminOptions.enable_max_upload_size?.value,
+			});    
 		}
 	}, [adminData, adminDataLoading]);
-
 
 	const handleChange = (e) => {
 		const { name, value, type, checked } = e.target;
@@ -97,6 +109,10 @@ export default function App() {
 			...prev,
 			[name]: type === 'checkbox' ? checked : value,
 		}));
+	};
+
+	const handleSliderChange = (event, newValue) => {
+		setForm(prev => ({ ...prev, max_upload_size: newValue }));
 	};
 
 	const handleSubmit = (e) => {
@@ -112,6 +128,9 @@ export default function App() {
 			setSnackbarOpen(true);
 			return;
 		}
+		const saveForm = {
+			...form,
+		};
 		try {
 			const response = await fetch(adminData.ajaxurl, {
 				method: 'POST',
@@ -121,7 +140,7 @@ export default function App() {
 				body: new URLSearchParams({
 					action: 'blank_theme_update_options',
 					nonce: adminData.nonce,
-					options: JSON.stringify(form),
+					options: JSON.stringify(saveForm),
 				}),
 			});
 			const data = await response.json();
@@ -173,7 +192,7 @@ export default function App() {
 
 	return (
 		<>
-			<Paper sx={{ maxWidth: 600, mx: 'auto', mt: 4, p: 3 }} elevation={2}>
+			<Paper sx={{ maxWidth: 600, mx: 'auto', my: 4, p: 3 }} elevation={2}>
 				<form onSubmit={handleSubmit}>
 					<Stack spacing={3}>
 						<Box sx={{ minWidth: 120 }}>
@@ -215,6 +234,8 @@ export default function App() {
 							onChange={handleChange}
 							/>
 						</Box>
+
+
 						<TextField
 							label={adminData?.application_host?.label || 'Application Host'}
 							name="application_host"
@@ -229,6 +250,9 @@ export default function App() {
 							onChange={handleChange}
 							fullWidth
 						/>
+
+													<Divider />
+
 						<FormControlLabel
 							control={
 								<Switch
@@ -239,18 +263,43 @@ export default function App() {
 							}
 							label={adminData?.disable_comments?.label || 'Disable Comments'}
 						/>
-						<TextField
-							label={adminData?.max_upload_size?.label || 'Max Upload Size (bytes)'}
-							name="max_upload_size"
-							type="number"
-							value={form.max_upload_size}
-							onChange={handleChange}
-							fullWidth
-						/>
-						<Button type="submit" variant="contained" color="primary">
-							Save Settings
-						</Button>
-					</Stack>
+
+						<Box sx={{px:1.5}}>
+							<Stack direction="row" >
+								<FormControlLabel
+									control={
+										<Switch
+											checked={form.enable_max_upload_size}
+											name="enable_max_upload_size"
+											onChange={handleChange}
+										/>
+									}
+									label={adminData?.enable_max_upload_size?.label || 'Limit Images Weight'}
+								/>
+								<Typography 
+								color={form.enable_max_upload_size ? theme.palette.text.primary : theme.palette.text.disabled}
+								id="max-upload-size-slider" gutterBottom>
+									{adminOptions?.max_upload_size?.label || 'Max Upload Size'}: {valueLabelFormat(form.max_upload_size)}
+								</Typography>
+															</Stack>
+
+								<Slider
+									value={form.max_upload_size}
+									min={1}
+									max={1024}
+									step={1}
+									disabled={!form.enable_max_upload_size}
+									getAriaValueText={valueLabelFormat}
+									valueLabelFormat={valueLabelFormat}
+									onChange={handleSliderChange}
+									valueLabelDisplay="auto"
+									aria-labelledby="max-upload-size-slider"
+								/>
+							</Box>
+							<Button type="submit" variant="contained" color="primary">
+								Save Settings
+							</Button>
+						</Stack>
 				</form>
 			</Paper>
 

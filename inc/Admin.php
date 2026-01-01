@@ -19,6 +19,7 @@ class Admin {
 		add_action( 'wp_ajax_blank_theme_update_options', [ $this, 'update_options' ] );
 	}
 
+
 	public function register_admin_page() {
 		add_menu_page(
 			__( 'Blank Theme Admin', 'blank' ),
@@ -122,6 +123,22 @@ class Admin {
 		echo '<style type="text/css">' . $custom_css . '</style>';
 	}
 
+
+	private static function get_default_options() {
+		 return [
+			'blank_allowed_roles' => [ 'administrator', 'editor' ],
+			'rest_api_user_id' => 1,
+			'rest_api_password_name' => 'rest_api',
+			'application_user_id' => 1,
+			'application_password_name' => 'flush_cache',
+			'application_host' => 'https://www.my-host.com',
+			'application_cache_route' => '/api/flush-cache',
+			'disable_comments' => true,
+			'max_upload_size' => 1024, // 1Mo in Ko
+			'enable_max_upload_size' => false,
+		];
+	}
+
 	public function update_options() {
 		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -133,8 +150,14 @@ class Admin {
 			if ( ! is_array( $options ) ) {
 				wp_send_json_error( [ 'error' => 'Invalid options data' ], 400 );
 			}
-			error_log( 'update_options: ' . print_r( $options, true ) );
-			update_option( 'blank_theme_update_options', $options );
+
+
+			$options = self::sanitize_admin_options( $options );
+			$defaults = self::get_default_options();
+
+			$options = wp_parse_args( $options, $defaults );
+			update_option( 'blank_theme_options', $options );
+
 			wp_send_json_success( [ 'message' => 'Options saved', 'options' => $options ] );
 		} else {
 			$options = $this->get_admin_options();
@@ -143,27 +166,23 @@ class Admin {
 	}
 
 	public function get_admin_options() {
-		$defaults = [
-			'blank_allowed_roles' => [ 'administrator', 'editor' ],
-			'rest_api_user_id' => 1,
-			'rest_api_password_name' => 'rest_api',
-			'application_user_id' => 1,
-			'application_password_name' => 'flush_cache',
-			'application_host' => 'https://www.my-host.com',
-			'application_cache_route' => '/api/flush-cache',
-			'disable_comments' => true,
-			'max_upload_size' => wp_max_upload_size(),
-		];
-		$options = get_option( 'blank_theme_update_options', [] );
+		$options = get_option( 'blank_theme_options', [] );
+		$options = self::sanitize_admin_options( $options );
+
+		$defaults = self::get_default_options();
 		$options = wp_parse_args( $options, $defaults );
-		error_log( 'get_options: ' . print_r( $options, true ) );
+
+		return self::decorate_admin_options($options);
+	}
+
+	private static function decorate_admin_options(array $options): array {
 		return [
 			'blank_allowed_roles' => [
 				'label' => __( 'Allowed Roles', 'blank' ),
 				'value' => array_map( 'sanitize_text_field', (array) $options['blank_allowed_roles'] ),
 			],
 			'rest_api_user_id' => [
-				'label' => __( 'REST API User ID', 'blank' ),
+				'label' => __( 'REST API User', 'blank' ),
 				'value' => (int) sanitize_text_field( $options['rest_api_user_id'] ),
 			],
 			'rest_api_password_name' => [
@@ -171,7 +190,7 @@ class Admin {
 				'value' => (string) sanitize_text_field( $options['rest_api_password_name'] ),
 			],
 			'application_user_id' => [
-				'label' => __( 'Application User ID', 'blank' ),
+				'label' => __( 'Application User', 'blank' ),
 				'value' => (int) sanitize_text_field( $options['application_user_id'] ),
 			],
 			'application_password_name' => [
@@ -191,9 +210,31 @@ class Admin {
 				'value' => (bool) rest_sanitize_boolean( $options['disable_comments'] ),
 			],
 			'max_upload_size' => [
-				'label' => __( 'Max Upload Size (bytes)', 'blank' ),
+				'label' => __( 'Max Upload Size', 'blank' ),
 				'value' => (int) sanitize_text_field( $options['max_upload_size'] ),
+				'min' => 1,
+				'max' => 1024,
 			],
+			'enable_max_upload_size' => [
+				'label' => __( 'Enable Max Upload Size', 'blank' ),
+				'value' => (bool) rest_sanitize_boolean( $options['enable_max_upload_size'] ),
+			]
+		];
+	}
+
+	private static function sanitize_admin_options(array $options): array {
+		// Only sanitize and return raw values for storage
+		return [
+			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_text_field', (array)$options['blank_allowed_roles']) : ['administrator', 'editor'],
+			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int)sanitize_text_field($options['rest_api_user_id']) : 0,
+			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string)sanitize_text_field($options['rest_api_password_name']) : '',
+			'application_user_id' => isset($options['application_user_id']) ? (int)sanitize_text_field($options['application_user_id']) : 0,
+			'application_password_name' => isset($options['application_password_name']) ? (string)sanitize_text_field($options['application_password_name']) : '',
+			'application_host' => isset($options['application_host']) ? (string)sanitize_text_field($options['application_host']) : '',
+			'application_cache_route' => isset($options['application_cache_route']) ? (string)sanitize_text_field($options['application_cache_route']) : '',
+			'disable_comments' => isset($options['disable_comments']) ? (bool)rest_sanitize_boolean($options['disable_comments']) : false,
+			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : 1024, // store in Ko
+			'enable_max_upload_size' => isset($options['enable_max_upload_size']) ? (bool)rest_sanitize_boolean($options['enable_max_upload_size']) : false,
 		];
 	}
 
