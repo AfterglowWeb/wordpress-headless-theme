@@ -1,6 +1,6 @@
 # Blank Headless WordPress Theme
 
-A minimal WordPress theme designed exclusively for **headless CMS** usage with external front-end applications like Next.js, React, Vue, or any other framework capable of consuming a REST API.
+A minimal WordPress theme designed exclusively for Headless CMS usage with external front-end applications like Next.js, React, Vue, or any other framework capable of consuming a REST API.
 
 ## Purpose
 
