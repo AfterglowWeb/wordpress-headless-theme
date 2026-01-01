@@ -265,7 +265,7 @@ export default function App() {
 						/>
 
 						<Box sx={{px:1.5}}>
-							<Stack direction="row" >
+							<Stack direction={{ xs: 'column', sm: 'row' }} >
 								<FormControlLabel
 									control={
 										<Switch
@@ -277,11 +277,12 @@ export default function App() {
 									label={adminData?.enable_max_upload_size?.label || 'Limit Images Weight'}
 								/>
 								<Typography 
-								color={form.enable_max_upload_size ? theme.palette.text.primary : theme.palette.text.disabled}
+								sx={{display:'flex', alignItems:'center', mb:0}}
+								color={form.enable_max_upload_size ? theme.palette.primary.main : theme.palette.text.disabled}
 								id="max-upload-size-slider" gutterBottom>
 									{adminOptions?.max_upload_size?.label || 'Max Upload Size'}: {valueLabelFormat(form.max_upload_size)}
 								</Typography>
-															</Stack>
+							</Stack>
 
 								<Slider
 									value={form.max_upload_size}

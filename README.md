@@ -118,7 +118,7 @@ Your may want to handle these aspects yourself.
 The images src are filtered out to remove wordpress domain and upload folder. Up to you to reconstruct your assets path inside your server application.
 The image props are filtered out to keep the minimal: id, src, alt, width, height, mime_type
 
-You can use the filter `blank_allowed_post_types_bulk_images` to control wich post_type images to expose.
+You can use the filter `blank_allowed_post_types` to control wich post_type images to expose.
 You can use the filter `blank_rest_image` to control wich image props you want to expose.
 See Filters section.
 
@@ -403,7 +403,7 @@ add_filter('blank_rest_image', function($filtered_image, $img_id) {
 }, 10, 2);
 ```
 
-### `blank_allowed_post_types_bulk_images`
+### `blank_allowed_post_types`
 **Description:** Filter the allowed post types for the `/blank/v1/images/<post_type>` endpoint.
 
 **Arguments:**
@@ -411,7 +411,7 @@ add_filter('blank_rest_image', function($filtered_image, $img_id) {
 
 **Example:**
 ```php
-add_filter('blank_allowed_post_types_bulk_images', function($post_types) {
+add_filter('blank_allowed_post_types', function($post_types) {
   $post_types[] = 'my_custom_type';
   return $post_types;
 }, 10, 1);
@@ -533,7 +533,7 @@ add_filter('blank_disable_comments', function($disable): bool {
 
  - Added filter on menu items 'blank_rest_menu_item' to allow modification of individual menu items before returning in REST API.
  - Added endpoint '/images/{post_type}' to fetch flattened list of images used in specified post type.
- - Changed filter name from 'cmk_blank_allowed_post_types' to 'blank_allowed_post_types_bulk_images' for consistency.
+ - Changed filter name from 'cmk_blank_allowed_post_types' to 'blank_allowed_post_types' for consistency.
  - Added filter 'blank_rest_image' to allow modification of image properties before returning in REST API.
 
 ## Contributing
