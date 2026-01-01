@@ -19,7 +19,7 @@ class Theme {
 		add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_menus' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_remove' ) );
-		add_action( 'template_redirect', array( $this, 'redirect_front' ) );
+		//add_action( 'template_redirect', array( $this, 'redirect_front' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
 		add_filter( 'mime_types', array( $this, 'mime_support' ), 10, 1 );

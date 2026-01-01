@@ -77,11 +77,12 @@ class Admin {
 				'nonce'                  => wp_create_nonce( 'blank_theme_update_options_nonce' ),
 				'ajaxurl'                => admin_url( 'admin-ajax.php' ),
 				'users'                  => self::list_users(),
+				'post_types'             => self::list_post_types(),
 				'admin_options'          => self::read_admin_options( true ),
-				'theme_name'             => $theme_object->get( 'Name' ),
-				'theme_version'          => $theme_object->get( 'Version' ),
-				'theme_uri'              => esc_url( $theme_object->get( 'ThemeURI' ) ),
-				'home_url'               => esc_url( get_home_url('/') ),
+				'theme_name'             => sanitize_key( $theme_object->get( 'Name' ) ),
+				'theme_version'          => sanitize_text_field( $theme_object->get( 'Version' ) ),
+				'theme_uri'              => sanitize_url( $theme_object->get( 'ThemeURI' ) ),
+				'home_url'               => get_home_url('/'),
 			)
 		);
 
@@ -127,6 +128,7 @@ class Admin {
 
 
 	private static function get_default_options() {
+
 		 return [
 			'blank_allowed_roles' => [ 'administrator', 'editor' ],
 			'blank_allowed_post_types' => [ 'post', 'page' ],
@@ -137,7 +139,7 @@ class Admin {
 			'application_host' => 'https://www.my-host.com',
 			'application_cache_route' => '/api/flush-cache',
 			'disable_comments' => true,
-			'max_upload_size' => 1024, // 1Mo in Ko
+			'max_upload_size' => 1024, // Ko.
 			'enable_max_upload_size' => false,
 		];
 	}
@@ -184,7 +186,7 @@ class Admin {
 	private static function sanitize_admin_options(array $options): array {
 		return [
 			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_key', (array)$options['blank_allowed_roles']) : ['administrator', 'editor'],
-			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array)$options['blank_allowed_post_types']) : ['post', 'page'],
+			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array) $options['blank_allowed_post_types']) : ['post', 'page'],
 			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int) sanitize_text_field($options['rest_api_user_id']) : 0,
 			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string) sanitize_text_field($options['rest_api_password_name']) : '',
 			'application_user_id' => isset($options['application_user_id']) ? (int) sanitize_text_field($options['application_user_id'] ) : 0, 
@@ -258,8 +260,6 @@ class Admin {
 		}
 
 		$user_roles = $user_meta->roles; 
-
-		error_log('user_roles' . print_r(  $user_meta ));
 
 		if ( in_array( $user_roles, $allowed_roles) ) {
 			return true;
@@ -335,12 +335,33 @@ class Admin {
 				$users_array[] = array(
 					'value'        => $user_id,
 					'label'        => isset( $user->display_name ) ? sanitize_text_field( $user->display_name ) : '',
-					'admin_url'    => isset( $user->user_url ) ? esc_url( get_edit_user_link( $user_id ) ) : '',
+					'admin_url'    => isset( $user->user_url ) ? sanitize_url( get_edit_user_link( $user_id ) ) : '',
 					'current_user' => get_current_user_id() === $user_id ? 1 : 0,
 					'password_names' => $passwords,
 				);
 			}
 		}
 		return $users_array;
+	}
+
+	private static function list_post_types () {
+		
+		$post_types = get_post_types(array(
+			'public' => true,
+		), 'objects');
+		if( empty ($post_types)) {
+			return;
+		}
+
+
+		$post_types = array_map( function($post_type) { 
+			return [
+				'value' => $post_type->name,
+				'label' => $post_type->labels->singular_name
+			];
+		}, $post_types );
+
+		return array_values($post_types);
+
 	}
 }

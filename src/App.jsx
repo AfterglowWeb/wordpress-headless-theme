@@ -1,4 +1,7 @@
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
+import { useTheme } from '@mui/material/styles';
+import { useAdminData } from './contexts/AdminDataContext';
+
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -6,7 +9,6 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import { useAdminData } from './contexts/AdminDataContext';
 
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -20,15 +22,16 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Divider from '@mui/material/Divider';
-import { useEffect } from 'react';
 import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Chip from '@mui/material/Chip';
 
 export default function App() {
 	const adminData = useAdminData();
 	const [adminDataLoading, setAdminDataLoading] = useState(true);
 	const [users, setUsers] = useState([]);
+	const [postTypes, setPostTypes] = useState([]);
 	const [adminOptions, setAdminOptions] = useState({});
 	const theme = useTheme();
 
@@ -40,6 +43,7 @@ export default function App() {
 	}
 
 	const [form, setForm] = useState({
+		blank_allowed_post_types: adminOptions?.blank_allowed_post_types?.value || [],
 		rest_api_user_id: adminOptions?.rest_api_user_id?.value || '',
 		rest_api_password_name: adminOptions?.rest_api_password_name?.value || '',
 		application_user_id: adminOptions?.application_user_id?.value || '',
@@ -86,10 +90,14 @@ export default function App() {
 		if (adminData && Array.isArray(adminData.users)) {
 			setUsers(adminData.users);
 		}
+		if (adminData && Array.isArray(adminData.post_types)) {
+			setPostTypes(adminData.post_types);
+		}
 		if (adminData && adminData.admin_options) {
 			const adminOptions = adminData.admin_options;
 			setAdminOptions(adminOptions);
 			setForm({
+				blank_allowed_post_types: adminOptions.blank_allowed_post_types?.value || [],
 				rest_api_user_id: adminOptions.rest_api_user_id?.value || '',
 				rest_api_password_name: adminOptions.rest_api_password_name?.value || '',
 				application_user_id: adminOptions.application_user_id?.value || '',
@@ -99,7 +107,7 @@ export default function App() {
 				disable_comments: !!adminOptions.disable_comments?.value,
 				max_upload_size: adminOptions.max_upload_size?.value || 1024,
 				enable_max_upload_size: !!adminOptions.enable_max_upload_size?.value,
-			});    
+			}); 
 		}
 	}, [adminData, adminDataLoading]);
 
@@ -185,7 +193,6 @@ export default function App() {
 		}
 	}, [form.application_user_id]);
 
-
 	if (!adminData && adminDataLoading) {
 		return null;
 	}
@@ -195,6 +202,17 @@ export default function App() {
 			<Paper sx={{ maxWidth: 600, mx: 'auto', my: 4, p: 3 }} elevation={2}>
 				<form onSubmit={handleSubmit}>
 					<Stack spacing={3}>
+
+						<Box sx={{ minWidth: 120 }}>
+							{postTypes && <MultipleSelect 
+							name="blank_allowed_post_types" 
+							label={adminOptions?.blank_allowed_post_types?.label || 'Allowed Post Types Through Rest API'} 
+							value={form.blank_allowed_post_types} 
+							options={postTypes} 
+							onChange={handleChange} />}
+						</Box>
+
+
 						<Box sx={{ minWidth: 120 }}>
 							<SimpleSelect 
 							name="rest_api_user_id" 
@@ -204,6 +222,7 @@ export default function App() {
 							defaultLabel={{ value: 0, label: 'Select a user' }}
 							onChange={handleChange} />
 						</Box>
+						
 						<Box sx={{ minWidth: 120 }}>
 							<SimpleSelect
 							name="rest_api_password_name"
@@ -354,10 +373,63 @@ function SimpleSelect({ label, name, value, options, defaultLabel, onChange }) {
 			
 				{options.map((option, index) => (
 					option.value && option.label ? (
-						<MenuItem key={name + option.value} value={option.value}>{option.label}</MenuItem>
+						<MenuItem 
+						key={name + option.value} 
+						value={option.value}>
+							{option.label}
+						</MenuItem>
 					) : null
 				))}
 			</Select>
 		</FormControl>
 	);
+}
+
+function MultipleSelect({ label, name, value, options, onChange }) {
+  const ITEM_HEIGHT = 48;
+  const ITEM_PADDING_TOP = 8;
+  const MenuProps = {
+    PaperProps: {
+      style: {
+        maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+        width: 250,
+      },
+    },
+  };
+
+  return (
+    <FormControl fullWidth sx={{ width: 300 }}>
+      <InputLabel id={`${name}-label`}>{label}</InputLabel>
+
+      <Select
+        labelId={`${name}-label`}
+        id={name}
+        name={name}                // important for event.target.name
+        multiple
+        value={value}
+        onChange={(e) => {
+          // MUI returns the array in e.target.value
+          onChange(e);
+        }}
+        input={<OutlinedInput label={label} />}
+        renderValue={(selected) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {selected.map((val) => {
+              const option = options.find((o) => o.value === val);
+              return option ? <Chip key={val} label={option.label} /> : null;
+            })}
+          </Box>
+        )}
+        MenuProps={MenuProps}
+      >
+        {options.map((option) =>
+          option.value && option.label ? (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ) : null
+        )}
+      </Select>
+    </FormControl>
+  );
 }

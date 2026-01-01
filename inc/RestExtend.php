@@ -108,7 +108,6 @@ class RestExtend {
 		 */
 		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_name', $admin_options['rest_api_password_name'], 10, 1 ) );
 
-
 		return Utils::validate_application_password( $received_token, $user_id, $password_name );
 	}
 
@@ -220,8 +219,8 @@ class RestExtend {
 		$default_options = array(
 			'name'        => (string) sanitize_text_field( get_bloginfo( 'name' ) ),
 			'description' => (string) sanitize_text_field( get_bloginfo( 'description' ) ),
-			'url'         => (string) esc_url( get_bloginfo( 'url' ) ),
-			'favicon'     => (string) get_site_icon_url() ? esc_url( get_site_icon_url() ) : '',
+			'url'         => (string) sanitize_url( get_bloginfo( 'url' ) ),
+			'favicon'     => (string) get_site_icon_url() ? sanitize_url( get_site_icon_url() ) : '',
 		);
 
 		$fields = array();
@@ -424,7 +423,7 @@ class RestExtend {
 				'slug'     => (string) sanitize_text_field( $post->post_name ),
 				'date'     => (string) get_the_date( 'c', $post->ID ),
 				'modified' => (string) get_the_modified_date( 'c', $post->ID ),
-				'link'     => (string) esc_url( get_permalink( $post->ID ) ),
+				'link'     => (string) sanitize_url( get_permalink( $post->ID ) ),
 				'content'  => (string) apply_filters( 'the_content', $post->post_content ),
 				'excerpt'  => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
 				'terms'    => array_map(
@@ -448,7 +447,7 @@ class RestExtend {
 		$filtered_menu_item = array(
 			'id'         => (int) sanitize_text_field( $menu_item->ID ),
 			'title'      => (string) sanitize_text_field( $menu_item->title ),
-			'url'        => (string) esc_url( $menu_item->url ),
+			'url'        => (string) sanitize_url( $menu_item->url ),
 			'type'       => (string) sanitize_key( $menu_item->type ),
 			'parent'     => (int) sanitize_text_field( $menu_item->menu_item_parent ),
 			'classes'    => (array) $menu_item->classes,

@@ -48,7 +48,6 @@ class Cache {
     }
  
     public function ajax_flush_application_cache() {
-
         if(false === check_ajax_referer('blank_flush_application_cache_nonce', 'nonce')) {
             wp_send_json_error(['error' => 'Invalid nonce'], 403);
             wp_die();
@@ -59,54 +58,93 @@ class Cache {
             wp_die();
         }
 
-        $application_user = (int) sanitize_text_field( apply_filters('blank_application_user_id', 1 ) );
-        $application_password_name = (int) sanitize_text_field( apply_filters('blank_application_password_name', 'flush_cache' ) );
-        $application_password = Utils::get_application_password($application_user, $application_password_name);
+        $admin_options = Admin::read_admin_options();
+        $blank_application_cache_route = (string) sanitize_text_field( apply_filters('blank_application_cache_route', $admin_options['application_cache_route']) );
 
-        if(! $application_password ) {
-            wp_send_json_error(['error' => 'Application password is not set'], 401);
-            wp_die();
-        }
-
-        $application_host = (string) sanitize_text_field( apply_filters('blank_application_host', 'https://www.my-host.com') );
-        $application_flush_cache_route = (string) sanitize_text_field( apply_filters('blank_application_cache_route', '/api/flush-cache') );
-
-        if(! $application_host || ! $application_flush_cache_route ) {
+        if( ! $blank_application_cache_route ) {
             wp_send_json_error(['error' => 'Application host or cache route is not set'], 403);
             wp_die();
         }
 
-        $response = wp_remote_post(rest_url( $application_host , $application_flush_cache_route), [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $application_password,
-            ],
-            'body' => json_encode(['flush' => true]),
-            'timeout' => 10,
-            'data_format' => 'body',
-        ]);
-
-        if (is_wp_error($response)) {
-            wp_send_json_error(['error' => $response->get_error_message()], 500);
-            wp_die();
-        }
-
-        $code = wp_remote_retrieve_response_code($response);
-        $body = json_decode(wp_remote_retrieve_body($response), true);
-
-        if ($code === 200 && !empty($body['success'])) {
-            $forward_response = array(
-                'success' => true,
-                'flushed' => (bool) isset($body['flushed']) ? rest_sanitize_boolean($body['flushed']) : false,
-                'timestamp' => (int) isset($body['timestamp']) ? sanitize_text_field($body['timestamp']) : 0,
-                'message' => (string) isset($body['message']) ? sanitize_text_field($body['message']) : '',
-            );
-            wp_send_json_success($forward_response, 200);
+        $response = self::fetch_application( $blank_application_cache_route, ['flush' => true]);
+        $code = $response['code'];
+        $body = $response['body'];
+        
+        if (200 === $code && ! empty( $body['success'] )) {
+            wp_send_json_success( array(
+                'success'     => (bool) isset($body['success']) ? rest_sanitize_boolean($body['success']) : false,
+                'timestamp'   => (string) isset($body['timestamp']) ? sanitize_text_field($body['timestamp']) : 0,
+                'message'     => (string) isset($body['message']) ? sanitize_text_field($body['message']) : '',
+            ), 200 );
             wp_die();
         } else {
-            wp_send_json_error(['error' => $body['error'] ?? esc_html__('Unknown error', 'blank')], $code);
+            wp_send_json_error( array(
+                'error' => isset( $body['error'] ) ? 
+                    sprintf( esc_html__('Error %s', 'blank'), sanitize_text_field( $body['error']) ) 
+                    : 
+                    'Unknown Error',
+            ), $code);
             wp_die();
         }
+    }
 
+    private function fetch_application( string $route, array $payload = [] ) {
+        
+        $admin_options = Admin::read_admin_options();
+
+        $application_user = (int) sanitize_text_field( apply_filters('blank_application_user_id', $admin_options['application_user_id'] ) );
+        $application_password_name = (string) sanitize_text_field( apply_filters('blank_application_password_name', $admin_options['application_password_name'] ) );
+        $application_password = Utils::get_application_password($application_user, $application_password_name);
+        $application_host = (string) sanitize_text_field( apply_filters('blank_application_host', $admin_options['application_host']) );
+
+        if(! $application_password || ! $application_host ) {
+            return array(
+                'code' => 401,
+                'body' => array(
+                    'error' => 'Application credentials are not set'
+                ),
+            );
+        }
+        
+        $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field( $_SERVER['SERVER_ADDR'] ) : gethostbyname(php_uname('n'));
+        $theme = wp_get_theme();
+        $headers = array(
+            'Authorization' => 'Bearer ' . $application_password,
+            'x-forwarded-for' =>  $server_ip,
+            'referer' => sanitize_url( site_url('/') ),
+            'x-wordpress-theme' => $theme ? sanitize_key( $theme->get('Name') ) : '',
+            'x-wordpress-theme-version' => $theme ? sanitize_text_field( $theme->get('Version') ) : '',
+        );
+        $body = json_encode($payload);
+        $payload = array(
+            'headers' => $headers,
+            'body' => $body,
+            'timeout' => 10,
+            'data_format' => 'body'
+        );
+
+        
+        $application_endpoint = rtrim($application_host, '/') . $route;
+        $response = wp_remote_post( $application_endpoint, $payload);
+
+        if ( is_wp_error( $response )) {
+           return array(
+                'code' => 500,
+                'body' => array(
+                    'error' => $response->get_error_message()
+                )
+            );
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        $headers = wp_remote_retrieve_headers($response);
+        $body = wp_remote_retrieve_body($response);
+
+        return array(
+            'code' => $code,
+            'body' => $body
+        );
+    
     }
 }
 
