@@ -88,6 +88,7 @@ class RestExtend {
 		}
 
 		$received_token = $token_parts[1];
+		$admin_options = Admin::read_admin_options();
 
 		/**
 		 * Filter the user ID for Bearer token validation.
@@ -96,7 +97,7 @@ class RestExtend {
 		 * @param int $user_id The user ID to validate the token against.
 		 * @return int Modified user ID.
 		 */
-		$user_id = (int) sanitize_text_field( apply_filters( 'blank_rest_api_user_id', 1, 10, 1 ) );
+		$user_id = (int) sanitize_text_field( apply_filters( 'blank_rest_api_user_id', $admin_options['rest_api_user_id'], 10, 1 ) );
 
 		/**
 		 * Filter the application password name for Bearer token validation.
@@ -105,8 +106,7 @@ class RestExtend {
 		 * @param string $password_name The application password name.
 		 * @return string Modified password name.
 		 */
-		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_name', 'rest_api', 10, 1 ) );
-
+		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_name', $admin_options['rest_api_password_name'], 10, 1 ) );
 
 		return Utils::validate_application_password( $received_token, $user_id, $password_name );
 	}
@@ -148,19 +148,7 @@ class RestExtend {
 
 		$post_type = $request->get_param( 'post_type' );
 
-		if ( ! post_type_exists( $post_type ) ) {
-			return new \WP_REST_Response(
-				array(
-					'status'  => 'error',
-					'message' => 'Invalid post type',
-				),
-				400
-			);
-		}
-
-		$allowed_post_types = (array) apply_filters( 'blank_allowed_post_types_bulk_images', array( 'portfolio', 'post', 'page' ) );
-
-		if ( ! in_array( $post_type, $allowed_post_types, true ) ) {
+		if ( false === Admin::is_post_type_allowed( $post_type ) ) {
 			return new \WP_REST_Response(
 				array(
 					'status'  => 'error',
@@ -201,13 +189,13 @@ class RestExtend {
 
 		$post_type = $request->get_param( 'post_type' );
 
-		if ( ! post_type_exists( $post_type ) ) {
+		if ( false === Admin::is_post_type_allowed( $post_type ) ) {
 			return new \WP_REST_Response(
 				array(
 					'status'  => 'error',
-					'message' => 'Invalid post type',
+					'message' => 'Post type not allowed',
 				),
-				400
+				403
 			);
 		}
 
@@ -231,8 +219,8 @@ class RestExtend {
 		$default_options = array(
 			'name'        => (string) sanitize_text_field( get_bloginfo( 'name' ) ),
 			'description' => (string) sanitize_text_field( get_bloginfo( 'description' ) ),
-			'url'         => (string) esc_url( get_bloginfo( 'url' ) ),
-			'favicon'     => (string) get_site_icon_url() ? esc_url( get_site_icon_url() ) : '',
+			'url'         => (string) sanitize_url( get_bloginfo( 'url' ) ),
+			'favicon'     => (string) get_site_icon_url() ? sanitize_url( get_site_icon_url() ) : '',
 		);
 
 		$fields = array();
@@ -435,7 +423,7 @@ class RestExtend {
 				'slug'     => (string) sanitize_text_field( $post->post_name ),
 				'date'     => (string) get_the_date( 'c', $post->ID ),
 				'modified' => (string) get_the_modified_date( 'c', $post->ID ),
-				'link'     => (string) esc_url( get_permalink( $post->ID ) ),
+				'link'     => (string) sanitize_url( get_permalink( $post->ID ) ),
 				'content'  => (string) apply_filters( 'the_content', $post->post_content ),
 				'excerpt'  => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
 				'terms'    => array_map(
@@ -459,7 +447,7 @@ class RestExtend {
 		$filtered_menu_item = array(
 			'id'         => (int) sanitize_text_field( $menu_item->ID ),
 			'title'      => (string) sanitize_text_field( $menu_item->title ),
-			'url'        => (string) esc_url( $menu_item->url ),
+			'url'        => (string) sanitize_url( $menu_item->url ),
 			'type'       => (string) sanitize_key( $menu_item->type ),
 			'parent'     => (int) sanitize_text_field( $menu_item->menu_item_parent ),
 			'classes'    => (array) $menu_item->classes,

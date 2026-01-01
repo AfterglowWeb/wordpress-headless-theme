@@ -32,12 +32,12 @@ class Utils {
 	}
 
 	public static function get_application_password( $user_id, $password_name) {
-		$passwords = \WP_Application_Passwords::get_user_application_passwords( $user_id );
+		$passwords = (array) \WP_Application_Passwords::get_user_application_passwords( $user_id );
 
-		if ( empty( $passwords ) || ! is_array( $passwords ) ) {
+		if ( empty( $passwords ) ) {
 			return '';
 		}
-
+		
 		$password_data = array_filter(
 			$passwords,
 			function ( $password_data ) use ( $password_name ) {
@@ -45,11 +45,16 @@ class Utils {
 			}
 		);
 
-		if ( ! isset( $password_data['password'] ) ) {
+		if ( empty($password_data) ) {
 			return '';
 		}
 
-		return  $password_data['password'];
+		$first = reset($password_data);
+		if (!isset($first['password'])) {
+			return '';
+		}
+
+		return $first['password'];
 	}
 
 }

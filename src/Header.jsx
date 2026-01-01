@@ -1,7 +1,10 @@
+import { useState, useEffect } from '@wordpress/element';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
+import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
 
 import { useAdminData } from './contexts/AdminDataContext';
 import sanitizeHtml from './utils/sanitizeHtml';
@@ -76,8 +79,18 @@ const VersionBadge = styled( Box )( ( { theme } ) => ( {
 } ) );
 
 export default function Header() {
-	const { adminData  } = useAdminData();
-	const { pluginVersion  } = adminData || {};
+		const adminData = useAdminData();
+
+	const [adminOptions, setAdminOptions] = useState({});
+
+	useEffect(() => {
+			if (!adminData ) {
+				return;
+			}
+			setAdminOptions(adminData)
+
+		}, [adminData]);
+		
 
 	return (
 		<AppHeader>
@@ -86,14 +99,24 @@ export default function Header() {
 					<AppLogo>abc.</AppLogo>
 
 					<BrandInfo>
-						<AppName>Blank Theme</AppName>
+						<AppName 
+							dangerouslySetInnerHTML={ {
+								__html: sanitizeHtml( adminOptions?.theme_name ),
+							} } 
+						/>
 					</BrandInfo>
 					
 						<VersionBadge
 							dangerouslySetInnerHTML={ {
-								__html: `v${ sanitizeHtml( pluginVersion ) }`,
+								__html: `v${ sanitizeHtml( adminOptions?.theme_version ) }`,
 							} }
 						/>
+
+						<Tooltip title={'Open Theme Github in a new tab'}>
+							<Button size="small" color="primary" href={adminOptions?.theme_uri} target="_blank" rel="noreferer noopener">
+								Documentation
+							</Button>
+						</Tooltip>
 					
 				</BrandSection>
 
