@@ -19,6 +19,8 @@ class Theme {
 		add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_menus' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_remove' ) );
+		add_action( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg' ), 10, 2 );
+		
 		//add_action( 'template_redirect', array( $this, 'redirect_front' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
@@ -58,6 +60,22 @@ class Theme {
 		remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
 		remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
 		remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	}
+
+	public function disable_gutenberg( $current_status, $post_type ) {
+		
+		$admin_options = Admin::read_admin_options();
+		$disable_gutenberg_post_types = (array) apply_filters('blank_disable_gutenberg_post_types', $admin_options['blank_allowed_post_types']);
+		
+		if( empty($disable_gutenberg_post_types) ) {
+			return $current_status;
+		}	
+		
+		if ( in_array( $post_type, $disable_gutenberg_post_types, true ) ) {
+			return false;
+		}
+
+		return $current_status;
 	}
 
 	public function theme_menus(): void {

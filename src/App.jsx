@@ -44,6 +44,7 @@ export default function App() {
 
 	const [form, setForm] = useState({
 		blank_allowed_post_types: adminOptions?.blank_allowed_post_types?.value || [],
+		blank_disable_gutenberg_post_types: adminOptions?.blank_disable_gutenberg_post_types?.value,
 		rest_api_user_id: adminOptions?.rest_api_user_id?.value || '',
 		rest_api_password_name: adminOptions?.rest_api_password_name?.value || '',
 		application_user_id: adminOptions?.application_user_id?.value || '',
@@ -98,6 +99,7 @@ export default function App() {
 			setAdminOptions(adminOptions);
 			setForm({
 				blank_allowed_post_types: adminOptions.blank_allowed_post_types?.value || [],
+				blank_disable_gutenberg_post_types: adminOptions.blank_disable_gutenberg_post_types?.value,
 				rest_api_user_id: adminOptions.rest_api_user_id?.value || '',
 				rest_api_password_name: adminOptions.rest_api_password_name?.value || '',
 				application_user_id: adminOptions.application_user_id?.value || '',
@@ -271,6 +273,17 @@ export default function App() {
 						/>
 
 													<Divider />
+
+						<FormControlLabel
+							control={
+								<Switch
+									checked={form.blank_disable_gutenberg_post_types}
+									name="blank_disable_gutenberg_post_types"
+									onChange={handleChange}
+								/>
+							}
+							label={adminData?.blank_disable_gutenberg_post_types?.label || 'Disable Gutenberg Editor on Post Types'}
+						/>
 
 						<FormControlLabel
 							control={

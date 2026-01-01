@@ -132,6 +132,7 @@ class Admin {
 		 return [
 			'blank_allowed_roles' => [ 'administrator', 'editor' ],
 			'blank_allowed_post_types' => [ 'post', 'page' ],
+			'blank_disable_gutenberg' => false,
 			'rest_api_user_id' => 1,
 			'rest_api_password_name' => 'rest_api',
 			'application_user_id' => 1,
@@ -187,6 +188,7 @@ class Admin {
 		return [
 			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_key', (array)$options['blank_allowed_roles']) : ['administrator', 'editor'],
 			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array) $options['blank_allowed_post_types']) : ['post', 'page'],
+			'blank_disable_gutenberg' => isset($options['blank_disable_gutenberg']) ? (bool) rest_sanitize_boolean($options['blank_disable_gutenberg']) : false,
 			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int) sanitize_text_field($options['rest_api_user_id']) : 0,
 			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string) sanitize_text_field($options['rest_api_password_name']) : '',
 			'application_user_id' => isset($options['application_user_id']) ? (int) sanitize_text_field($options['application_user_id'] ) : 0, 
@@ -194,7 +196,7 @@ class Admin {
 			'application_host' => isset($options['application_host']) ? (string) sanitize_text_field($options['application_host']) : '',
 			'application_cache_route' => isset($options['application_cache_route']) ? (string) sanitize_text_field($options['application_cache_route']) : '',
 			'disable_comments' => isset($options['disable_comments']) ? (bool) rest_sanitize_boolean($options['disable_comments']) : false,
-			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : 1024, // store in Ko
+			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : 1024,
 			'enable_max_upload_size' => isset($options['enable_max_upload_size']) ? (bool) rest_sanitize_boolean($options['enable_max_upload_size']) : false,
 		];
 	}
@@ -208,6 +210,10 @@ class Admin {
 			'blank_allowed_post_types' => [
 				'label' => __( 'Allowed Post Types', 'blank' ),
 				'value' => $options['blank_allowed_post_types'],
+			],
+			'blank_disable_gutenberg' => [
+				'label' => __( 'Disable Gutenberg on Post Types', 'blank' ),
+				'value' => $options['blank_disable_gutenberg'],
 			],
 			'rest_api_user_id' => [
 				'label' => __( 'REST API User', 'blank' ),
