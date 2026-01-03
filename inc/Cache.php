@@ -12,163 +12,161 @@ class Cache {
 		return static::$instance;
 	}
 
-    private function __construct() {
-        add_action('wp_ajax_blank_flush_application_cache', [$this, 'ajax_flush_application_cache']);
-        add_action('admin_bar_menu', [$this, 'add_admin_bar_button'], 100);
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_bar_script']);
-    }
+	private function __construct() {
+		add_action( 'wp_ajax_blank_flush_application_cache', array( $this, 'ajax_flush_application_cache' ) );
+		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_button' ), 100 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_bar_script' ) );
+	}
 
-    public function add_admin_bar_button($wp_admin_bar) {
-        if (!current_user_can('manage_options')) {
-            return;
-        }
+	public function add_admin_bar_button( $wp_admin_bar ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
 
-        $wp_admin_bar->add_node([
-            'id'    => 'blank-flush-cache',
-            'title' => esc_html__('Flush Application Cache', 'blank'),
-            'href'  => '#',
-            'meta'  => [
-                'title' => esc_html__('Flush Application Cache', 'blank'),
-                'onclick' => 'blankFlushApplicationCache(); return false;',
-            ],
-        ]);
-    }
+		$wp_admin_bar->add_node(
+			array(
+				'id'    => 'blank-flush-cache',
+				'title' => esc_html__( 'Flush Application Cache', 'blank' ),
+				'href'  => '#',
+				'meta'  => array(
+					'title'   => esc_html__( 'Flush Application Cache', 'blank' ),
+					'onclick' => 'blankFlushApplicationCache(); return false;',
+				),
+			)
+		);
+	}
 
-    public function enqueue_admin_bar_script() {
-        if (!current_user_can('manage_options')) {
-            return;
-        }
+	public function enqueue_admin_bar_script() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
 
-        wp_enqueue_script('blank_admin_bar', get_template_directory_uri() . '/assets/js/admin-bar.js', 'jquery-core', rand() );
-        wp_localize_script('blank_admin_bar', 'blankAdminBar', array(
-            'ajaxurl' => admin_url( 'admin-ajax.php', 'relative' ),
-            'action' => 'blank_flush_application_cache',
-            'nonce' => wp_create_nonce('blank_flush_application_cache_nonce'),
-        ));
-    }
- 
-    public function ajax_flush_application_cache() {
-        if(false === check_ajax_referer('blank_flush_application_cache_nonce', 'nonce')) {
-            wp_send_json_error(['error' => 'Invalid nonce'], 403);
-            wp_die();
-        }
+		$theme   = wp_get_theme();
+		$version = is_a( $theme, 'WP_Theme' ) ? sanitize_text_field( $theme->get( 'Version' ) ) : '1.0.0';
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['error' => 'Unauthorized'], 401);
-            wp_die();
-        }
+		wp_enqueue_script( 'blank_admin_bar', get_template_directory_uri() . '/assets/js/admin-bar.js', 'jquery-core', $version, array( 'in_footer' => true ) );
+		wp_localize_script(
+			'blank_admin_bar',
+			'blankAdminBar',
+			array(
+				'ajaxurl' => admin_url( 'admin-ajax.php', 'relative' ),
+				'action'  => 'blank_flush_application_cache',
+				'nonce'   => wp_create_nonce( 'blank_flush_application_cache_nonce' ),
+			)
+		);
+	}
 
-        $admin_options = Admin::read_admin_options();
-        
-        $blank_application_cache_route = (string) sanitize_text_field( apply_filters('blank_application_cache_route', $admin_options['application_cache_route']) );
+	public function ajax_flush_application_cache() {
+		if ( false === check_ajax_referer( 'blank_flush_application_cache_nonce', 'nonce' ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ), 403 );
+			wp_die();
+		}
 
-        if( ! $blank_application_cache_route ) {
-            wp_send_json_error(['error' => 'Application host or cache route is not set'], 403);
-            wp_die();
-        }
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'error' => 'Unauthorized' ), 401 );
+			wp_die();
+		}
 
-        $response = self::fetch_application( $blank_application_cache_route, array( 'flush' => true ) );
-        $code = (int) wp_remote_retrieve_response_code( $response );
-        $remote_body = sanitize_text_field (wp_remote_retrieve_body( $response ) );
+		$admin_options = Admin::read_admin_options();
 
-        if(is_a( $remote_body, 'WP_Error' )) {
-             wp_send_json_error( array(
-                'error' => 'Unknown Error'
-            ), $code);
-            wp_die();
-        }   
+		$blank_application_cache_route = (string) sanitize_text_field( apply_filters( 'blank_application_cache_route', $admin_options['application_cache_route'] ) );
 
-        $decoded_body = json_decode( $remote_body, true );
+		if ( ! $blank_application_cache_route ) {
+			wp_send_json_error( array( 'error' => 'Application host or cache route is not set' ), 403 );
+			wp_die();
+		}
 
-        if (200 === $code && isset( $decoded_body['success'] )) {
-            wp_send_json_success( array(
-                'success'     => (bool) rest_sanitize_boolean($decoded_body['success']),
-                'timestamp'   => (string) isset($decoded_body['timestamp']) ? sanitize_text_field($decoded_body['timestamp']) : 0,
-                'message'     => (string) isset($decoded_body['message']) ? sanitize_text_field($decoded_body['message']) : '',
-            ), 200 );
-            wp_die();
-        } else {
-            wp_send_json_error( array(
-                'error' => isset( $decoded_body['error'] ) ? 
-                    sprintf( esc_html__('Error %s', 'blank'), sanitize_text_field( $decoded_body['error']) ) 
-                    : 
-                    'Unknown Error'
-            ), $code);
-            wp_die();
-        }
+		$response    = self::fetch_application( $blank_application_cache_route, array( 'flush' => true ) );
+		$code        = (int) wp_remote_retrieve_response_code( $response );
+		$remote_body = sanitize_text_field( wp_remote_retrieve_body( $response ) );
 
-        wp_die();
-    }
+		if ( is_a( $remote_body, 'WP_Error' ) ) {
+			wp_send_json_error(
+				array(
+					'error' => 'Unknown Error',
+				),
+				$code
+			);
+			wp_die();
+		}
 
-    private function fetch_application( string $route, array $payload = [] ): array {
-        
-        $admin_options = Admin::read_admin_options();
+		$decoded_body = json_decode( $remote_body, true );
 
-        $application_host = (string) sanitize_text_field( apply_filters('blank_application_host', $admin_options['application_host']) );
-        $application_user = (int) sanitize_text_field( apply_filters('blank_application_user_id', $admin_options['application_user_id'] ) );
-        $application_password_name = (string) sanitize_text_field( apply_filters('blank_application_password_name', $admin_options['application_password_name'] ) );
-        
-        $application_password = Utils::get_application_password($application_user, $application_password_name);
+		if ( 200 === $code && isset( $decoded_body['success'] ) ) {
+			wp_send_json_success(
+				array(
+					'success'   => (bool) rest_sanitize_boolean( $decoded_body['success'] ),
+					'timestamp' => (string) isset( $decoded_body['timestamp'] ) ? sanitize_text_field( $decoded_body['timestamp'] ) : 0,
+					'message'   => (string) isset( $decoded_body['message'] ) ? sanitize_text_field( $decoded_body['message'] ) : '',
+				),
+				200
+			);
+			wp_die();
+		} else {
+			wp_send_json_error(
+				array(
+					'error' => isset( $decoded_body['error'] ) ?
+						/* translators: %s is the error sent */
+						sprintf( esc_html__( 'Error %s', 'blank' ), sanitize_text_field( $decoded_body['error'] ) )
+						:
+						'Unknown Error',
+				),
+				$code
+			);
+			wp_die();
+		}
+	}
 
-        if(! $application_password || ! $application_host ) {
-            return array(
-                'code' => 401,
-                'body' => array(
-                    'error' => 'Application credentials are not set'
-                ),
-            );
-        }
-        
-        $server_ip = (string) isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field( $_SERVER['SERVER_ADDR'] ) : gethostbyname(php_uname('n'));
-        $theme = wp_get_theme();
-        $theme_object = is_a( $theme, 'WP_Theme' ) ? $theme : null;
+	private function fetch_application( string $route, array $payload = array() ): array {
 
-        $headers = (array) apply_filters( 'blank_application_headers_payload', array(
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $application_password,
-            'Referer' => sanitize_url( site_url('/') ),
-            'x-forwarded-for' => $server_ip,
-            'x-wordpress-theme' => $theme_object ? sanitize_text_field( $theme->get('Name') ) : '',
-            'x-wordpress-theme-domain' => $theme_object ? sanitize_key( $theme->get('Domain') ) : '',
-            'x-wordpress-theme-version' => $theme_object ? sanitize_text_field( $theme->get('Version') ) : '',
-        ));
+		$admin_options = Admin::read_admin_options();
 
-        $payload = array_map('sanitize_text_field', apply_filters('blank_application_body_payload', $payload));
+		$application_host          = (string) sanitize_text_field( apply_filters( 'blank_application_host', $admin_options['application_host'] ) );
+		$application_user          = (int) sanitize_text_field( apply_filters( 'blank_application_user_id', $admin_options['application_user_id'] ) );
+		$application_password_name = (string) sanitize_text_field( apply_filters( 'blank_application_password_name', $admin_options['application_password_name'] ) );
 
-        $request_args = array(
-            'headers' => $headers,
-            'body' => json_encode( $payload ),
-            'timeout' => 10,
-            'sslverify' => defined('WP_ENVIRONMENT_TYPE') && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
-            'curl' => [
-                CURLOPT_SSL_VERIFYPEER => defined('WP_ENVIRONMENT_TYPE') && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
-                CURLOPT_SSL_VERIFYHOST => defined('WP_ENVIRONMENT_TYPE') && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
-            ],
-        );
+		$application_password = Utils::get_application_password( $application_user, $application_password_name );
 
+		if ( ! $application_password || ! $application_host ) {
+			return array(
+				'code' => 401,
+				'body' => array(
+					'error' => 'Application credentials are not set',
+				),
+			);
+		}
 
-        $application_endpoint = rtrim($application_host, '/') . $route;
-        return wp_remote_post( $application_endpoint, $request_args);
+		$server_ip    = (string) isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : gethostbyname( php_uname( 'n' ) );
+		$theme        = wp_get_theme();
+		$theme_object = is_a( $theme, 'WP_Theme' ) ? $theme : null;
 
-        /*if ( is_wp_error( $response )) {
-           return array(
-                'code' => 500,
-                'body' => array(
-                    'error' => $response->get_error_message()
-                )
-            );
-        }
+		$headers = (array) apply_filters(
+			'blank_application_headers_payload',
+			array(
+				'Content-Type'              => 'application/json',
+				'Authorization'             => 'Bearer ' . $application_password,
+				'Referer'                   => sanitize_url( site_url( '/' ) ),
+				'x-forwarded-for'           => $server_ip,
+				'x-wordpress-theme'         => $theme_object ? sanitize_text_field( $theme->get( 'Name' ) ) : '',
+				'x-wordpress-theme-domain'  => $theme_object ? sanitize_key( $theme->get( 'Domain' ) ) : '',
+				'x-wordpress-theme-version' => $theme_object ? sanitize_text_field( $theme->get( 'Version' ) ) : '',
+			)
+		);
 
-        $code = (int) wp_remote_retrieve_response_code($response);
-        $body = wp_remote_retrieve_body($response);
+		$payload = array_map( 'sanitize_text_field', apply_filters( 'blank_application_body_payload', $payload ) );
 
-        return array(
-            'code' => $code,
-            'body' => json_decode( $body )
-        );*/
-    
-    }
+		$request_args = array(
+			'headers'   => $headers,
+			'body'      => wp_json_encode( $payload ),
+			'timeout'   => 10,
+			'sslverify' => defined( 'WP_ENVIRONMENT_TYPE' ) && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
+			'curl'      => array(
+				CURLOPT_SSL_VERIFYPEER => defined( 'WP_ENVIRONMENT_TYPE' ) && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
+				CURLOPT_SSL_VERIFYHOST => defined( 'WP_ENVIRONMENT_TYPE' ) && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
+			),
+		);
 
+		$application_endpoint = rtrim( $application_host, '/' ) . $route;
+		return wp_remote_post( $application_endpoint, $request_args );
+	}
 }
-
-

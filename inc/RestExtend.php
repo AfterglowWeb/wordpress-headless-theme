@@ -16,6 +16,32 @@ class RestExtend {
 	private function __construct() {
 
 		add_action(
+			'init',
+			function (): void {
+				$admin_options      = Admin::read_admin_options();
+				$allowed_post_types = $admin_options['blank_allowed_post_types'];
+
+				foreach ( $allowed_post_types as $allowed_post_type ) {
+					add_filter(
+						"rest_{$allowed_post_type}_collection_params",
+						function ( $query_params ) {
+							$max_per_page = (int) sanitize_text_field( apply_filters( 'blank_rest_api_max_per_page', 1000 ) );
+
+							if ( isset( $query_params['per_page'] ) ) {
+								$query_params['per_page']['default'] = $max_per_page;
+								$query_params['per_page']['maximum'] = $max_per_page;
+							}
+							return $query_params;
+						},
+						10,
+						2
+					);
+				}
+			},
+			20
+		);
+
+		add_action(
 			'rest_api_init',
 			function (): void {
 				register_rest_route(
@@ -88,7 +114,7 @@ class RestExtend {
 		}
 
 		$received_token = $token_parts[1];
-		$admin_options = Admin::read_admin_options();
+		$admin_options  = Admin::read_admin_options();
 
 		/**
 		 * Filter the user ID for Bearer token validation.
@@ -365,7 +391,7 @@ class RestExtend {
 		$filtered_image = array(
 			'id'        => (int) $img_id,
 			'src'       => $src,
-			'alt'       => $alt ?: $title,
+			'alt'       => $alt ? $alt : $title,
 			'width'     => isset( $meta['width'] ) ? (int) $meta['width'] : null,
 			'height'    => isset( $meta['height'] ) ? (int) $meta['height'] : null,
 			'mime_type' => $mime,
@@ -390,7 +416,7 @@ class RestExtend {
 	}
 
 	private static function filter_post_props( $post ): array {
-			
+
 			$post_images = self::post_images_flat( $post );
 
 			// Prepare ACF image field keys to exclude from ACF fields.

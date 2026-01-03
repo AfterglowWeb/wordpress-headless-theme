@@ -1,9 +1,9 @@
 {
   "name": "cmk/blank-theme",
-  "description": "Blank Rest Wordpress Theme",
+  "description": "A minimal WordPress theme designed exclusively for headless CMS usage.",
   "type": "theme",
   "license": "GPL-2.0-or-later",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "authors": [
       {
         "name": "Cédric Moris Kelly",

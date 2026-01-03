@@ -17,8 +17,8 @@ class Utils {
 	}
 
 	public static function validate_application_password( $received_token, $user_id, $password_name ): bool {
-		
-		$password = self::get_application_password( $user_id, $password_name);
+
+		$password = self::get_application_password( $user_id, $password_name );
 
 		if ( empty( $password ) ) {
 			return false;
@@ -31,13 +31,13 @@ class Utils {
 		return false;
 	}
 
-	public static function get_application_password( $user_id, $password_name) {
+	public static function get_application_password( $user_id, $password_name ) {
 		$passwords = (array) \WP_Application_Passwords::get_user_application_passwords( $user_id );
 
 		if ( empty( $passwords ) ) {
 			return '';
 		}
-		
+
 		$password_data = array_filter(
 			$passwords,
 			function ( $password_data ) use ( $password_name ) {
@@ -45,16 +45,15 @@ class Utils {
 			}
 		);
 
-		if ( empty($password_data) ) {
+		if ( empty( $password_data ) ) {
 			return '';
 		}
 
-		$first = reset($password_data);
-		if (!isset($first['password'])) {
+		$first = reset( $password_data );
+		if ( ! isset( $first['password'] ) ) {
 			return '';
 		}
 
 		return $first['password'];
 	}
-
 }
