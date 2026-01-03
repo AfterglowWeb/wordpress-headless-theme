@@ -18,9 +18,12 @@ class CustomPosts {
 		add_action( 'init', array( $this, 'register_custom_taxonomies' ) );
 
 		$post_types = get_post_types( array( 'public' => true ) );
-		$post_types = array_filter( $post_types, function( $post_type ) {
-			return $post_type !== 'attachment';
-		});
+		$post_types = array_filter(
+			$post_types,
+			function ( $post_type ) {
+				return 'attachment' !== $post_type;
+			}
+		);
 		$this->add_admin_column(
 			'Image',
 			$post_types,
@@ -59,13 +62,13 @@ class CustomPosts {
 					}
 				}
 
-				$name          = esc_html__( $post_type['name'], 'blank' );
-				$singular_name = esc_html__( $post_type['singular_name'], 'blank' );
+				$name          = sanitize_text_field( $post_type['name'] );
+				$singular_name = sanitize_text_field( $post_type['singular_name'] );
 
 				$labels = array(
-					'name'               => esc_html__( $name ),
-					'singular_name'      => esc_html__( $singular_name ),
-					'menu_name'          => esc_html__( $name ),
+					'name'               => $name,
+					'singular_name'      => $singular_name,
+					'menu_name'          => $name,
 					/* translators: %s is a singular name */
 					'add_new'            => sprintf( esc_html__( 'Add %s', 'blank' ), strtolower( $singular_name ) ),
 					/* translators: %s is a singular name */
@@ -143,13 +146,13 @@ class CustomPosts {
 					}
 				}
 
-				$name          = esc_html__( $taxonomy['name'], 'blank' );
-				$singular_name = esc_html__( $taxonomy['singular_name'], 'blank' );
+				$name          = sanitize_text_field( $taxonomy['name'] );
+				$singular_name = sanitize_text_field( $taxonomy['singular_name'] );
 
 				$labels = array(
-					'name'              => esc_html__( $name ),
-					'singular_name'     => esc_html__( $singular_name ),
-					'menu_name'         => esc_html__( $name ),
+					'name'              => $name,
+					'singular_name'     => $singular_name,
+					'menu_name'         => $name,
 					/* translators: %s is a singular name */
 					'parent_item'       => sprintf( esc_html__( 'Parent %s', 'blank' ), strtolower( $singular_name ) ),
 					/* translators: %s is a singular name */
@@ -262,6 +265,4 @@ class CustomPosts {
 
 		}
 	}
-
-	
 }

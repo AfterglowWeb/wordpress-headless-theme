@@ -1,7 +1,7 @@
 {
   "name": "blank-theme",
-  "version": "1.0.3b",
-  "description": "A blank WordPress theme boilerplate with MUI and React.",
+  "version": "1.0.4",
+  "description": "A minimal WordPress theme designed exclusively for headless CMS usage.",
   "main": "./src/index.js",
   "scripts": {
     "start": "wp-scripts start --webpack-copy-php",

@@ -6,7 +6,6 @@ window.blankFlushApplicationCache = function() {
     action: blankAdminBar.action, 
     nonce: blankAdminBar.nonce
   }, function(response) {
-   
     if (response.success && response.data ) {
       alert(`Success:\n${response.data.message} at ${response.data.timestamp}`);
     } else {

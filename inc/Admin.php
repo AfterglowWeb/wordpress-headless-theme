@@ -14,11 +14,11 @@ class Admin {
 	}
 
 	private function __construct() {
-		add_action( 'admin_init', array( $this, 'add_custom_capability') );
-		add_action( 'admin_menu', [ $this, 'register_admin_page' ] );
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
-		add_action( 'admin_footer', [ $this, 'print_inline_styles' ], 20 );
-		add_action( 'wp_ajax_blank_theme_update_options', [ $this, 'update_options' ] );
+		add_action( 'admin_init', array( $this, 'add_custom_capability' ) );
+		add_action( 'admin_menu', array( $this, 'register_admin_page' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'admin_footer', array( $this, 'print_inline_styles' ), 20 );
+		add_action( 'wp_ajax_blank_theme_update_options', array( $this, 'update_options' ) );
 	}
 
 
@@ -28,23 +28,22 @@ class Admin {
 			__( 'Blank Theme', 'blank' ),
 			'blank_edit_theme_options',
 			'blank-theme-admin',
-			[ $this, 'render_admin_page' ],
+			array( $this, 'render_admin_page' ),
 			'dashicons-admin-generic',
 			2
 		);
 	}
 
 	public function add_custom_capability(): void {
-		$admin_options = Admin::read_admin_options();
+		$admin_options = self::read_admin_options();
 		$allowed_roles = (array) $admin_options['blank_allowed_roles'];
-		if( empty($allowed_roles) ) {
-			return; 
+		if ( empty( $allowed_roles ) ) {
+			return;
 		}
-		foreach( $allowed_roles as $allowed_role ) {
-			$role_object = get_role($allowed_role);
-			$role_object->add_cap('blank_edit_theme_options');
+		foreach ( $allowed_roles as $allowed_role ) {
+			$role_object = get_role( $allowed_role );
+			$role_object->add_cap( 'blank_edit_theme_options' );
 		}
-
 	}
 
 	public function render_admin_page() {
@@ -52,15 +51,15 @@ class Admin {
 	}
 
 	public function enqueue_scripts( $hook ) {
-		if ( $hook !== 'toplevel_page_blank-theme-admin' ) {
+		if ( 'toplevel_page_blank-theme-admin' !== $hook ) {
 			return;
 		}
 
-        wp_enqueue_script( 'wplink' );
+		wp_enqueue_script( 'wplink' );
 		wp_enqueue_style( 'editor-buttons' );
 
-		$mui_config = $this->load_script_config( get_template_directory() . '/build/mui.asset.php' );
-        $mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : [];
+		$mui_config       = $this->load_script_config( get_template_directory() . '/build/mui.asset.php' );
+		$mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : array();
 		wp_enqueue_script(
 			'blank-theme-mui',
 			get_template_directory_uri() . '/build/mui.js',
@@ -70,7 +69,7 @@ class Admin {
 		);
 
 		$script_config = $this->load_script_config( get_template_directory() . '/build/index.asset.php' );
-        $dependencies = ! empty( $script_config ) && isset( $script_config['dependencies'] ) ? $script_config['dependencies'] : [];
+		$dependencies  = ! empty( $script_config ) && isset( $script_config['dependencies'] ) ? $script_config['dependencies'] : array();
 		wp_enqueue_script(
 			'blank-theme-admin',
 			get_template_directory_uri() . '/build/index.js',
@@ -82,33 +81,31 @@ class Admin {
 			true
 		);
 
-		$theme = wp_get_theme();
-        $theme_object = is_a( $theme, 'WP_Theme' ) ? $theme : null;
+		$theme        = wp_get_theme();
+		$theme_object = is_a( $theme, 'WP_Theme' ) ? $theme : null;
 
-        wp_localize_script(
+		wp_localize_script(
 			'blank-theme-admin',
 			'blankThemeAdminData',
 			array(
-				'nonce'                  => wp_create_nonce( 'blank_theme_update_options_nonce' ),
-				'ajaxurl'                => admin_url( 'admin-ajax.php' ),
-				'roles'                  => self::list_roles(),
-				'users'                  => self::list_users(),
-				'post_types'             => self::list_post_types(),
-				'admin_options'          => self::read_admin_options( true ),
-				'theme_name'             => $theme_object ? sanitize_text_field( $theme_object->get( 'Name' ) ) : '',
-				'theme_domain'           => $theme_object ? sanitize_key( $theme->get('Domain') ) : '',
-				'theme_version'          => $theme_object ? sanitize_text_field( $theme_object->get( 'Version' ) ) : '',
-				'theme_uri'              => $theme_object ? sanitize_url( $theme_object->get( 'ThemeURI' ) )  : '',
-				'home_url'               => get_home_url('/'),
+				'nonce'         => wp_create_nonce( 'blank_theme_update_options_nonce' ),
+				'ajaxurl'       => admin_url( 'admin-ajax.php' ),
+				'roles'         => self::list_roles(),
+				'users'         => self::list_users(),
+				'post_types'    => self::list_post_types(),
+				'admin_options' => self::read_admin_options( true ),
+				'theme_name'    => $theme_object ? sanitize_text_field( $theme_object->get( 'Name' ) ) : '',
+				'theme_domain'  => $theme_object ? sanitize_key( $theme->get( 'Domain' ) ) : '',
+				'theme_version' => $theme_object ? sanitize_text_field( $theme_object->get( 'Version' ) ) : '',
+				'theme_uri'     => $theme_object ? sanitize_url( $theme_object->get( 'ThemeURI' ) ) : '',
+				'home_url'      => get_home_url( '/' ),
 			)
 		);
-
-
 	}
 
 	public function print_inline_styles() {
 		$hook = get_current_screen();
-		if ( $hook->id !== 'toplevel_page_blank-theme-admin' ) {
+		if ( 'toplevel_page_blank-theme-admin' !== $hook->id ) {
 			return;
 		}
 		$custom_css = '
@@ -146,142 +143,146 @@ class Admin {
 
 	private static function get_default_options() {
 
-		 return [
-			'blank_allowed_roles' => [ 'administrator', 'editor' ],
-			'blank_allowed_post_types' => [ 'post', 'page' ],
-			'blank_disable_gutenberg' => false,
-			'rest_api_user_id' => 1,
-			'rest_api_password_name' => 'rest_api',
-			'application_user_id' => 1,
+		return array(
+			'blank_allowed_roles'       => array( 'administrator', 'editor' ),
+			'blank_allowed_post_types'  => array( 'post', 'page' ),
+			'blank_disable_gutenberg'   => false,
+			'rest_api_user_id'          => 1,
+			'rest_api_password_name'    => 'rest_api',
+			'application_user_id'       => 1,
 			'application_password_name' => 'flush_cache',
-			'application_host' => 'https://www.my-host.com',
-			'application_cache_route' => '/api/flush-cache',
-			'disable_comments' => true,
-			'max_upload_size' => 1024, // Ko.
-			'enable_max_upload_size' => false,
-		];
+			'application_host'          => 'https://www.my-host.com',
+			'application_cache_route'   => '/api/flush-cache',
+			'disable_comments'          => true,
+			'max_upload_size'           => 1024, // Ko.
+			'enable_max_upload_size'    => false,
+		);
 	}
 
 	public function update_options() {
 		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'error' => esc_html__('Unauthorized', 'blank') ], 401 );
+			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized', 'blank' ) ), 401 );
 		}
 
-		if ( isset( $_POST['action'] ) && $_POST['action'] === 'blank_theme_update_options' && isset( $_POST['options'] ) ) {
-			$options = json_decode( stripslashes( $_POST['options'] ), true );
+		if ( isset( $_POST['action'] ) && 'blank_theme_update_options' === $_POST['action'] && isset( $_POST['options'] ) ) {
+			$options = json_decode( sanitize_text_field( wp_unslash( $_POST['options'] ) ), true );
 			if ( ! is_array( $options ) ) {
-				wp_send_json_error( [ 'error' => esc_html__('Invalid options data', 'blank') ], 400 );
+				wp_send_json_error( array( 'error' => esc_html__( 'Invalid options data', 'blank' ) ), 400 );
 			}
-
 
 			$options = self::sanitize_admin_options( $options );
 			$options = wp_parse_args( $options, self::get_default_options() );
 
 			update_option( 'blank_theme_options', $options );
 
-			wp_send_json_success( [ 'message' => esc_html__('Options saved', 'blank'), 'options' => $options ] );
+			wp_send_json_success(
+				array(
+					'message' => esc_html__( 'Options saved', 'blank' ),
+					'options' => $options,
+				)
+			);
 		} else {
 			$options = self::read_admin_options();
 			wp_send_json_success( $options );
 		}
 	}
 
-	public static function read_admin_options($decorate = false) {
+	public static function read_admin_options( $decorate = false ) {
 
-		$options = get_option( 'blank_theme_options', [] );
+		$options = get_option( 'blank_theme_options', array() );
 		$options = self::sanitize_admin_options( $options );
 
 		$options = wp_parse_args( $options, self::get_default_options() );
 
-		if( false === $decorate ) {
+		if ( false === $decorate ) {
 			return $options;
 		}
 
-		return self::decorate_admin_options($options);
+		return self::decorate_admin_options( $options );
 	}
 
-	private static function sanitize_admin_options(array $options): array {
+	private static function sanitize_admin_options( array $options ): array {
 		$default_options = self::get_default_options();
 
-		return [
-			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_key', (array)$options['blank_allowed_roles']) : $default_options['blank_allowed_roles'],
-			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array) $options['blank_allowed_post_types']) : $default_options['blank_allowed_post_types'],
-			'blank_disable_gutenberg' => isset($options['blank_disable_gutenberg']) ? (bool) rest_sanitize_boolean($options['blank_disable_gutenberg']) : $default_options['blank_disable_gutenberg'],
-			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int) sanitize_text_field($options['rest_api_user_id']) : $default_options['rest_api_user_id'],
-			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string) sanitize_text_field($options['rest_api_password_name']) : $default_options['rest_api_password_name'],
-			'application_user_id' => isset($options['application_user_id']) ? (int) sanitize_text_field($options['application_user_id'] ) : $default_options['application_user_id'], 
-			'application_password_name' => isset($options['application_password_name']) ? (string) sanitize_text_field($options['application_password_name']) : $default_options['application_password_name'],
-			'application_host' => isset($options['application_host']) ? (string) sanitize_text_field($options['application_host']) : $default_options['application_host'],
-			'application_cache_route' => isset($options['application_cache_route']) ? (string) sanitize_text_field($options['application_cache_route']) : $default_options['application_cache_route'],
-			'disable_comments' => isset($options['disable_comments']) ? (bool) rest_sanitize_boolean($options['disable_comments']) : $default_options['disable_comments'],
-			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : $default_options['max_upload_size'],
-			'enable_max_upload_size' => isset($options['enable_max_upload_size']) ? (bool) rest_sanitize_boolean($options['enable_max_upload_size']) : $default_options['enable_max_upload_size'],
-		];
+		return array(
+			'blank_allowed_roles'       => isset( $options['blank_allowed_roles'] ) ? array_map( 'sanitize_key', (array) $options['blank_allowed_roles'] ) : $default_options['blank_allowed_roles'],
+			'blank_allowed_post_types'  => isset( $options['blank_allowed_post_types'] ) ? array_map( 'sanitize_key', (array) $options['blank_allowed_post_types'] ) : $default_options['blank_allowed_post_types'],
+			'blank_disable_gutenberg'   => isset( $options['blank_disable_gutenberg'] ) ? (bool) rest_sanitize_boolean( $options['blank_disable_gutenberg'] ) : $default_options['blank_disable_gutenberg'],
+			'rest_api_user_id'          => isset( $options['rest_api_user_id'] ) ? (int) sanitize_text_field( $options['rest_api_user_id'] ) : $default_options['rest_api_user_id'],
+			'rest_api_password_name'    => isset( $options['rest_api_password_name'] ) ? (string) sanitize_text_field( $options['rest_api_password_name'] ) : $default_options['rest_api_password_name'],
+			'application_user_id'       => isset( $options['application_user_id'] ) ? (int) sanitize_text_field( $options['application_user_id'] ) : $default_options['application_user_id'],
+			'application_password_name' => isset( $options['application_password_name'] ) ? (string) sanitize_text_field( $options['application_password_name'] ) : $default_options['application_password_name'],
+			'application_host'          => isset( $options['application_host'] ) ? (string) sanitize_text_field( $options['application_host'] ) : $default_options['application_host'],
+			'application_cache_route'   => isset( $options['application_cache_route'] ) ? (string) sanitize_text_field( $options['application_cache_route'] ) : $default_options['application_cache_route'],
+			'disable_comments'          => isset( $options['disable_comments'] ) ? (bool) rest_sanitize_boolean( $options['disable_comments'] ) : $default_options['disable_comments'],
+			'max_upload_size'           => isset( $options['max_upload_size'] ) ? (int) sanitize_text_field( $options['max_upload_size'] ) : $default_options['max_upload_size'],
+			'enable_max_upload_size'    => isset( $options['enable_max_upload_size'] ) ? (bool) rest_sanitize_boolean( $options['enable_max_upload_size'] ) : $default_options['enable_max_upload_size'],
+		);
 	}
 
-	private static function decorate_admin_options(array $options): array {
-		return [
-			'blank_allowed_roles' => [
+	private static function decorate_admin_options( array $options ): array {
+		return array(
+			'blank_allowed_roles'       => array(
 				'label' => esc_html__( 'Allowed Roles', 'blank' ),
 				'value' => $options['blank_allowed_roles'],
-			],
-			'blank_allowed_post_types' => [
+			),
+			'blank_allowed_post_types'  => array(
 				'label' => esc_html__( 'Allowed Post Types', 'blank' ),
 				'value' => $options['blank_allowed_post_types'],
-			],
-			'blank_disable_gutenberg' => [
+			),
+			'blank_disable_gutenberg'   => array(
 				'label' => esc_html__( 'Disable Gutenberg on Post Types', 'blank' ),
 				'value' => $options['blank_disable_gutenberg'],
-			],
-			'rest_api_user_id' => [
+			),
+			'rest_api_user_id'          => array(
 				'label' => esc_html__( 'REST API User', 'blank' ),
 				'value' => $options['rest_api_user_id'],
-			],
-			'rest_api_password_name' => [
+			),
+			'rest_api_password_name'    => array(
 				'label' => esc_html__( 'REST API Password Key', 'blank' ),
 				'value' => $options['rest_api_password_name'],
-			],
-			'application_user_id' => [
+			),
+			'application_user_id'       => array(
 				'label' => esc_html__( 'Application User', 'blank' ),
 				'value' => $options['application_user_id'],
-			],
-			'application_password_name' => [
+			),
+			'application_password_name' => array(
 				'label' => esc_html__( 'Application Password Key', 'blank' ),
 				'value' => $options['application_password_name'],
-			],
-			'application_host' => [
+			),
+			'application_host'          => array(
 				'label' => esc_html__( 'Application Host', 'blank' ),
 				'value' => $options['application_host'],
-			],
-			'application_cache_route' => [
+			),
+			'application_cache_route'   => array(
 				'label' => esc_html__( 'Application Cache Route', 'blank' ),
 				'value' => $options['application_cache_route'],
-			],
-			'disable_comments' => [
+			),
+			'disable_comments'          => array(
 				'label' => esc_html__( 'Disable Comments', 'blank' ),
 				'value' => $options['disable_comments'],
-			],
-			'max_upload_size' => [
+			),
+			'max_upload_size'           => array(
 				'label' => esc_html__( 'Max Upload Size', 'blank' ),
 				'value' => $options['max_upload_size'],
-				'min' => 1,
-				'max' => 1024,
-			],
-			'enable_max_upload_size' => [
+				'min'   => 1,
+				'max'   => 1024,
+			),
+			'enable_max_upload_size'    => array(
 				'label' => esc_html__( 'Enable Max Upload Size', 'blank' ),
 				'value' => $options['enable_max_upload_size'],
-			]
-		];
+			),
+		);
 	}
 
-	public static function is_post_type_allowed(string $post_type): bool {
-		
+	public static function is_post_type_allowed( string $post_type ): bool {
+
 		if ( ! post_type_exists( $post_type ) ) {
 			return false;
 		}
 
-		$admin_options = self::read_admin_options();
+		$admin_options            = self::read_admin_options();
 		$blank_allowed_post_types = (array) apply_filters( 'blank_allowed_post_types', $admin_options['blank_allowed_post_types'] );
 
 		if ( ! in_array( $post_type, $blank_allowed_post_types, true ) ) {
@@ -291,7 +292,7 @@ class Admin {
 		return true;
 	}
 
-    /**
+	/**
 	 * Load the script configuration from a PHP asset file.
 	 *
 	 * @param string $file_path Path to the asset file.
@@ -309,15 +310,15 @@ class Admin {
 	}
 
 	private static function list_roles(): array {
-		return array_keys( ( array ) get_editable_roles() );
+		return array_keys( (array) get_editable_roles() );
 	}
 
-    private static function list_users(): array {
+	private static function list_users(): array {
 
 		$admin_options = self::read_admin_options();
 		$allowed_roles = $admin_options['blank_allowed_roles'];
 
-		$users = get_users(
+		$users       = get_users(
 			array(
 				'role__in' => $allowed_roles,
 			)
@@ -345,10 +346,10 @@ class Admin {
 				}
 
 				$users_array[] = array(
-					'value'        => $user_id,
-					'label'        => isset( $user->display_name ) ? sanitize_text_field( $user->display_name ) : '',
-					'admin_url'    => isset( $user->user_url ) ? sanitize_url( get_edit_user_link( $user_id ) ) : '',
-					'current_user' => get_current_user_id() === $user_id ? 1 : 0,
+					'value'          => $user_id,
+					'label'          => isset( $user->display_name ) ? sanitize_text_field( $user->display_name ) : '',
+					'admin_url'      => isset( $user->user_url ) ? sanitize_url( get_edit_user_link( $user_id ) ) : '',
+					'current_user'   => get_current_user_id() === $user_id ? 1 : 0,
 					'password_names' => $passwords,
 				);
 			}
@@ -356,24 +357,28 @@ class Admin {
 		return $users_array;
 	}
 
-	private static function list_post_types () {
-		
-		$post_types = get_post_types(array(
-			'public' => true,
-		), 'objects');
-		if( empty ($post_types)) {
+	private static function list_post_types() {
+
+		$post_types = get_post_types(
+			array(
+				'public' => true,
+			),
+			'objects'
+		);
+		if ( empty( $post_types ) ) {
 			return;
 		}
 
+		$post_types = array_map(
+			function ( $post_type ) {
+				return array(
+					'value' => $post_type->name,
+					'label' => $post_type->labels->singular_name,
+				);
+			},
+			$post_types
+		);
 
-		$post_types = array_map( function($post_type) { 
-			return [
-				'value' => $post_type->name,
-				'label' => $post_type->labels->singular_name
-			];
-		}, $post_types );
-
-		return array_values($post_types);
-
+		return array_values( $post_types );
 	}
 }
