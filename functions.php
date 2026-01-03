@@ -44,21 +44,22 @@ RestExtend::get_instance();
 Cache::get_instance();
 Admin::get_instance();
 
-function is_admin_screen( $screenName ) {
-		if ( ! is_admin() ) {
-			return false;
-		}
-		$adminScreen = get_current_screen();
-		if ( ! is_a( $adminScreen, 'WP_Screen' ) ) {
-			return false;
-		}
-		if ( in_array($screenName, array(
-			$adminScreen->base,  
-			$adminScreen->parent_base,
-			$adminScreen->id
-		), true) ) {
-			return true;
-		}
-		
+function is_admin_screen( $screen_name ) {
+	if ( ! is_admin() ) {
 		return false;
 	}
+
+	$admin_screen = get_current_screen();
+	if ( ! is_a( $admin_screen, 'WP_Screen' ) ) {
+		return false;
+	}
+	if ( in_array($screen_name, array(
+		$admin_screen->base,  
+		$admin_screen->parent_base,
+		$admin_screen->id
+	), true) ) {
+		return true;
+	}
+	
+	return false;
+}
