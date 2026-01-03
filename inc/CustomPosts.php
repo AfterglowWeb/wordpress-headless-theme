@@ -16,12 +16,14 @@ class CustomPosts {
 	private function __construct() {
 		add_action( 'init', array( $this, 'register_custom_posts' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomies' ) );
-		add_action( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg' ), 10, 2 );
-		add_action( 'init', array( $this, 'disable_tags' ) );
 
+		$post_types = get_post_types( array( 'public' => true ) );
+		$post_types = array_filter( $post_types, function( $post_type ) {
+			return $post_type !== 'attachment';
+		});
 		$this->add_admin_column(
 			'Image',
-			array( 'portfolio' ),
+			$post_types,
 			function ( $post_id ) {
 				$thumbnail_id = get_post_thumbnail_id( $post_id );
 				if ( $thumbnail_id ) {
@@ -32,10 +34,6 @@ class CustomPosts {
 				}
 			}
 		);
-	}
-
-	public function disable_tags(): void {
-		unregister_taxonomy_for_object_type( 'post_tag', 'post' );
 	}
 
 	public function register_custom_posts(): void {
@@ -198,7 +196,7 @@ class CustomPosts {
 		}
 	}
 
-	public function add_admin_column(
+	private function add_admin_column(
 		$column_title,
 		$post_types,
 		$callback,
@@ -265,11 +263,5 @@ class CustomPosts {
 		}
 	}
 
-	public function disable_gutenberg( $current_status, $post_type ) {
-		if ( in_array( $post_type, array( 'portfolio', 'page', 'post' ), true ) ) {
-			return false;
-		}
-
-		return $current_status;
-	}
+	
 }

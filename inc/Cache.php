@@ -59,6 +59,7 @@ class Cache {
         }
 
         $admin_options = Admin::read_admin_options();
+        
         $blank_application_cache_route = (string) sanitize_text_field( apply_filters('blank_application_cache_route', $admin_options['application_cache_route']) );
 
         if( ! $blank_application_cache_route ) {
@@ -66,7 +67,7 @@ class Cache {
             wp_die();
         }
 
-        $response = self::fetch_application( $blank_application_cache_route, ['flush' => true]);
+        $response = self::fetch_application( $blank_application_cache_route, array( 'flush' => true ) );
         $code = $response['code'];
         $body = $response['body'];
         
@@ -92,10 +93,11 @@ class Cache {
         
         $admin_options = Admin::read_admin_options();
 
+        $application_host = (string) sanitize_text_field( apply_filters('blank_application_host', $admin_options['application_host']) );
         $application_user = (int) sanitize_text_field( apply_filters('blank_application_user_id', $admin_options['application_user_id'] ) );
         $application_password_name = (string) sanitize_text_field( apply_filters('blank_application_password_name', $admin_options['application_password_name'] ) );
+        
         $application_password = Utils::get_application_password($application_user, $application_password_name);
-        $application_host = (string) sanitize_text_field( apply_filters('blank_application_host', $admin_options['application_host']) );
 
         if(! $application_password || ! $application_host ) {
             return array(
@@ -106,26 +108,36 @@ class Cache {
             );
         }
         
-        $server_ip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field( $_SERVER['SERVER_ADDR'] ) : gethostbyname(php_uname('n'));
+        $server_ip = (string) isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field( $_SERVER['SERVER_ADDR'] ) : gethostbyname(php_uname('n'));
         $theme = wp_get_theme();
-        $headers = array(
+        $theme_object = is_a( $theme, 'WP_Theme' ) ? $theme : null;
+
+        $headers = (array) apply_filters( 'blank_application_headers_payload', array(
+            'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $application_password,
-            'x-forwarded-for' =>  $server_ip,
-            'referer' => sanitize_url( site_url('/') ),
-            'x-wordpress-theme' => $theme ? sanitize_key( $theme->get('Name') ) : '',
-            'x-wordpress-theme-version' => $theme ? sanitize_text_field( $theme->get('Version') ) : '',
-        );
-        $body = json_encode($payload);
-        $payload = array(
+            'Referer' => sanitize_url( site_url('/') ),
+            'x-forwarded-for' => $server_ip,
+            'x-wordpress-theme' => $theme_object ? sanitize_text_field( $theme->get('Name') ) : '',
+            'x-wordpress-theme-domain' => $theme_object ? sanitize_key( $theme->get('Domain') ) : '',
+            'x-wordpress-theme-version' => $theme_object ? sanitize_text_field( $theme->get('Version') ) : '',
+        ));
+
+        $payload = array_map('sanitize_text_field', apply_filters('blank_application_body_payload', $payload));
+
+        $request_args = array(
             'headers' => $headers,
-            'body' => $body,
+            'body' => json_encode( $payload ),
             'timeout' => 10,
-            'data_format' => 'body'
+            'sslverify' => defined('WP_ENVIRONMENT_TYPE') && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
+            'curl' => [
+                CURLOPT_SSL_VERIFYPEER => defined('WP_ENVIRONMENT_TYPE') && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
+                CURLOPT_SSL_VERIFYHOST => defined('WP_ENVIRONMENT_TYPE') && 'local' === WP_ENVIRONMENT_TYPE ? false : true,
+            ],
         );
 
-        
+
         $application_endpoint = rtrim($application_host, '/') . $route;
-        $response = wp_remote_post( $application_endpoint, $payload);
+        $response = wp_remote_post( $application_endpoint, $request_args);
 
         if ( is_wp_error( $response )) {
            return array(
@@ -137,7 +149,6 @@ class Cache {
         }
 
         $code = (int) wp_remote_retrieve_response_code($response);
-        $headers = wp_remote_retrieve_headers($response);
         $body = wp_remote_retrieve_body($response);
 
         return array(
@@ -146,6 +157,7 @@ class Cache {
         );
     
     }
+
 }
 
 

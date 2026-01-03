@@ -19,7 +19,9 @@ class Theme {
 		add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_menus' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_remove' ) );
-		//add_action( 'template_redirect', array( $this, 'redirect_front' ) );
+		add_action( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg' ), 10, 2 );
+		
+		add_action( 'template_redirect', array( $this, 'redirect_front' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
 		add_filter( 'mime_types', array( $this, 'mime_support' ), 10, 1 );
@@ -58,6 +60,22 @@ class Theme {
 		remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
 		remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
 		remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	}
+
+	public function disable_gutenberg( $current_status, $post_type ) {
+		
+		$admin_options = Admin::read_admin_options();
+		$disable_gutenberg_post_types = (array) apply_filters('blank_disable_gutenberg_post_types', $admin_options['blank_allowed_post_types']);
+		
+		if( empty($disable_gutenberg_post_types) ) {
+			return $current_status;
+		}	
+		
+		if ( in_array( $post_type, $disable_gutenberg_post_types, true ) ) {
+			return false;
+		}
+
+		return $current_status;
 	}
 
 	public function theme_menus(): void {
@@ -146,7 +164,10 @@ class Theme {
 
 	public function redirect_front(): void {
 
-		if( is_front_page() || is_home() || is_admin() || wp_doing_ajax() ) {
+		global $wp;
+		$current_url = home_url( $wp->request );
+
+		if( is_front_page() || is_home() || is_admin() || wp_doing_ajax() || $this->is_rest_url( $current_url ) || $this->is_upload_url( $current_url ) ) {
 			return;
 		}
 
@@ -155,6 +176,27 @@ class Theme {
 		wp_safe_redirect( apply_filters( 'allowed_redirect_hosts', $redirect_url ) );
 		exit;
 		
+	}
+
+	private function is_upload_url(string $url ): bool {
+		
+		$upload_dir = wp_get_upload_dir();
+		
+		if( isset( $upload_dir['url'] ) && strpos( $url, $upload_dir['url'] ) !== false ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private function is_rest_url(string $url ): bool {
+
+		$rest_url = sanitize_url( get_rest_url() );
+		if( $rest_url && strpos( $url, $rest_url ) !== false ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public function remove_empty_p_tags( $content ): string {
@@ -180,10 +222,13 @@ class Theme {
 			return $file;
 		}
 
-		$max_file_size = apply_filters('blank_max_upload_size', 500 * 1024); // 500 KB.
+		$max_file_size = (int) apply_filters('blank_max_upload_size', 500 * 1024); // 500Ko.
 
 		if ( strpos( $file['type'], 'image' ) !== false && $file['size'] > $max_file_size ) {
-			$file['error'] = 'Le poids maximum des images est fixé à 500ko. Utilisez le format .webp pour réduire le poids des images.';
+			$file['error'] = sprintf(
+				esc_html__('The maximum file size for images is %d Ko. Try the .webp format to reduce the file size.', 'blank'),
+				(int) round($max_file_size / 1024)
+			);
 		}
 
 		return $file;

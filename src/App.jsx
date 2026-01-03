@@ -34,6 +34,8 @@ export default function App() {
 	const [postTypes, setPostTypes] = useState([]);
 	const [adminOptions, setAdminOptions] = useState({});
 	const theme = useTheme();
+	const { __ } =  wp.i18n || {};
+
 
 	function valueLabelFormat(value) {
 		if (value >= 1024) {
@@ -44,6 +46,7 @@ export default function App() {
 
 	const [form, setForm] = useState({
 		blank_allowed_post_types: adminOptions?.blank_allowed_post_types?.value || [],
+		blank_disable_gutenberg: !!adminOptions?.blank_disable_gutenberg?.value,
 		rest_api_user_id: adminOptions?.rest_api_user_id?.value || '',
 		rest_api_password_name: adminOptions?.rest_api_password_name?.value || '',
 		application_user_id: adminOptions?.application_user_id?.value || '',
@@ -51,7 +54,7 @@ export default function App() {
 		application_host: adminOptions?.application_host?.value || '',
 		application_cache_route: adminOptions?.application_cache_route?.value || '',
 		disable_comments: !!adminOptions?.disable_comments?.value,
-		max_upload_size: adminOptions?.max_upload_size?.value || 1024, // default 1Mo
+		max_upload_size: adminOptions?.max_upload_size?.value || 1024,
 		enable_max_upload_size: !!adminOptions?.enable_max_upload_size?.value,
 	});
 
@@ -98,6 +101,7 @@ export default function App() {
 			setAdminOptions(adminOptions);
 			setForm({
 				blank_allowed_post_types: adminOptions.blank_allowed_post_types?.value || [],
+				blank_disable_gutenberg:!!adminOptions.blank_disable_gutenberg?.value,
 				rest_api_user_id: adminOptions.rest_api_user_id?.value || '',
 				rest_api_password_name: adminOptions.rest_api_password_name?.value || '',
 				application_user_id: adminOptions.application_user_id?.value || '',
@@ -153,7 +157,7 @@ export default function App() {
 			});
 			const data = await response.json();
 			if (data.success) {
-				setSnackbarMessage('Settings saved successfully!');
+				setSnackbarMessage(__('Settings saved successfully!', 'blank'));
 				setSnackbarSeverity('success');
 			} else {
 				setSnackbarMessage('Error: ' + (data.data?.error || 'Unknown error'));
@@ -270,7 +274,18 @@ export default function App() {
 							fullWidth
 						/>
 
-													<Divider />
+						<Divider />
+
+						<FormControlLabel
+							control={
+								<Switch
+									checked={form.blank_disable_gutenberg}
+									name="blank_disable_gutenberg"
+									onChange={handleChange}
+								/>
+							}
+							label={adminData?.blank_disable_gutenberg?.label || 'Disable Gutenberg'}
+						/>
 
 						<FormControlLabel
 							control={
@@ -317,7 +332,7 @@ export default function App() {
 								/>
 							</Box>
 							<Button type="submit" variant="contained" color="primary">
-								Save Settings
+								{__('Save Settings', 'blank')}
 							</Button>
 						</Stack>
 				</form>
@@ -329,15 +344,15 @@ export default function App() {
 				onClose={handleCancelSave}
 				aria-labelledby="confirm-dialog-title"
 			>
-				<DialogTitle id="confirm-dialog-title">Confirm Save</DialogTitle>
+				<DialogTitle id="confirm-dialog-title">{__('Confirm Save', 'blank')}</DialogTitle>
 				<DialogContent>
 					<DialogContentText>
-						Are you sure you want to save these settings?
+						{__('Are you sure you want to save these settings?', 'blank')}
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={handleCancelSave} color="secondary">Cancel</Button>
-					<Button onClick={handleConfirmSave} color="primary" autoFocus>Confirm</Button>
+					<Button onClick={handleCancelSave} color="default" variant="outlined">{__('Cancel')}</Button>
+					<Button onClick={handleConfirmSave} color="primary" variant="contained">{__('Confirm')}</Button>
 				</DialogActions>
 			</Dialog>
 
@@ -386,29 +401,26 @@ function SimpleSelect({ label, name, value, options, defaultLabel, onChange }) {
 }
 
 function MultipleSelect({ label, name, value, options, onChange }) {
-  const ITEM_HEIGHT = 48;
-  const ITEM_PADDING_TOP = 8;
   const MenuProps = {
     PaperProps: {
       style: {
-        maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+        maxHeight: 48 * 4.5 + 8,
         width: 250,
       },
     },
   };
 
   return (
-    <FormControl fullWidth sx={{ width: 300 }}>
+    <FormControl fullWidth>
       <InputLabel id={`${name}-label`}>{label}</InputLabel>
 
       <Select
         labelId={`${name}-label`}
         id={name}
-        name={name}                // important for event.target.name
+        name={name}
         multiple
         value={value}
         onChange={(e) => {
-          // MUI returns the array in e.target.value
           onChange(e);
         }}
         input={<OutlinedInput label={label} />}

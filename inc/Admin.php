@@ -68,7 +68,8 @@ class Admin {
 			true
 		);
 
-        $theme_object = wp_get_theme();
+		$theme = wp_get_theme();
+        $theme_object = is_a( $theme, 'WP_Theme' ) ? $theme : null;
 
         wp_localize_script(
 			'blank-theme-admin',
@@ -79,9 +80,10 @@ class Admin {
 				'users'                  => self::list_users(),
 				'post_types'             => self::list_post_types(),
 				'admin_options'          => self::read_admin_options( true ),
-				'theme_name'             => sanitize_key( $theme_object->get( 'Name' ) ),
-				'theme_version'          => sanitize_text_field( $theme_object->get( 'Version' ) ),
-				'theme_uri'              => sanitize_url( $theme_object->get( 'ThemeURI' ) ),
+				'theme_name'             => $theme_object ? sanitize_text_field( $theme_object->get( 'Name' ) ) : '',
+				'theme_domain'           => $theme_object ? sanitize_key( $theme->get('Domain') ) : '',
+				'theme_version'          => $theme_object ? sanitize_text_field( $theme_object->get( 'Version' ) ) : '',
+				'theme_uri'              => $theme_object ? sanitize_url( $theme_object->get( 'ThemeURI' ) )  : '',
 				'home_url'               => get_home_url('/'),
 			)
 		);
@@ -132,6 +134,7 @@ class Admin {
 		 return [
 			'blank_allowed_roles' => [ 'administrator', 'editor' ],
 			'blank_allowed_post_types' => [ 'post', 'page' ],
+			'blank_disable_gutenberg' => false,
 			'rest_api_user_id' => 1,
 			'rest_api_password_name' => 'rest_api',
 			'application_user_id' => 1,
@@ -147,13 +150,13 @@ class Admin {
 	public function update_options() {
 		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'error' => 'Unauthorized' ], 401 );
+			wp_send_json_error( [ 'error' => esc_html__('Unauthorized', 'blank') ], 401 );
 		}
 
 		if ( isset( $_POST['action'] ) && $_POST['action'] === 'blank_theme_update_options' && isset( $_POST['options'] ) ) {
 			$options = json_decode( stripslashes( $_POST['options'] ), true );
 			if ( ! is_array( $options ) ) {
-				wp_send_json_error( [ 'error' => 'Invalid options data' ], 400 );
+				wp_send_json_error( [ 'error' => esc_html__('Invalid options data', 'blank') ], 400 );
 			}
 
 
@@ -162,7 +165,7 @@ class Admin {
 
 			update_option( 'blank_theme_options', $options );
 
-			wp_send_json_success( [ 'message' => 'Options saved', 'options' => $options ] );
+			wp_send_json_success( [ 'message' => esc_html__('Options saved', 'blank'), 'options' => $options ] );
 		} else {
 			$options = self::read_admin_options();
 			wp_send_json_success( $options );
@@ -187,6 +190,7 @@ class Admin {
 		return [
 			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_key', (array)$options['blank_allowed_roles']) : ['administrator', 'editor'],
 			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array) $options['blank_allowed_post_types']) : ['post', 'page'],
+			'blank_disable_gutenberg' => isset($options['blank_disable_gutenberg']) ? (bool) rest_sanitize_boolean($options['blank_disable_gutenberg']) : false,
 			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int) sanitize_text_field($options['rest_api_user_id']) : 0,
 			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string) sanitize_text_field($options['rest_api_password_name']) : '',
 			'application_user_id' => isset($options['application_user_id']) ? (int) sanitize_text_field($options['application_user_id'] ) : 0, 
@@ -194,7 +198,7 @@ class Admin {
 			'application_host' => isset($options['application_host']) ? (string) sanitize_text_field($options['application_host']) : '',
 			'application_cache_route' => isset($options['application_cache_route']) ? (string) sanitize_text_field($options['application_cache_route']) : '',
 			'disable_comments' => isset($options['disable_comments']) ? (bool) rest_sanitize_boolean($options['disable_comments']) : false,
-			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : 1024, // store in Ko
+			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : 1024,
 			'enable_max_upload_size' => isset($options['enable_max_upload_size']) ? (bool) rest_sanitize_boolean($options['enable_max_upload_size']) : false,
 		];
 	}
@@ -202,49 +206,53 @@ class Admin {
 	private static function decorate_admin_options(array $options): array {
 		return [
 			'blank_allowed_roles' => [
-				'label' => __( 'Allowed Roles', 'blank' ),
+				'label' => esc_html__( 'Allowed Roles', 'blank' ),
 				'value' => $options['blank_allowed_roles'],
 			],
 			'blank_allowed_post_types' => [
-				'label' => __( 'Allowed Post Types', 'blank' ),
+				'label' => esc_html__( 'Allowed Post Types', 'blank' ),
 				'value' => $options['blank_allowed_post_types'],
 			],
+			'blank_disable_gutenberg' => [
+				'label' => esc_html__( 'Disable Gutenberg on Post Types', 'blank' ),
+				'value' => $options['blank_disable_gutenberg'],
+			],
 			'rest_api_user_id' => [
-				'label' => __( 'REST API User', 'blank' ),
+				'label' => esc_html__( 'REST API User', 'blank' ),
 				'value' => $options['rest_api_user_id'],
 			],
 			'rest_api_password_name' => [
-				'label' => __( 'REST API Password Key', 'blank' ),
+				'label' => esc_html__( 'REST API Password Key', 'blank' ),
 				'value' => $options['rest_api_password_name'],
 			],
 			'application_user_id' => [
-				'label' => __( 'Application User', 'blank' ),
+				'label' => esc_html__( 'Application User', 'blank' ),
 				'value' => $options['application_user_id'],
 			],
 			'application_password_name' => [
-				'label' => __( 'Application Password Key', 'blank' ),
+				'label' => esc_html__( 'Application Password Key', 'blank' ),
 				'value' => $options['application_password_name'],
 			],
 			'application_host' => [
-				'label' => __( 'Application Host', 'blank' ),
+				'label' => esc_html__( 'Application Host', 'blank' ),
 				'value' => $options['application_host'],
 			],
 			'application_cache_route' => [
-				'label' => __( 'Application Cache Route', 'blank' ),
+				'label' => esc_html__( 'Application Cache Route', 'blank' ),
 				'value' => $options['application_cache_route'],
 			],
 			'disable_comments' => [
-				'label' => __( 'Disable Comments', 'blank' ),
+				'label' => esc_html__( 'Disable Comments', 'blank' ),
 				'value' => $options['disable_comments'],
 			],
 			'max_upload_size' => [
-				'label' => __( 'Max Upload Size', 'blank' ),
+				'label' => esc_html__( 'Max Upload Size', 'blank' ),
 				'value' => $options['max_upload_size'],
 				'min' => 1,
 				'max' => 1024,
 			],
 			'enable_max_upload_size' => [
-				'label' => __( 'Enable Max Upload Size', 'blank' ),
+				'label' => esc_html__( 'Enable Max Upload Size', 'blank' ),
 				'value' => $options['enable_max_upload_size'],
 			]
 		];
