@@ -14,6 +14,7 @@ class Admin {
 	}
 
 	private function __construct() {
+		add_action( 'admin_init', array( $this, 'add_custom_capability') );
 		add_action( 'admin_menu', [ $this, 'register_admin_page' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'admin_footer', [ $this, 'print_inline_styles' ], 20 );
@@ -25,12 +26,25 @@ class Admin {
 		add_menu_page(
 			__( 'Blank Theme Admin', 'blank' ),
 			__( 'Blank Theme', 'blank' ),
-			'manage_options',
+			'blank_edit_theme_options',
 			'blank-theme-admin',
 			[ $this, 'render_admin_page' ],
 			'dashicons-admin-generic',
 			2
 		);
+	}
+
+	public function add_custom_capability(): void {
+		$admin_options = Admin::read_admin_options();
+		$allowed_roles = (array) $admin_options['blank_allowed_roles'];
+		if( empty($allowed_roles) ) {
+			return; 
+		}
+		foreach( $allowed_roles as $allowed_role ) {
+			$role_object = get_role($allowed_role);
+			$role_object->add_cap('blank_edit_theme_options');
+		}
+
 	}
 
 	public function render_admin_page() {
@@ -77,6 +91,7 @@ class Admin {
 			array(
 				'nonce'                  => wp_create_nonce( 'blank_theme_update_options_nonce' ),
 				'ajaxurl'                => admin_url( 'admin-ajax.php' ),
+				'roles'                  => self::list_roles(),
 				'users'                  => self::list_users(),
 				'post_types'             => self::list_post_types(),
 				'admin_options'          => self::read_admin_options( true ),
@@ -187,19 +202,21 @@ class Admin {
 	}
 
 	private static function sanitize_admin_options(array $options): array {
+		$default_options = self::get_default_options();
+
 		return [
-			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_key', (array)$options['blank_allowed_roles']) : ['administrator', 'editor'],
-			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array) $options['blank_allowed_post_types']) : ['post', 'page'],
-			'blank_disable_gutenberg' => isset($options['blank_disable_gutenberg']) ? (bool) rest_sanitize_boolean($options['blank_disable_gutenberg']) : false,
-			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int) sanitize_text_field($options['rest_api_user_id']) : 0,
-			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string) sanitize_text_field($options['rest_api_password_name']) : '',
-			'application_user_id' => isset($options['application_user_id']) ? (int) sanitize_text_field($options['application_user_id'] ) : 0, 
-			'application_password_name' => isset($options['application_password_name']) ? (string) sanitize_text_field($options['application_password_name']) : '',
-			'application_host' => isset($options['application_host']) ? (string) sanitize_text_field($options['application_host']) : '',
-			'application_cache_route' => isset($options['application_cache_route']) ? (string) sanitize_text_field($options['application_cache_route']) : '',
-			'disable_comments' => isset($options['disable_comments']) ? (bool) rest_sanitize_boolean($options['disable_comments']) : false,
-			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : 1024,
-			'enable_max_upload_size' => isset($options['enable_max_upload_size']) ? (bool) rest_sanitize_boolean($options['enable_max_upload_size']) : false,
+			'blank_allowed_roles' => isset($options['blank_allowed_roles']) ? array_map('sanitize_key', (array)$options['blank_allowed_roles']) : $default_options['blank_allowed_roles'],
+			'blank_allowed_post_types' => isset($options['blank_allowed_post_types']) ? array_map('sanitize_key', (array) $options['blank_allowed_post_types']) : $default_options['blank_allowed_post_types'],
+			'blank_disable_gutenberg' => isset($options['blank_disable_gutenberg']) ? (bool) rest_sanitize_boolean($options['blank_disable_gutenberg']) : $default_options['blank_disable_gutenberg'],
+			'rest_api_user_id' => isset($options['rest_api_user_id']) ? (int) sanitize_text_field($options['rest_api_user_id']) : $default_options['rest_api_user_id'],
+			'rest_api_password_name' => isset($options['rest_api_password_name']) ? (string) sanitize_text_field($options['rest_api_password_name']) : $default_options['rest_api_password_name'],
+			'application_user_id' => isset($options['application_user_id']) ? (int) sanitize_text_field($options['application_user_id'] ) : $default_options['application_user_id'], 
+			'application_password_name' => isset($options['application_password_name']) ? (string) sanitize_text_field($options['application_password_name']) : $default_options['application_password_name'],
+			'application_host' => isset($options['application_host']) ? (string) sanitize_text_field($options['application_host']) : $default_options['application_host'],
+			'application_cache_route' => isset($options['application_cache_route']) ? (string) sanitize_text_field($options['application_cache_route']) : $default_options['application_cache_route'],
+			'disable_comments' => isset($options['disable_comments']) ? (bool) rest_sanitize_boolean($options['disable_comments']) : $default_options['disable_comments'],
+			'max_upload_size' => isset($options['max_upload_size']) ? (int) sanitize_text_field($options['max_upload_size']) : $default_options['max_upload_size'],
+			'enable_max_upload_size' => isset($options['enable_max_upload_size']) ? (bool) rest_sanitize_boolean($options['enable_max_upload_size']) : $default_options['enable_max_upload_size'],
 		];
 	}
 
@@ -258,23 +275,6 @@ class Admin {
 		];
 	}
 
-	public static function is_user_allowed( int $user_id, array $options):bool {
-		
-		$allowed_roles = isset($options['blank_allowed_roles']) ? array_map('sanitize_text_field', (array) $options['blank_allowed_roles']) : ['administrator', 'editor'];
-		$user_meta = get_userdata($user_id);
-
-		if( ! is_a( $user_meta, 'WP_User' ) ) {
-			return false;
-		}
-
-		$user_roles = $user_meta->roles; 
-
-		if ( in_array( $user_roles, $allowed_roles) ) {
-			return true;
-		}
-		return false;
-	}
-
 	public static function is_post_type_allowed(string $post_type): bool {
 		
 		if ( ! post_type_exists( $post_type ) ) {
@@ -306,6 +306,10 @@ class Admin {
 			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : '1.0.0';
 		}
 		return $config;
+	}
+
+	private static function list_roles(): array {
+		return array_keys( ( array ) get_editable_roles() );
 	}
 
     private static function list_users(): array {
