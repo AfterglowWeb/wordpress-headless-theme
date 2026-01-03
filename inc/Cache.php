@@ -68,28 +68,39 @@ class Cache {
         }
 
         $response = self::fetch_application( $blank_application_cache_route, array( 'flush' => true ) );
-        $code = $response['code'];
-        $body = $response['body'];
-        
-        if (200 === $code && ! empty( $body['success'] )) {
+        $code = (int) wp_remote_retrieve_response_code( $response );
+        $remote_body = sanitize_text_field (wp_remote_retrieve_body( $response ) );
+
+        if(is_a( $remote_body, 'WP_Error' )) {
+             wp_send_json_error( array(
+                'error' => 'Unknown Error'
+            ), $code);
+            wp_die();
+        }   
+
+        $decoded_body = json_decode( $remote_body, true );
+
+        if (200 === $code && isset( $decoded_body['success'] )) {
             wp_send_json_success( array(
-                'success'     => (bool) isset($body['success']) ? rest_sanitize_boolean($body['success']) : false,
-                'timestamp'   => (string) isset($body['timestamp']) ? sanitize_text_field($body['timestamp']) : 0,
-                'message'     => (string) isset($body['message']) ? sanitize_text_field($body['message']) : '',
+                'success'     => (bool) rest_sanitize_boolean($decoded_body['success']),
+                'timestamp'   => (string) isset($decoded_body['timestamp']) ? sanitize_text_field($decoded_body['timestamp']) : 0,
+                'message'     => (string) isset($decoded_body['message']) ? sanitize_text_field($decoded_body['message']) : '',
             ), 200 );
             wp_die();
         } else {
             wp_send_json_error( array(
-                'error' => isset( $body['error'] ) ? 
-                    sprintf( esc_html__('Error %s', 'blank'), sanitize_text_field( $body['error']) ) 
+                'error' => isset( $decoded_body['error'] ) ? 
+                    sprintf( esc_html__('Error %s', 'blank'), sanitize_text_field( $decoded_body['error']) ) 
                     : 
-                    'Unknown Error',
+                    'Unknown Error'
             ), $code);
             wp_die();
         }
+
+        wp_die();
     }
 
-    private function fetch_application( string $route, array $payload = [] ) {
+    private function fetch_application( string $route, array $payload = [] ): array {
         
         $admin_options = Admin::read_admin_options();
 
@@ -137,9 +148,9 @@ class Cache {
 
 
         $application_endpoint = rtrim($application_host, '/') . $route;
-        $response = wp_remote_post( $application_endpoint, $request_args);
+        return wp_remote_post( $application_endpoint, $request_args);
 
-        if ( is_wp_error( $response )) {
+        /*if ( is_wp_error( $response )) {
            return array(
                 'code' => 500,
                 'body' => array(
@@ -153,8 +164,8 @@ class Cache {
 
         return array(
             'code' => $code,
-            'body' => $body
-        );
+            'body' => json_decode( $body )
+        );*/
     
     }
 

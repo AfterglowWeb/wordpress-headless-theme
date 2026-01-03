@@ -5,11 +5,11 @@ window.blankFlushApplicationCache = function() {
   jQuery.post(blankAdminBar.ajaxurl, { 
     action: blankAdminBar.action, 
     nonce: blankAdminBar.nonce
-  }, function(resp) {
-    console.log(resp);
-    if (resp.success) {
-      alert(`${resp.timestamp}:<br/>${resp.message}`);
+  }, function(response) {
+   
+    if (response.success && response.data ) {
+      alert(`Success:\n${response.data.message} at ${response.data.timestamp}`);
     } else {
-      alert('Error: ' + (resp.data && resp.data.error ? resp.data.error : 'Unknown error'));
+      alert('Error: ' + (response.data && response.data.error ? response.data.error : 'Unknown error'));
     }
  })};
