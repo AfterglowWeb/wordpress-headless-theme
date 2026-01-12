@@ -146,21 +146,6 @@ class Admin {
 		echo '<style type="text/css">' . $custom_css . '</style>';
 	}
 
-	private static function get_default_options() {
-
-		return array(
-			'blank_protect_wp_rest_routes' => false,
-			'blank_allowed_post_types'     => array( 'post', 'page' ),
-			'blank_disable_gutenberg'      => false,
-			'blank_disable_comments'       => true,
-			'rest_api_user_id'             => 1,
-			'application_host'             => 'https://www.my-host.com',
-			'application_cache_route'      => '/api/revalidate',
-			'max_upload_size'              => 1024, // Ko.
-			'enable_max_upload_size'       => false,
-		);
-	}
-
 	public function ajax_read_options() {
 		check_ajax_referer( 'blank_theme_read_options_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -215,6 +200,23 @@ class Admin {
 
 	}
 
+	private static function get_default_options() {
+
+		return array(
+			'blank_protect_wp_rest_routes' => false,
+			'blank_allowed_post_types'     => array( 'post', 'page' ),
+			'blank_disable_gutenberg'      => false,
+			'blank_disable_comments'       => true,
+			'rest_api_user_id'             => 1,
+			'rest_api_rate_limit'          => 30,
+			'rest_api_rate_limit_time'     => 60,
+			'application_host'             => 'https://example.com',
+			'application_cache_route'      => '/api/revalidate',
+			'max_upload_size'              => 1024, // Ko.
+			'enable_max_upload_size'       => false,
+		);
+	}
+
 	private static function sanitize_admin_options( array $options ): array {
 		$default_options = self::get_default_options();
 
@@ -224,6 +226,8 @@ class Admin {
 			'blank_disable_gutenberg'      => isset( $options['blank_disable_gutenberg'] ) ? (bool) rest_sanitize_boolean( $options['blank_disable_gutenberg'] ) : $default_options['blank_disable_gutenberg'],
 			'blank_disable_comments'       => isset( $options['blank_disable_comments'] ) ? (bool) rest_sanitize_boolean( $options['blank_disable_comments'] ) : $default_options['blank_disable_comments'],
 			'rest_api_user_id'             => isset( $options['rest_api_user_id'] ) ? (int) sanitize_text_field( $options['rest_api_user_id'] ) : $default_options['rest_api_user_id'],
+			'rest_api_rate_limit'          => isset( $options['rest_api_rate_limit'] ) ? (int) sanitize_text_field( $options['rest_api_rate_limit'] ) : $default_options['rest_api_rate_limit'],
+			'rest_api_rate_limit_time'     => isset( $options['rest_api_rate_limit_time'] ) ? (int) sanitize_text_field( $options['rest_api_rate_limit_time'] ) : $default_options['rest_api_rate_limit_time'],
 			'application_host'             => isset( $options['application_host'] ) ? (string) sanitize_text_field( $options['application_host'] ) : $default_options['application_host'],
 			'application_cache_route'      => isset( $options['application_cache_route'] ) ? (string) sanitize_text_field( $options['application_cache_route'] ) : $default_options['application_cache_route'],
 			'max_upload_size'              => isset( $options['max_upload_size'] ) ? (int) sanitize_text_field( $options['max_upload_size'] ) : $default_options['max_upload_size'],
