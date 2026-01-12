@@ -1,3 +1,26 @@
-#!/bin/bash
-rm blank.zip
-zip -r blank.zip . -x "*.zip" -x "*.tar" -x "*.tar.gz" -x "*.env" -x "*.env*" -x ".git/*" -x ".gitignore" -x "*.config.js" -x "node_modules/*" -x ".DS_Store" -x "**/*.DS_Store" -x "._*"
+#!/usr/bin/env bash
+set -euo pipefail
+
+ZIP_NAME="blank.zip"
+
+rm -f "$ZIP_NAME"
+
+zip -r "$ZIP_NAME" . \
+  -x "*.zip" \
+  -x "*.tar" \
+  -x "*.tar.gz" \
+  -x "*.env" \
+  -x "*.env*" \
+  -x "*.config.js" \
+  -x "src/*" \
+  -x "node_modules/*" \
+  -x "*/node_modules/*" \
+  -x ".*/*" \
+  -x ".gitignore" \
+  -x ".DS_Store" \
+  -x "*/.DS_Store" \
+  -x "._*" \
+  -x "package.json" \
+  -x "package-lock.json" \
+  -x "yarn.lock" \
+  -x "README.md" \

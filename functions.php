@@ -37,11 +37,12 @@ if (file_exists(get_template_directory() . '/vendor/autoload.php')) {
 }
 
 Theme::get_instance();
-Acf::get_instance();
 CustomPosts::get_instance();
 DisableComments::get_instance();
-RestExtend::get_instance();
-Cache::get_instance();
+Rest\Routes::register();
+Application\WebhookService::get_instance();
+
+Acf::get_instance();
 Admin::get_instance();
 
 function is_admin_screen( $screen_name ) {

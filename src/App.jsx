@@ -1,6 +1,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { useTheme } from '@mui/material/styles';
 import { useAdminData } from './contexts/AdminDataContext';
+import useSettingsForm from './contexts/useSettingsForm';
 
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -8,8 +9,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Snackbar from '@mui/material/Snackbar';
-import MuiAlert from '@mui/material/Alert';
-
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Switch from '@mui/material/Switch';
@@ -28,178 +28,74 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import Chip from '@mui/material/Chip';
 
 export default function App() {
-	const adminData = useAdminData();
-	const [adminDataLoading, setAdminDataLoading] = useState(true);
-	const [users, setUsers] = useState([]);
-	const [postTypes, setPostTypes] = useState([]);
-	const [adminOptions, setAdminOptions] = useState({});
+	const { adminData, updateAdminData } = useAdminData();
 	const theme = useTheme();
-	const { __ } =  wp.i18n || {};
+	const { __ } = wp.i18n || {};
 
-
-	function valueLabelFormat(value) {
-		if (value >= 1024) {
-			return (value / 1024) + ' MB';
-		}
-		return value + ' KB';
-	}
-
-	const [form, setForm] = useState({
-		blank_allowed_post_types: adminOptions?.blank_allowed_post_types?.value || [],
-		blank_disable_gutenberg: !!adminOptions?.blank_disable_gutenberg?.value,
-		rest_api_user_id: adminOptions?.rest_api_user_id?.value || '',
-		rest_api_password_name: adminOptions?.rest_api_password_name?.value || '',
-		application_user_id: adminOptions?.application_user_id?.value || '',
-		application_password_name: adminOptions?.application_password_name?.value || '',
-		application_host: adminOptions?.application_host?.value || '',
-		application_cache_route: adminOptions?.application_cache_route?.value || '',
-		disable_comments: !!adminOptions?.disable_comments?.value,
-		max_upload_size: adminOptions?.max_upload_size?.value || 1024,
-		enable_max_upload_size: !!adminOptions?.enable_max_upload_size?.value,
+	const {
+		form,
+		setField,
+		setSlider,
+		submit,
+		openConfirm,
+		closeConfirm,
+		confirmOpen,
+		justSaved,
+	} = useSettingsForm({
+		adminData,
+		updateAdminData,
+		action: 'blank_theme_update_options',
 	});
 
-	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [users, setUsers] = useState([]);
+	const [restApiUser, setRestApiUser] = useState({});
+	const [postTypes, setPostTypes] = useState([]);
+
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const [snackbarMessage, setSnackbarMessage] = useState('');
 	const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-	const restPasswordOptions = (() => {
-		const selectedUser = users.find(u => u.value === form.rest_api_user_id);
-		if (selectedUser && selectedUser.password_names) {
-			return Object.entries(selectedUser.password_names).map(([index, name]) => ({
-				value: name,
-				label: name
-			}));
-		}
-		return [];
-	})();
-
-	const applicationPasswordOptions = (() => {
-		const selectedUser = users.find(u => u.value === form.application_user_id);
-		if (selectedUser && selectedUser.password_names) {
-			return Object.entries(selectedUser.password_names).map(([index, name]) => ({
-				value: name,
-				label: name
-			}));
-		}
-		return [];
-	})();
+	useEffect(() => {
+		if (Array.isArray(adminData?.users)) setUsers(adminData.users);
+		if (Array.isArray(adminData?.post_types)) setPostTypes(adminData.post_types);
+	}, [adminData]);
 
 	useEffect(() => {
-		if (!adminData && adminDataLoading) {
-			return;
+		if(form.rest_api_user_id && users) {
+			const currentUser = users.filter((user) => form.rest_api_user_id === user.value );
+			if(currentUser && currentUser.length > 0) {
+				setRestApiUser(currentUser[0]);
+			}
 		}
-		setAdminDataLoading(false);
-		if (adminData && Array.isArray(adminData.users)) {
-			setUsers(adminData.users);
-		}
-		if (adminData && Array.isArray(adminData.post_types)) {
-			setPostTypes(adminData.post_types);
-		}
-		if (adminData && adminData.admin_options) {
-			const adminOptions = adminData.admin_options;
-			setAdminOptions(adminOptions);
-			setForm({
-				blank_allowed_post_types: adminOptions.blank_allowed_post_types?.value || [],
-				blank_disable_gutenberg:!!adminOptions.blank_disable_gutenberg?.value,
-				rest_api_user_id: adminOptions.rest_api_user_id?.value || '',
-				rest_api_password_name: adminOptions.rest_api_password_name?.value || '',
-				application_user_id: adminOptions.application_user_id?.value || '',
-				application_password_name: adminOptions.application_password_name?.value || '',
-				application_host: adminOptions.application_host?.value || '',
-				application_cache_route: adminOptions.application_cache_route?.value || '',
-				disable_comments: !!adminOptions.disable_comments?.value,
-				max_upload_size: adminOptions.max_upload_size?.value || 1024,
-				enable_max_upload_size: !!adminOptions.enable_max_upload_size?.value,
-			}); 
-		}
-	}, [adminData, adminDataLoading]);
-
-	const handleChange = (e) => {
-		const { name, value, type, checked } = e.target;
-		setForm((prev) => ({
-			...prev,
-			[name]: type === 'checkbox' ? checked : value,
-		}));
-	};
-
-	const handleSliderChange = (event, newValue) => {
-		setForm(prev => ({ ...prev, max_upload_size: newValue }));
-	};
+	}, [users, form.rest_api_user_id]);
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		setConfirmOpen(true);
+		openConfirm();
 	};
 
 	const handleConfirmSave = async () => {
-		setConfirmOpen(false);
-		if (!adminData?.nonce || !adminData?.ajaxurl) {
-			setSnackbarMessage('Missing AJAX configuration.');
-			setSnackbarSeverity('error');
-			setSnackbarOpen(true);
-			return;
-		}
-		const saveForm = {
-			...form,
-		};
 		try {
-			const response = await fetch(adminData.ajaxurl, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-				},
-				body: new URLSearchParams({
-					action: 'blank_theme_update_options',
-					nonce: adminData.nonce,
-					options: JSON.stringify(saveForm),
-				}),
-			});
-			const data = await response.json();
-			if (data.success) {
-				setSnackbarMessage(__('Settings saved successfully!', 'blank'));
-				setSnackbarSeverity('success');
-			} else {
-				setSnackbarMessage('Error: ' + (data.data?.error || 'Unknown error'));
-				setSnackbarSeverity('error');
-			}
+			await submit();
+			setSnackbarMessage(__('Settings saved successfully!', 'blank'));
+			setSnackbarSeverity('success');
 		} catch (err) {
-			setSnackbarMessage('AJAX error: ' + err.message);
+			setSnackbarMessage(err.message);
 			setSnackbarSeverity('error');
 		}
 		setSnackbarOpen(true);
+		closeConfirm();
 	};
 
-	const handleCancelSave = () => {
-		setConfirmOpen(false);
-	};
-
-	const handleSnackbarClose = (event, reason) => {
+	const handleSnackbarClose = (_, reason) => {
 		if (reason === 'clickaway') return;
 		setSnackbarOpen(false);
 	};
 
-	useEffect(() => {
-		if (form.rest_api_user_id === '') {
-			setForm(prev => ({
-				...prev,
-				rest_api_password_name: '',
-			}));
-		}
-	}, [form.rest_api_user_id]);
+	const valueLabelFormat = (value) =>
+		value >= 1024 ? `${value / 1024} MB` : `${value} KB`;
 
-	useEffect(() => {
-		if (form.application_user_id === '') {
-			setForm(prev => ({
-				...prev,
-				application_password_name: '',
-			}));
-		}
-	}, [form.application_user_id]);
-
-	if (!adminData && adminDataLoading) {
-		return null;
-	}
+	if (!adminData) return null;
 
 	return (
 		<>
@@ -210,67 +106,55 @@ export default function App() {
 						<Box sx={{ minWidth: 120 }}>
 							{postTypes && <MultipleSelect 
 							name="blank_allowed_post_types" 
-							label={adminOptions?.blank_allowed_post_types?.label || 'Allowed Post Types Through Rest API'} 
+							label={__('Handle Post Types', 'blank')} 
 							value={form.blank_allowed_post_types} 
 							options={postTypes} 
-							onChange={handleChange} />}
+							onChange={setField} />}
 						</Box>
-
 
 						<Box sx={{ minWidth: 120 }}>
 							<SimpleSelect 
 							name="rest_api_user_id" 
-							label={adminOptions?.rest_api_user_id?.label || 'Rest API User'} 
+							label={__('Rest API User', 'blank')} 
 							value={form.rest_api_user_id} 
 							options={users} 
-							defaultLabel={{ value: 0, label: 'Select a user' }}
-							onChange={handleChange} />
+							defaultLabel={{ value: 0, label: __('Select User', 'blank') }}
+							onChange={setField} />
+
+							{restApiUser && 
+								<Typography
+								component="a"
+								href={restApiUser.admin_url}
+								variant="body.1"
+								target="_blank"
+								color="primary"
+								>{__('See User Profile', 'blank')}</Typography>
+							}
 						</Box>
 						
-						<Box sx={{ minWidth: 120 }}>
-							<SimpleSelect
-							name="rest_api_password_name"
-							label={adminOptions?.rest_api_password_name?.label || 'Rest API Password Key'}
-							value={form.rest_api_password_name}
-							options={restPasswordOptions}
-							defaultLabel={{ value: '', label: form.rest_api_user_id ? '' : 'Select a Rest API User First' }}
-							onChange={handleChange}
-							/>
-						</Box>
 						<Divider />
-						<Box sx={{ minWidth: 120 }}>
-							<SimpleSelect 
-							name="application_user_id" 
-							label={adminOptions?.application_user_id?.label || 'Application User'} 
-							value={form.application_user_id} 
-							options={users} 
-							defaultLabel={{ value: 0, label: 'Select a user' }}
-							onChange={handleChange} />
-						</Box>
-						<Box sx={{ minWidth: 120 }}>
-							<SimpleSelect
-							name="application_password_name"
-							label={adminOptions?.application_password_name?.label || 'Application Password Key'}
-							value={form.application_password_name}
-							options={applicationPasswordOptions}
-							defaultLabel={{ value: '', label: form.application_user_id ? '' : 'Select an Application User First' }}
-							onChange={handleChange}
-							/>
-						</Box>
-
 
 						<TextField
-							label={adminData?.application_host?.label || 'Application Host'}
+							label={__('Application Host', 'blank')}
 							name="application_host"
 							value={form.application_host}
-							onChange={handleChange}
+							onChange={setField}
+							sx={{
+								transition: 'background-color 0.4s ease',
+								backgroundColor: justSaved ? 'rgba(76, 175, 80, 0.08)' : 'transparent',
+							}}
 							fullWidth
 						/>
+
 						<TextField
-							label={adminData?.application_cache_route?.label || 'Application Cache Route'}
+							label={__('Application Cache Route', 'blank')}
 							name="application_cache_route"
 							value={form.application_cache_route}
-							onChange={handleChange}
+							onChange={setField}
+							sx={{
+								transition: 'background-color 0.4s ease',
+								backgroundColor: justSaved ? 'rgba(76, 175, 80, 0.08)' : 'transparent',
+							}}
 							fullWidth
 						/>
 
@@ -279,23 +163,34 @@ export default function App() {
 						<FormControlLabel
 							control={
 								<Switch
-									checked={form.blank_disable_gutenberg}
-									name="blank_disable_gutenberg"
-									onChange={handleChange}
+									checked={!!form.blank_protect_wp_rest_routes}
+									name="blank_protect_wp_rest_routes"
+									onChange={setField}
 								/>
 							}
-							label={adminData?.blank_disable_gutenberg?.label || 'Disable Gutenberg'}
+							label={__('Protect Wordpress Rest Routes', 'blank')}
 						/>
 
 						<FormControlLabel
 							control={
 								<Switch
-									checked={form.disable_comments}
-									name="disable_comments"
-									onChange={handleChange}
+									checked={!!form.blank_disable_gutenberg}
+									name="blank_disable_gutenberg"
+									onChange={setField}
 								/>
 							}
-							label={adminData?.disable_comments?.label || 'Disable Comments'}
+							label={__('Disable Gutenberg', 'blank')}
+						/>
+
+						<FormControlLabel
+							control={
+								<Switch
+									checked={!!form.blank_disable_comments}
+									name="blank_disable_comments"
+									onChange={setField}
+								/>
+							}
+							label={__('Disable Comments', 'blank')}
 						/>
 
 						<Box sx={{px:1.5}}>
@@ -303,18 +198,18 @@ export default function App() {
 								<FormControlLabel
 									control={
 										<Switch
-											checked={form.enable_max_upload_size}
+											checked={!!form.enable_max_upload_size}
 											name="enable_max_upload_size"
-											onChange={handleChange}
+											onChange={setField}
 										/>
 									}
-									label={adminData?.enable_max_upload_size?.label || 'Limit Images Weight'}
+									label={__('Limit Images Weight', 'blank')}
 								/>
 								<Typography 
 								sx={{display:'flex', alignItems:'center', mb:0}}
 								color={form.enable_max_upload_size ? theme.palette.primary.main : theme.palette.text.disabled}
 								id="max-upload-size-slider" gutterBottom>
-									{adminOptions?.max_upload_size?.label || 'Max Upload Size'}: {valueLabelFormat(form.max_upload_size)}
+									{__('Max Upload Size', 'blank')} : { valueLabelFormat(form.max_upload_size) }
 								</Typography>
 							</Stack>
 
@@ -326,7 +221,7 @@ export default function App() {
 									disabled={!form.enable_max_upload_size}
 									getAriaValueText={valueLabelFormat}
 									valueLabelFormat={valueLabelFormat}
-									onChange={handleSliderChange}
+									onChange={(_, value) => setSlider('max_upload_size', value)}
 									valueLabelDisplay="auto"
 									aria-labelledby="max-upload-size-slider"
 								/>
@@ -338,10 +233,9 @@ export default function App() {
 				</form>
 			</Paper>
 
-			{/* Confirmation Dialog */}
 			<Dialog
 				open={confirmOpen}
-				onClose={handleCancelSave}
+				onClose={closeConfirm}
 				aria-labelledby="confirm-dialog-title"
 			>
 				<DialogTitle id="confirm-dialog-title">{__('Confirm Save', 'blank')}</DialogTitle>
@@ -351,21 +245,20 @@ export default function App() {
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={handleCancelSave} color="default" variant="outlined">{__('Cancel')}</Button>
+					<Button onClick={closeConfirm} color="default" variant="outlined">{__('Cancel')}</Button>
 					<Button onClick={handleConfirmSave} color="primary" variant="contained">{__('Confirm')}</Button>
 				</DialogActions>
 			</Dialog>
 
-			{/* Snackbar Alert */}
 			<Snackbar
 				open={snackbarOpen}
 				autoHideDuration={5000}
 				onClose={handleSnackbarClose}
 				anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
 			>
-				<MuiAlert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+				<Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
 					{snackbarMessage}
-				</MuiAlert>
+				</Alert>
 			</Snackbar>
 		</>
 	);
@@ -410,6 +303,9 @@ function MultipleSelect({ label, name, value, options, onChange }) {
     },
   };
 
+    const safeValue = Array.isArray(value) ? value : [];
+
+
   return (
     <FormControl fullWidth>
       <InputLabel id={`${name}-label`}>{label}</InputLabel>
@@ -419,23 +315,25 @@ function MultipleSelect({ label, name, value, options, onChange }) {
         id={name}
         name={name}
         multiple
-        value={value}
+        value={safeValue}
         onChange={(e) => {
           onChange(e);
         }}
         input={<OutlinedInput label={label} />}
         renderValue={(selected) => (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {selected.map((val) => {
-              const option = options.find((o) => o.value === val);
-              return option ? <Chip key={val} label={option.label} /> : null;
-            })}
+            {Array.isArray(selected)
+              ? selected.map((val) => {
+                  const option = options.find((o) => o.value === val);
+                  return option ? <Chip key={val} label={option.label} /> : null;
+                })
+              : null}
           </Box>
         )}
         MenuProps={MenuProps}
       >
         {options.map((option) =>
-          option.value && option.label ? (
+          option?.value != null && option?.label ? (
             <MenuItem key={option.value} value={option.value}>
               {option.label}
             </MenuItem>

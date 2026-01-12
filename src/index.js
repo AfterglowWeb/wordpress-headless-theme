@@ -11,7 +11,7 @@ const App = lazy( () => import( './App' ) );
 
 document.addEventListener( 'DOMContentLoaded', function () {
 	const container = document.getElementById( 'blank-theme-admin-page' );
-	const adminData = window?.blankThemeAdminData;
+	const adminData = window?.blankThemeAdminData || {};
 	if ( container && adminData ) {
 		const root = createRoot( container );
 		root.render(

@@ -4,7 +4,6 @@ defined( 'ABSPATH' ) || exit;
 
 class Theme {
 
-
 	protected static $instance = null;
 
 	public static function get_instance() {
@@ -15,25 +14,36 @@ class Theme {
 	}
 
 	private function __construct() {
+
 		add_action( 'after_setup_theme', array( $this, 'theme_lang' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_supports' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_menus' ) );
 		add_action( 'after_setup_theme', array( $this, 'theme_remove' ) );
 		add_action( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg' ), 10, 2 );
-
 		add_action( 'template_redirect', array( $this, 'redirect_front' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
 		add_filter( 'mime_types', array( $this, 'mime_support' ), 10, 1 );
 		add_filter( 'wp_handle_upload_prefilter', array( $this, 'max_upload_size' ) );
 		add_filter( 'the_content', array( $this, 'remove_empty_p_tags' ), 10, 1 );
-
-		add_filter(
-			'excerpt_length',
+		add_action(
+			'switch_theme',
 			function () {
-				return 55;
-			},
-			999
+
+				$role = get_role( 'administrator' );
+				if ( ! $role ) {
+					return;
+				}
+
+				$caps = array(
+					'blank_api_access',
+					'blank_edit_theme_options',
+				);
+
+				foreach ( $caps as $cap ) {
+					$role->remove_cap( $cap );
+				}
+			}
 		);
 	}
 
@@ -165,13 +175,13 @@ class Theme {
 	public function redirect_front(): void {
 
 		global $wp;
-		$current_url = home_url( $wp->request );
+		$current_url = sanitize_url( home_url( $wp->request ) );
 
-		if ( is_front_page() || is_home() || is_admin() || wp_doing_ajax() || $this->is_rest_url( $current_url ) || $this->is_upload_url( $current_url ) ) {
+		if ( is_front_page() || is_home() || is_admin() || wp_doing_ajax() || $this->is_upload_url( $current_url ) ) {
 			return;
 		}
 
-		$redirect_url = esc_url( apply_filters( 'blank_redirect_url', home_url() ) );
+		$redirect_url = sanitize_url( apply_filters( 'blank_redirect_url', home_url() ) );
 
 		wp_safe_redirect( apply_filters( 'allowed_redirect_hosts', $redirect_url ) );
 		exit;
@@ -182,16 +192,6 @@ class Theme {
 		$upload_dir = wp_get_upload_dir();
 
 		if ( isset( $upload_dir['url'] ) && strpos( $url, $upload_dir['url'] ) !== false ) {
-			return true;
-		}
-
-		return false;
-	}
-
-	private function is_rest_url( string $url ): bool {
-
-		$rest_url = sanitize_url( get_rest_url() );
-		if ( $rest_url && strpos( $url, $rest_url ) !== false ) {
 			return true;
 		}
 

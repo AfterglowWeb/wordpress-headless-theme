@@ -1,4 +1,4 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -79,18 +79,15 @@ const VersionBadge = styled( Box )( ( { theme } ) => ( {
 } ) );
 
 export default function Header() {
-		const adminData = useAdminData();
-
-	const [adminOptions, setAdminOptions] = useState({});
+	const {adminData} = useAdminData();
 
 	useEffect(() => {
-			if (!adminData ) {
-				return;
-			}
-			setAdminOptions(adminData)
+		if (!adminData ) {
+			return;
+		}
+	}, [adminData]);
 
-		}, [adminData]);
-		
+	if (!adminData) return null;
 
 	return (
 		<AppHeader>
@@ -101,19 +98,19 @@ export default function Header() {
 					<BrandInfo>
 						<AppName 
 							dangerouslySetInnerHTML={ {
-								__html: sanitizeHtml( adminOptions?.theme_name ),
+								__html: sanitizeHtml( adminData?.theme_name ),
 							} } 
 						/>
 					</BrandInfo>
 					
 						<VersionBadge
 							dangerouslySetInnerHTML={ {
-								__html: `v${ sanitizeHtml( adminOptions?.theme_version ) }`,
+								__html: `v${ sanitizeHtml( adminData?.theme_version ) }`,
 							} }
 						/>
 
 						<Tooltip title={'Open Theme Github in a new tab'}>
-							<Button size="small" color="primary" href={adminOptions?.theme_uri} target="_blank" rel="noreferer noopener">
+							<Button size="small" color="primary" href={adminData?.theme_uri} target="_blank" rel="noreferer noopener">
 								Documentation
 							</Button>
 						</Tooltip>

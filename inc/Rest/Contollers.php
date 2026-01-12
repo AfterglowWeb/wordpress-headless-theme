@@ -1,141 +1,10 @@
-<?php namespace cmk\blank;
+<?php namespace cmk\blank\Rest;
 
 defined( 'ABSPATH' ) || exit;
 
-class RestExtend {
 
-	protected static $instance = null;
 
-	public static function get_instance(): restExtend {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	private function __construct() {
-
-		add_action(
-			'init',
-			function (): void {
-				$admin_options      = Admin::read_admin_options();
-				$allowed_post_types = $admin_options['blank_allowed_post_types'];
-
-				foreach ( $allowed_post_types as $allowed_post_type ) {
-					add_filter(
-						"rest_{$allowed_post_type}_collection_params",
-						function ( $query_params ) {
-							$max_per_page = (int) sanitize_text_field( apply_filters( 'blank_rest_api_max_per_page', 1000 ) );
-
-							if ( isset( $query_params['per_page'] ) ) {
-								$query_params['per_page']['default'] = $max_per_page;
-								$query_params['per_page']['maximum'] = $max_per_page;
-							}
-							return $query_params;
-						},
-						10,
-						2
-					);
-				}
-			},
-			20
-		);
-
-		add_action(
-			'rest_api_init',
-			function (): void {
-				register_rest_route(
-					'blank/v1',
-					'/data',
-					array(
-						'methods'             => 'GET',
-						'callback'            => 'cmk\blank\RestExtend::site_data',
-						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
-					)
-				);
-			}
-		);
-
-		add_action(
-			'rest_api_init',
-			function (): void {
-				register_rest_route(
-					'blank/v1',
-					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})/images',
-					array(
-						'methods'             => 'GET',
-						'callback'            => 'cmk\blank\RestExtend::images_per_post_type',
-						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
-						'args'                => array(
-							'post_type' => array(
-								'required'          => true,
-								'type'              => 'string',
-								'sanitize_callback' => 'sanitize_text_field',
-							),
-						),
-					)
-				);
-			}
-		);
-
-		add_action(
-			'rest_api_init',
-			function (): void {
-				register_rest_route(
-					'blank/v1',
-					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})',
-					array(
-						'methods'             => 'GET',
-						'callback'            => 'cmk\blank\RestExtend::posts_per_post_type',
-						'permission_callback' => 'cmk\blank\RestExtend::validate_bearer_token',
-						'args'                => array(
-							'post_type' => array(
-								'required'          => true,
-								'type'              => 'string',
-								'sanitize_callback' => 'sanitize_text_field',
-							),
-						),
-					)
-				);
-			}
-		);
-	}
-
-	public static function validate_bearer_token( \WP_REST_Request $request ): bool {
-		$auth_header = $request->get_header( 'Authorization' );
-
-		if ( empty( $auth_header ) ) {
-			return false;
-		}
-
-		$token_parts = explode( '|', $auth_header );
-		if ( 2 !== count( $token_parts ) || 'Bearer' !== $token_parts[0] ) {
-			return false;
-		}
-
-		$received_token = $token_parts[1];
-		$admin_options  = Admin::read_admin_options();
-
-		/**
-		 * Filter the user ID for Bearer token validation.
-		 * By default, validates against User ID 1.
-		 *
-		 * @param int $user_id The user ID to validate the token against.
-		 * @return int Modified user ID.
-		 */
-		$user_id = (int) sanitize_text_field( apply_filters( 'blank_rest_api_user_id', $admin_options['rest_api_user_id'], 10, 1 ) );
-
-		/**
-		 * Filter the application password name for Bearer token validation.
-		 * By default, uses 'rest_api' as the password name.
-		 *
-		 * @param string $password_name The application password name.
-		 * @return string Modified password name.
-		 */
-		$password_name = (string) sanitize_text_field( apply_filters( 'blank_rest_api_password_name', $admin_options['rest_api_password_name'], 10, 1 ) );
-
-		return Utils::validate_application_password( $received_token, $user_id, $password_name );
-	}
+class Controllers {
 
 	public static function site_data(): \WP_REST_Response {
 
@@ -145,7 +14,7 @@ class RestExtend {
 			return new \WP_REST_Response(
 				array(
 					'status'  => 'error',
-					'message' => 'No data available',
+					'message' => esc_html__( 'No data available', 'blank' ),
 				),
 				404
 			);
@@ -174,15 +43,7 @@ class RestExtend {
 
 		$post_type = $request->get_param( 'post_type' );
 
-		if ( false === Admin::is_post_type_allowed( $post_type ) ) {
-			return new \WP_REST_Response(
-				array(
-					'status'  => 'error',
-					'message' => 'Post type not allowed',
-				),
-				403
-			);
-		}
+		
 
 		$args   = array(
 			'post_type'      => $post_type,
@@ -215,15 +76,6 @@ class RestExtend {
 
 		$post_type = $request->get_param( 'post_type' );
 
-		if ( false === Admin::is_post_type_allowed( $post_type ) ) {
-			return new \WP_REST_Response(
-				array(
-					'status'  => 'error',
-					'message' => 'Post type not allowed',
-				),
-				403
-			);
-		}
 
 		$args  = array(
 			'post_type'      => $post_type,
@@ -252,7 +104,7 @@ class RestExtend {
 		$fields = array();
 
 		if ( function_exists( 'get_fields' ) ) {
-			$fields = get_fields( 'options' );
+			$fields = apply_filters( 'blank_sanitize_acf_options_page', get_fields( 'options' ) );
 		}
 
 		$data = array(

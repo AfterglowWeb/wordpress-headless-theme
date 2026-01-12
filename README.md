@@ -1,23 +1,42 @@
 # Blank Headless WordPress Theme
 
-A minimal WordPress theme designed exclusively for **headless CMS** usage with external front-end applications like Next.js, React, Vue, or any other framework capable of consuming a REST API.
+A WordPress theme designed exclusively for **headless CMS** usage with external front-end applications like Next.js, React, Vue, or any other framework capable of consuming a REST API.
 
-## Purpose
+<details>
+<summary>Purpose<summary>
 
-This theme is **not intended for traditional WordPress front-end rendering**. It serves as a secure data layer for headless architectures, providing:
+This theme serves as a secure data layer for headless architectures. 
+By default, templates are all redirected to a blank home page. Then it is up to you to deploy it behind a bridge.
 
-- Custom REST API endpoints with Bearer token authentication
-- Advanced Custom Fields (ACF) integration (optional)
-- Custom post types and taxonomies management via JSON configuration
-- Custom menus via JSON configuration
-- Clean, minimal codebase with no front-end assets
+It exposes flattened posts, menus and site identity through custom REST API endpoints protected by an Application token authentication.
+It allows you to control the following options in Wordpress admin:
 
-## Requirements
+- Disable wp/v2 endpoints
+- Disable Gutenberg
+- Disable Comments
+- Select Post Types to be Exposed
+- Advanced Custom Fields (ACF) support (Options page and fields)
+- Restric WordPress application credentials further
+- Setup a Webhook to flush front static files / cache (up to your needs)
+- Custom Post Types via JSON configuration
+- Custom Taxonomies via JSON configuration
+- Custom Menus via JSON configuration
+
+A list of filter hooks is listed below for further customization.
+If you tend to use this approach, you should create a child theme.
+
+</details>
+
+<details>
+<summary>Requirements<summary>
 
 - **WordPress:** 6.0 or higher
 - **PHP:** 7.4 or higher
 
-## Installation
+</details>
+
+<details>
+<summary>Installation<summary>
 
 1. Download or clone this repository into your `wp-content/themes/` directory:
 ```bash
@@ -29,14 +48,15 @@ git clone https://github.com/AfterglowWeb/wordpress-headless-theme.git blank
 
 3. Configure custom post types, taxonomies, and menus using JSON files in `/config` directory (see Configuration section)
 
-## REST API Endpoints
+4. Setup an application password on an admin or editor user.
 
-The theme provides **3 custom REST API endpoint**
-  - `/blank/v1/data`
-  - `/blank/v1/<post_type>`
-  - `/blank/v1/<post_type>/images`
+5. Setup a webhook password on an admin or editor user.
 
-## Authentication
+6. Go through the setup options in the theme admin page located at the bottom of the admin menu.
+
+</details>
+
+<details><summary>Authentication<summary>
 
 The **3 custom REST API endpoints** are protected by a bearer token authentication using **WordPress Application Passwords**. You can setup application tokens on a user based logic in the user profiles.
 By default, the theme validates the Bearer token against **User ID 1** (typically the site administrator) with `rest_api` as the password identifier. You can customize this using the `blank_rest_api_user_id` and the `blank_rest_api_password_name` filters (see Filters section).
@@ -46,9 +66,7 @@ By default, the theme validates the Bearer token against **User ID 1** (typicall
 1. Go to **Users > Profile** in WordPress admin
 2. Scroll to **Application Passwords** section
 3. Create a new application password
-4. **Important:** Copy the generated password and **remove ALL spaces** before using it
-   - WordPress generates: `abcd efgh ijkl mnop`
-   - You must use: `abcdefghijklmnop`
+4. **Important:** Go back in Copy the generated token 
 5. Store it in your front-end `.env` file (without spaces):
    ```
    WORDPRESS_BEARER_TOKEN=abcdefghijklmnop
@@ -62,6 +80,15 @@ curl -H "Authorization: Bearer|abcdefghijklmnop" \
 
 **Token Format:** `Bearer|token` (pipe delimiter, no spaces in token)
 
+</details>
+
+<details>
+<summary>REST API Endpoints<summary>
+
+The theme provides **3 custom REST API endpoint**
+  - `/blank/v1/data`
+  - `/blank/v1/<post_type>`
+  - `/blank/v1/<post_type>/images`
 
 ### GET /wp-json/blank/v1/data
 
@@ -155,6 +182,8 @@ Authorization: Bearer|yourtoken
 ### Standard WordPress REST API
 Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
 
+</details>
+
 ## Post Types, Menus and Taxonomies Configuration
 
 ### Custom Post Types
@@ -225,7 +254,7 @@ The theme automatically:
 
 ## Disable Comments
 
-By default, the theme disables comments support through posts and and comments admin screens. You can enable theme by using the filter `blank_disable_comments`.
+By default, the theme disables comments support through posts and and comments admin screens. You can enable theme by using the filter `blank_blank_disable_comments`.
 
 ## Available Filters (Hooks)
 
@@ -495,7 +524,7 @@ add_filter('blank_application_cache_route', function( string $route ): string {
 }, 10, 1);
 ```
 
-### `blank_disable_comments`
+### `blank_blank_disable_comments`
 **Description:** Enable or disable WordPress comments support (default: disabled).
 
 **Arguments:**
@@ -503,7 +532,7 @@ add_filter('blank_application_cache_route', function( string $route ): string {
 
 **Example:**
 ```php
-add_filter('blank_disable_comments', function($disable): bool {
+add_filter('blank_blank_disable_comments', function($disable): bool {
   return false; // Enable comments
 }, 10, 1);
 ```
