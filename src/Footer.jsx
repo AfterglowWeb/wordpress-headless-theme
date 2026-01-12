@@ -1,9 +1,19 @@
-import { Button, Tooltip } from '@mui/material';
-import Box from '@mui/material/Box';
+import { useEffect } from '@wordpress/element';
 import { useAdminData } from './contexts/AdminDataContext';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 
 export default function Footer() {
-	const { adminData } = useAdminData();
+	const {adminData} = useAdminData();
+	
+	useEffect(() => {
+		if (!adminData ) {
+			return;
+		}
+	}, [adminData]);
+	
+	if (!adminData) return null;
 
 	return (
 		<Box
@@ -25,9 +35,6 @@ export default function Footer() {
 				GPL-V2 License CC BY-SA 4.0
 			</Button>
 			</Tooltip>
-			<Button color="primary" size="small">
-				Data privacy
-			</Button>
 		</Box>
 	);
 }
