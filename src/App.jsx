@@ -15,6 +15,7 @@ import TextField from '@mui/material/TextField';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
+import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -26,6 +27,10 @@ import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Chip from '@mui/material/Chip';
+
+import WebhookSecret from './components/WebhookSecret';
+
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 export default function App() {
 	const { adminData, updateAdminData } = useAdminData();
@@ -116,47 +121,64 @@ export default function App() {
 							<SimpleSelect 
 							name="rest_api_user_id" 
 							label={__('Rest API User', 'blank')} 
+							helperText={__('Restrict REST API access to a specific application user.', 'blank')}
 							value={form.rest_api_user_id} 
 							options={users} 
 							defaultLabel={{ value: 0, label: __('Select User', 'blank') }}
 							onChange={setField} />
 
-							{restApiUser && 
+							{form.rest_api_user_id && restApiUser && restApiUser?.admin_url ?
 								<Typography
 								component="a"
 								href={restApiUser.admin_url}
-								variant="body.1"
+								variant="body.2"
 								target="_blank"
-								color="primary"
-								>{__('See User Profile', 'blank')}</Typography>
-							}
+								sx={{display:'flex', alignItems:'center', gap:'4px', px:'14px', fontSize:'12px'}}
+								>{__('User profile', 'blank')}<OpenInNewIcon fontSize='inherut' /></Typography>
+							 : null}
 						</Box>
+
+						<TextField
+							label={__('Rate Limit Requests', 'blank')}
+							type="number"
+							helperText={__('The maximum number of REST API requests a user can make before being rate-limited.', 'blank')}
+							name="rest_api_rate_limit"
+							value={form.rest_api_rate_limit}
+							onChange={setField}
+							fullWidth
+						/>
+
+						<TextField
+							label={__('Rate Limit Window (seconds)', 'blank')}
+							type="number"
+							helperText={__('The time window (in seconds) during which the request limit applies.', 'blank')}
+							name="rest_api_rate_limit_time"
+							value={form.rest_api_rate_limit_time}
+							onChange={setField}
+							fullWidth
+						/>
 						
 						<Divider />
 
 						<TextField
 							label={__('Application Host', 'blank')}
 							name="application_host"
+							helperText={__('The full application URL, including the protocol (e.g., https://example.com).', 'blank')}
 							value={form.application_host}
 							onChange={setField}
-							sx={{
-								transition: 'background-color 0.4s ease',
-								backgroundColor: justSaved ? 'rgba(76, 175, 80, 0.08)' : 'transparent',
-							}}
 							fullWidth
 						/>
 
 						<TextField
-							label={__('Application Cache Route', 'blank')}
-							name="application_cache_route"
-							value={form.application_cache_route}
+							label={__('Application Webhook', 'blank')}
+							name="application_webhook_endpoint"
+							helperText={__('The application endpoint used to trigger a webhook.', 'blank')}
+							value={form.application_webhook_endpoint}
 							onChange={setField}
-							sx={{
-								transition: 'background-color 0.4s ease',
-								backgroundColor: justSaved ? 'rgba(76, 175, 80, 0.08)' : 'transparent',
-							}}
 							fullWidth
 						/>
+
+						<WebhookSecret form={form} setField={setField} />
 
 						<Divider />
 
@@ -191,6 +213,17 @@ export default function App() {
 								/>
 							}
 							label={__('Disable Comments', 'blank')}
+						/>
+
+						<FormControlLabel
+							control={
+								<Switch
+									checked={!!form.blank_enable_acf_support}
+									name="blank_enable_acf_support"
+									onChange={setField}
+								/>
+							}
+							label={__('Enable ACF Support', 'blank')}
 						/>
 
 						<Box sx={{px:1.5}}>
@@ -229,7 +262,7 @@ export default function App() {
 							<Button type="submit" variant="contained" color="primary">
 								{__('Save Settings', 'blank')}
 							</Button>
-						</Stack>
+					</Stack>
 				</form>
 			</Paper>
 
@@ -264,7 +297,7 @@ export default function App() {
 	);
 }
 
-function SimpleSelect({ label, name, value, options, defaultLabel, onChange }) {
+function SimpleSelect({ label, helperText, name, value, options, defaultLabel, onChange }) {
 	return (
 		<FormControl fullWidth>
 			<InputLabel id={`${name}-label`}>{label}</InputLabel>
@@ -289,11 +322,12 @@ function SimpleSelect({ label, name, value, options, defaultLabel, onChange }) {
 					) : null
 				))}
 			</Select>
+			{helperText && <FormHelperText>{helperText}</FormHelperText>}
 		</FormControl>
 	);
 }
 
-function MultipleSelect({ label, name, value, options, onChange }) {
+function MultipleSelect({ label, helperText, name, value, options, onChange }) {
   const MenuProps = {
     PaperProps: {
       style: {
@@ -340,6 +374,7 @@ function MultipleSelect({ label, name, value, options, onChange }) {
           ) : null
         )}
       </Select>
+	  {helperText && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );
 }

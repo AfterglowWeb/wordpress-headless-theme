@@ -511,7 +511,7 @@ add_filter('blank_application_host', function( string $host ): string {
 }, 10, 1);
 ```
 
-### `blank_application_cache_route`
+### `blank_application_webhook_endpoint`
 **Description:**  Setup your application cache route.
 
 **Arguments:**
@@ -519,7 +519,7 @@ add_filter('blank_application_host', function( string $host ): string {
 
 **Example:**
 ```php
-add_filter('blank_application_cache_route', function( string $route ): string {
+add_filter('blank_application_webhook_endpoint', function( string $route ): string {
   return '/api/flush-cache';
 }, 10, 1);
 ```
@@ -548,7 +548,7 @@ add_filter('blank_blank_disable_comments', function($disable): bool {
 
  - Added all front templates redirect to home_url() in cmk\blank\Theme::redirect_front_pages(), can be controlled through `blank_redirect_url`.
  - Added class cmk\blank\Cache to provide a webhook to flush application cache.
- - Added filters: `blank_application_host`, `blank_application_cache_route`, `blank_application_user_id`, `blank_application_password_name`
+ - Added filters: `blank_application_host`, `blank_application_webhook_endpoint`, `blank_application_user_id`, `blank_application_password_name`
 - Added mandatory password identifier.
 
 ### version 1.0.2b

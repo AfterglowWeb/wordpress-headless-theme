@@ -2,14 +2,16 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Admin\Options;
+
 final class WebhookClient {
 
 	public static function post( string $route, array $payload ): array {
 
-		$options = \cmk\blank\Admin::read_admin_options();
-
-		$host   = rtrim( $options['application_host'], '/' );
-		$secret = sanitize_text_field( get_option( 'blank_webhook_secret' ) );
+		$options = Options::read_options();
+		$host    = rtrim( $options['application_host'], '/' );
+		$route   = ltrim( $route, '/' );
+		$secret  = sanitize_text_field( $options['application_webhook_secret'] );
 
 		if ( ! $host || ! $secret ) {
 			return new \WP_Error( 'config', 'Webhook not configured' );
@@ -25,7 +27,7 @@ final class WebhookClient {
 		);
 
 		return wp_remote_post(
-			$host . $route,
+			$host . '/' . $route,
 			array(
 				'timeout' => 10,
 				'headers' => array(
