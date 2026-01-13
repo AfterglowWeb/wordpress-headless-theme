@@ -35,6 +35,29 @@ class Routes {
 		);
 
 		add_filter(
+			'rest_pre_dispatch',
+			function ( $result, $server, $request ) {
+				if ( strpos( $request->get_route(), '/settings' ) === false ) {
+					return $result;
+				}
+
+				$auth = \cmk\blank\Rest\Permissions::validate_rest_api_token();
+				if ( is_wp_error( $auth ) ) {
+					return $auth;
+				}
+
+				$rate = \cmk\blank\Rest\RateLimit::check( $request );
+				if ( is_wp_error( $rate ) ) {
+					return $rate;
+				}
+
+				return $result;
+			},
+			10,
+			3
+		);
+
+		add_filter(
 			'rest_authentication_errors',
 			function ( $result ) {
 
@@ -70,7 +93,7 @@ class Routes {
 								return $auth;
 							}
 
-							$rate = \cmk\blank\Rest\RateLimit::check( $request, 30 );
+							$rate = \cmk\blank\Rest\RateLimit::check( $request );
 							if ( is_wp_error( $rate ) ) {
 								return $rate;
 							}
@@ -93,7 +116,7 @@ class Routes {
 								return $auth;
 							}
 
-							$rate = \cmk\blank\Rest\RateLimit::check( $request, 30 );
+							$rate = \cmk\blank\Rest\RateLimit::check( $request );
 							if ( is_wp_error( $rate ) ) {
 								return $rate;
 							}
@@ -132,7 +155,7 @@ class Routes {
 								return $auth;
 							}
 
-							$rate = \cmk\blank\Rest\RateLimit::check( $request, 30 );
+							$rate = \cmk\blank\Rest\RateLimit::check( $request );
 							if ( is_wp_error( $rate ) ) {
 								return $rate;
 							}

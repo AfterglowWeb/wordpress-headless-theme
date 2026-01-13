@@ -6,7 +6,7 @@ use cmk\blank\Admin\Options;
 
 class RateLimit {
 
-	public static function check( \WP_REST_Request $request, int $limit = 60 ) {
+	public static function check( \WP_REST_Request $request ) {
 
 		$user_id       = get_current_user_id();
 		$key           = 'blank_rl_' . md5( $user_id . $request->get_route() );
