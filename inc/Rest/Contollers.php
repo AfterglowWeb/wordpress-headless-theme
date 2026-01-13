@@ -2,8 +2,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-
-
 class Controllers {
 
 	public static function site_data(): \WP_REST_Response {
@@ -43,8 +41,6 @@ class Controllers {
 
 		$post_type = $request->get_param( 'post_type' );
 
-		
-
 		$args   = array(
 			'post_type'      => $post_type,
 			'posts_per_page' => -1,
@@ -76,7 +72,6 @@ class Controllers {
 
 		$post_type = $request->get_param( 'post_type' );
 
-
 		$args  = array(
 			'post_type'      => $post_type,
 			'posts_per_page' => -1,
@@ -101,17 +96,11 @@ class Controllers {
 			'favicon'     => (string) get_site_icon_url() ? sanitize_url( get_site_icon_url() ) : '',
 		);
 
-		$fields = array();
-
-		if ( function_exists( 'get_fields' ) ) {
-			$fields = apply_filters( 'blank_sanitize_acf_options_page', get_fields( 'options' ) );
-		}
-
 		$data = array(
 			'menus'    => self::menus_flat(),
 			'identity' => array_merge(
 				$default_options,
-				$fields
+				apply_filters( 'blank_rest_site_data_acf', 'options' )
 			),
 		);
 
@@ -249,6 +238,7 @@ class Controllers {
 			'mime_type' => $mime,
 			'post_id'   => $post_id ? (int) $post_id : null,
 			'field_key' => $field_key,
+			'acf'       => apply_filters( 'blank_rest_image_acf', $img_id ),
 		);
 
 		return (array) apply_filters( 'blank_rest_image', $filtered_image, $img_id );
@@ -261,7 +251,7 @@ class Controllers {
 			'slug'        => (string) sanitize_text_field( $term->slug ),
 			'description' => (string) sanitize_text_field( $term->description ),
 			'count'       => (int) $term->count,
-			'acf'         => apply_filters( 'blank_rest_term_acf', function_exists( 'get_fields' ) ? (array) get_fields( $term ) : array(), $term->term_id ),
+			'acf'         => apply_filters( 'blank_rest_term_acf', $term ),
 		);
 
 		return (array) apply_filters( 'blank_rest_term', $filtered_term, $term );
@@ -315,7 +305,7 @@ class Controllers {
 					get_object_taxonomies( (string) sanitize_text_field( $post->post_type ), 'names' )
 				),
 				'images'   => $post_images,
-				'acf'      => apply_filters( 'blank_rest_post_acf', function_exists( 'get_fields' ) ? (array) get_fields( $post->ID ) : array(), $post->ID ),
+				'acf'      => apply_filters( 'blank_rest_post_acf', $post->ID ),
 			);
 
 			return apply_filters( 'blank_rest_post', $filtered_post, $post );
@@ -331,6 +321,8 @@ class Controllers {
 			'classes'    => (array) $menu_item->classes,
 			'target'     => (string) sanitize_text_field( $menu_item->target ),
 			'attr_title' => (string) sanitize_text_field( $menu_item->attr_title ),
+			'acf'        => apply_filters( 'blank_rest_menu_item_acf', $menu_item->ID ),
+
 		);
 
 		return (array) apply_filters( 'blank_rest_menu_item', $filtered_menu_item, $menu_item );
