@@ -157,23 +157,26 @@ export default function App() {
 							onChange={setField}
 							fullWidth
 						/>
+
+						<FormControl component="fieldset">
+							<FormControlLabel
+								control={
+									<Switch
+										checked={!!form.blank_protect_wp_rest_routes}
+										name="blank_protect_wp_rest_routes"
+										onChange={setField}
+									/>
+								}
+								label={__('Protect WordPress Rest Routes', 'blank')}
+							/>
+							<FormHelperText>{__('Enforce authorization on WordPress rest routes /wp-json/wp/v2/', 'blank')}</FormHelperText>
+						</FormControl>
 						
 						<Divider />
 
 						<Webhook form={form} setField={setField} />
 
 						<Divider />
-
-						<FormControlLabel
-							control={
-								<Switch
-									checked={!!form.blank_protect_wp_rest_routes}
-									name="blank_protect_wp_rest_routes"
-									onChange={setField}
-								/>
-							}
-							label={__('Protect Wordpress Rest Routes', 'blank')}
-						/>
 
 						<FormControlLabel
 							control={
