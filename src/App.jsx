@@ -28,7 +28,7 @@ import Typography from '@mui/material/Typography';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Chip from '@mui/material/Chip';
 
-import WebhookSecret from './components/WebhookSecret';
+import Webhook from './components/Webhook';
 
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
@@ -160,25 +160,7 @@ export default function App() {
 						
 						<Divider />
 
-						<TextField
-							label={__('Application Host', 'blank')}
-							name="application_host"
-							helperText={__('The full application URL, including the protocol (e.g., https://example.com).', 'blank')}
-							value={form.application_host}
-							onChange={setField}
-							fullWidth
-						/>
-
-						<TextField
-							label={__('Application Webhook', 'blank')}
-							name="application_webhook_endpoint"
-							helperText={__('The application endpoint used to trigger a webhook.', 'blank')}
-							value={form.application_webhook_endpoint}
-							onChange={setField}
-							fullWidth
-						/>
-
-						<WebhookSecret form={form} setField={setField} />
+						<Webhook form={form} setField={setField} />
 
 						<Divider />
 
@@ -270,6 +252,7 @@ export default function App() {
 				open={confirmOpen}
 				onClose={closeConfirm}
 				aria-labelledby="confirm-dialog-title"
+				maxWidth="xs"
 			>
 				<DialogTitle id="confirm-dialog-title">{__('Confirm Save', 'blank')}</DialogTitle>
 				<DialogContent>
@@ -278,8 +261,8 @@ export default function App() {
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={closeConfirm} color="default" variant="outlined">{__('Cancel')}</Button>
-					<Button onClick={handleConfirmSave} color="primary" variant="contained">{__('Confirm')}</Button>
+					<Button onClick={closeConfirm} color="default" variant="outlined">{__('Cancel', 'blank')}</Button>
+					<Button onClick={handleConfirmSave} color="primary" variant="contained">{__('Confirm', 'blank')}</Button>
 				</DialogActions>
 			</Dialog>
 

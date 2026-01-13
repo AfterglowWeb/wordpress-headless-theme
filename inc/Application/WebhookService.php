@@ -86,12 +86,48 @@ class WebhookService {
 		);
 	}
 
+	public function ajax_delete_application_webhook_secret() {
+
+		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
+			wp_send_json_error(
+				array(
+					'error' => esc_html__( 'Unauthorized', 'blank' ),
+				),
+				401
+			);
+		}
+
+		if( true === $this->delete_webhook_secret() ) {
+			wp_send_json_success(
+				array(
+					'message' => esc_html__( 'Webhook secret deleted.', 'blank'),
+				),
+				200
+			);
+		}
+
+		wp_send_json_error(
+			array(
+				'error' => esc_html__( 'An error occured while deleting Webhook secret.', 'blank' ),
+			),
+			500
+		);
+	}
+
 	private function update_webhook_secret(): string {
 		$secret = wp_generate_password( 64, true );
 		update_option( 'blank_theme_application_webhook_secret', $secret );
-		Options::update_options( array( 'application_webhook_secret_generated', true ) );
+		Options::update_option( 'application_webhook_secret_generated', true );
 
 		return $secret;
+	}
+
+	private function delete_webhook_secret(): bool {
+		$result = update_option( 'blank_theme_application_webhook_secret', false );
+		Options::update_option( 'application_webhook_secret_generated', false );
+		return $result;
 	}
 
 	public function enqueue_scripts() {
