@@ -75,17 +75,18 @@ class Options {
 
 	public static function options_config(): array {
 		return array(
-			'blank_protect_wp_rest_routes'         => array(
-				'default_value'     => false,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			),
-
+			
 			'blank_allowed_post_types'             => array(
 				'default_value'     => array( 'post', 'page' ),
 				'type'              => 'array',
 				'sanitize_callback' => 'sanitize_key',
+				'rest_expose'       => false,
+			),
+
+			'blank_filter_wp_rest_post_types'         => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
 			),
 
@@ -128,6 +129,13 @@ class Options {
 				'default_value'     => 60,
 				'type'              => 'int',
 				'sanitize_callback' => 'sanitize_text_field',
+				'rest_expose'       => false,
+			),
+
+			'blank_protect_wp_rest_routes'         => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
 			),
 
