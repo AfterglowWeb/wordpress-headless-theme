@@ -28,7 +28,7 @@ import Typography from '@mui/material/Typography';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Chip from '@mui/material/Chip';
 
-import WebhookSecret from './components/WebhookSecret';
+import Webhook from './components/Webhook';
 
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
@@ -157,41 +157,26 @@ export default function App() {
 							onChange={setField}
 							fullWidth
 						/>
+
+						<FormControl component="fieldset">
+							<FormControlLabel
+								control={
+									<Switch
+										checked={!!form.blank_protect_wp_rest_routes}
+										name="blank_protect_wp_rest_routes"
+										onChange={setField}
+									/>
+								}
+								label={__('Protect WordPress Rest Routes', 'blank')}
+							/>
+							<FormHelperText>{__('Enforce authorization on WordPress rest routes /wp-json/wp/v2/', 'blank')}</FormHelperText>
+						</FormControl>
 						
 						<Divider />
 
-						<TextField
-							label={__('Application Host', 'blank')}
-							name="application_host"
-							helperText={__('The full application URL, including the protocol (e.g., https://example.com).', 'blank')}
-							value={form.application_host}
-							onChange={setField}
-							fullWidth
-						/>
-
-						<TextField
-							label={__('Application Webhook', 'blank')}
-							name="application_webhook_endpoint"
-							helperText={__('The application endpoint used to trigger a webhook.', 'blank')}
-							value={form.application_webhook_endpoint}
-							onChange={setField}
-							fullWidth
-						/>
-
-						<WebhookSecret form={form} setField={setField} />
+						<Webhook form={form} setField={setField} />
 
 						<Divider />
-
-						<FormControlLabel
-							control={
-								<Switch
-									checked={!!form.blank_protect_wp_rest_routes}
-									name="blank_protect_wp_rest_routes"
-									onChange={setField}
-								/>
-							}
-							label={__('Protect Wordpress Rest Routes', 'blank')}
-						/>
 
 						<FormControlLabel
 							control={
@@ -270,6 +255,7 @@ export default function App() {
 				open={confirmOpen}
 				onClose={closeConfirm}
 				aria-labelledby="confirm-dialog-title"
+				maxWidth="xs"
 			>
 				<DialogTitle id="confirm-dialog-title">{__('Confirm Save', 'blank')}</DialogTitle>
 				<DialogContent>
@@ -278,8 +264,8 @@ export default function App() {
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={closeConfirm} color="default" variant="outlined">{__('Cancel')}</Button>
-					<Button onClick={handleConfirmSave} color="primary" variant="contained">{__('Confirm')}</Button>
+					<Button onClick={closeConfirm} color="default" variant="outlined">{__('Cancel', 'blank')}</Button>
+					<Button onClick={handleConfirmSave} color="primary" variant="contained">{__('Confirm', 'blank')}</Button>
 				</DialogActions>
 			</Dialog>
 

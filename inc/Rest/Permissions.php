@@ -53,4 +53,82 @@ class Permissions {
 
 		return true;
 	}
+
+	public static function protect_wp_rest_routes( $result ) {
+		
+		if ( $result instanceof \WP_Error ) {
+			return $result;
+		}
+
+		if ( is_admin() ) {
+			return $result;
+		}
+
+		$options = Options::read_options();
+
+		if ( empty( $options['blank_protect_wp_rest_routes'] ) ) {
+			return $result;
+		}
+
+		if ( empty( $_SERVER['REQUEST_URI'] ) ) {
+			return $result;
+		}
+
+		$uri = wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );
+
+		if ( ! is_string( $uri ) ) {
+			return $result;
+		}
+
+		if ( strpos( $uri, '/wp-json/wp/v2/' ) === false ) {
+			return $result;
+		}
+
+		$auth = Permissions::validate_rest_api_token();
+		if ( is_wp_error( $auth ) ) {
+			return $auth;
+		}
+
+		return true;
+	}
+
+	public static function filter_wp_rest_post_types( $result, $server, \WP_REST_Request $request ) {
+
+		if ( $result instanceof \WP_Error ) {
+			return $result;
+		}
+
+		if ( is_admin() ) {
+			return $result;
+		}
+
+		$route = $request->get_route();
+
+		$options = Options::read_options();
+
+		if ( empty( $options['blank_protect_wp_rest_routes'] ) ) {
+			return $result;
+		}
+
+		if ( ! str_starts_with( $route, '/wp/v2/' ) ) {
+			return $result;
+		}
+
+		$parts = explode( '/', trim( $route, '/' ) );
+		$post_type = $parts[2] ?? null;
+
+		if ( ! $post_type ) {
+			return $result;
+		}
+
+		if ( false === Permissions::is_post_type_allowed( $post_type ) ) {
+			return new \WP_Error(
+				'forbidden_post_type',
+				__( 'This post type is not allowed.', 'blank' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		return $result;
+	}
 }
