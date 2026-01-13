@@ -1,9 +1,9 @@
-window.blankFlushApplicationCache = function(e) {
-  if (!confirm('Flush Application cache?')) {
+window.blankTriggerWebhook = function(e) {
+  if (!confirm(blankWebhookService.confirmMessage)) {
     return;
   }
   jQuery.post(blankWebhookService.ajaxurl, { 
-    action: 'flush_application_cache', 
+    action: 'trigger_application_webhook', 
     nonce: blankWebhookService.nonce
   }, function(response) {
     if (response.success && response.data ) {

@@ -28,6 +28,8 @@ import Typography from '@mui/material/Typography';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Chip from '@mui/material/Chip';
 
+import WebhookSecret from './components/WebhookSecret';
+
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 export default function App() {
@@ -168,13 +170,15 @@ export default function App() {
 						/>
 
 						<TextField
-							label={__('Application Cache Flush Endpoint', 'blank')}
-							name="application_cache_route"
-							helperText={__('The application endpoint used to trigger a cache flush (webhook URL path).', 'blank')}
-							value={form.application_cache_route}
+							label={__('Application Webhook', 'blank')}
+							name="application_webhook_endpoint"
+							helperText={__('The application endpoint used to trigger a webhook.', 'blank')}
+							value={form.application_webhook_endpoint}
 							onChange={setField}
 							fullWidth
 						/>
+
+						<WebhookSecret form={form} setField={setField} />
 
 						<Divider />
 
@@ -209,6 +213,17 @@ export default function App() {
 								/>
 							}
 							label={__('Disable Comments', 'blank')}
+						/>
+
+						<FormControlLabel
+							control={
+								<Switch
+									checked={!!form.blank_enable_acf_support}
+									name="blank_enable_acf_support"
+									onChange={setField}
+								/>
+							}
+							label={__('Enable ACF Support', 'blank')}
 						/>
 
 						<Box sx={{px:1.5}}>
@@ -247,7 +262,7 @@ export default function App() {
 							<Button type="submit" variant="contained" color="primary">
 								{__('Save Settings', 'blank')}
 							</Button>
-						</Stack>
+					</Stack>
 				</form>
 			</Paper>
 

@@ -2,6 +2,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Admin\Options;
+
 class Theme {
 
 	protected static $instance = null;
@@ -74,7 +76,7 @@ class Theme {
 
 	public function disable_gutenberg( $current_status, $post_type ) {
 
-		$admin_options                = Admin::read_admin_options();
+		$admin_options                = Options::read_options();
 		$disable_gutenberg_post_types = (array) apply_filters( 'blank_disable_gutenberg_post_types', $admin_options['blank_allowed_post_types'] );
 
 		if ( empty( $disable_gutenberg_post_types ) ) {

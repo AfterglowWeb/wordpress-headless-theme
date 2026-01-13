@@ -2,7 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin;
+use cmk\blank\Admin\Options;
 
 class Routes {
 
@@ -11,7 +11,7 @@ class Routes {
 		add_action(
 			'init',
 			function (): void {
-				$admin_options      = Admin::read_admin_options();
+				$admin_options      = Options::read_options();
 				$allowed_post_types = $admin_options['blank_allowed_post_types'];
 
 				foreach ( $allowed_post_types as $allowed_post_type ) {
@@ -85,7 +85,7 @@ class Routes {
 					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})',
 					array(
 						'methods'             => 'GET',
-						'callback' => array( Controllers::class, 'posts_per_post_type' ),
+						'callback'            => array( Controllers::class, 'posts_per_post_type' ),
 						'permission_callback' => function ( \WP_REST_Request $request ) {
 
 							$auth = \cmk\blank\Rest\Permissions::validate_rest_api_token();
@@ -101,12 +101,12 @@ class Routes {
 							return true;
 						},
 
-						'args' => array(
+						'args'                => array(
 							'post_type' => array(
-								'required' => true,
+								'required'          => true,
 								'sanitize_callback' => 'sanitize_key',
 								'validate_callback' => function ( $param ) {
-									if ( false === \cmk\blank\Rest\Permissions::is_post_type_allowed($param) ) {
+									if ( false === \cmk\blank\Rest\Permissions::is_post_type_allowed( $param ) ) {
 										return new \WP_Error(
 											'forbidden_post_type',
 											__( 'This post type is not allowed.', 'blank' ),
@@ -139,12 +139,12 @@ class Routes {
 
 							return true;
 						},
-						'args' => array(
+						'args'                => array(
 							'post_type' => array(
-								'required' => true,
+								'required'          => true,
 								'sanitize_callback' => 'sanitize_key',
 								'validate_callback' => function ( $param ) {
-									if ( false === \cmk\blank\Rest\Permissions::is_post_type_allowed($param) ) {
+									if ( false === \cmk\blank\Rest\Permissions::is_post_type_allowed( $param ) ) {
 										return new \WP_Error(
 											'forbidden_post_type',
 											__( 'This post type is not allowed.', 'blank' ),
@@ -157,7 +157,6 @@ class Routes {
 						),
 					)
 				);
-				
 			}
 		);
 	}
