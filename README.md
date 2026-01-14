@@ -401,7 +401,7 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 ### `blank_show_admin_options_in_rest`
 ### `blank_theme_%admin_option_key%`
 ### `blank_use_multisite_options`
-### `blank_rest_api_max_per_page`
+### `blank_rest_api_posts_per_page`
 ### `blank_application_webhook_body_payload`
 
 ## ChangeLog

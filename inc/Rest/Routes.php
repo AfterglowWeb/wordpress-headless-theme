@@ -97,12 +97,12 @@ class Routes {
 	}
 
 	public static function permission_check( \WP_REST_Request $request ) {
-		$auth = Permissions::validate_rest_api_token();
+		$auth = \cmk\blank\Rest\Permissions::validate_rest_api_token();
 		if ( is_wp_error( $auth ) ) {
 			return $auth;
 		}
 
-		$rate = RateLimit::check( $request );
+		$rate = \cmk\blank\Rest\RateLimit::check( $request );
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
 		}
@@ -122,14 +122,15 @@ class Routes {
 	}
 
 	public static function set_posts_per_page(): void {
-		$admin_options      = Options::read_options();
+		$admin_options      = \cmk\blank\Admin\Options::read_options();
 		$allowed_post_types = $admin_options['blank_allowed_post_types'];
 
 		foreach ( $allowed_post_types as $allowed_post_type ) {
 			add_filter(
 				'rest_' . $allowed_post_type . '_collection_params',
 				function ( $query_params ) {
-					$max_per_page = absint( apply_filters( 'blank_rest_api_max_per_page', 100 ) );
+					$admin_options = \cmk\blank\Admin\Options::read_options();
+					$max_per_page  = $admin_options['rest_api_posts_per_page'];
 
 					if ( isset( $query_params['per_page'] ) ) {
 						$query_params['per_page']['default'] = $max_per_page;

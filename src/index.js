@@ -77,43 +77,22 @@ const HeaderSkeleton = () => (
 const FooterSkeleton = () => (
 	<Box
 		sx={ {
-			p: 3,
-			borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-			background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
+			p: 1,
+			h: 100,
 			display: 'flex',
 			gap: 2,
-			justifyContent: 'flex-end',
-			alignItems: 'center',
+			flexDirection: 'column',
 		} }
 	>
-		<Skeleton variant="rounded" width={ 180 } height={ 32 } />
-		<Skeleton variant="rounded" width={ 100 } height={ 32 } />
+		<Skeleton variant="rounded" height={ 32 } />
+		<Skeleton variant="rounded" height={ 32 } />
 	</Box>
 );
 
 const ContentSkeleton = () => (
-	<Box sx={ { p: { xs: 2, md: 3 } } }>
-		{ /* Toolbar skeleton */ }
-		<Box sx={ { display: 'flex', gap: 2, mb: 2 } }>
-			<Skeleton variant="rounded" width={ 150 } height={ 40 } />
-			<Skeleton variant="rounded" width={ 150 } height={ 40 } />
-			<Skeleton variant="rounded" width={ 100 } height={ 40 } />
-		</Box>
-
-		{ /* Panels skeleton */ }
-		<Box
-			sx={ {
-				display: 'grid',
-				gap: 2,
-				py: 4,
-				gridTemplateColumns: {
-					xs: '1fr',
-					lg: 'repeat(2, minmax(0, 1fr))',
-				},
-			} }
-		>
-			<Skeleton variant="rounded" height={ 200 } />
-			<Skeleton variant="rounded" height={ 200 } />
-		</Box>
+	<Box sx={ { display:'flex', flexDirection:'column', gap:2, maxWidth:600, mx:'auto', p: { xs: 2, md: 3 } } }>
+			<Skeleton variant="rounded" height={ 300 } />
+			<Skeleton variant="rounded" height={ 300 } />
+			<Skeleton variant="rounded" height={ 300 } />
 	</Box>
 );
