@@ -1,5 +1,7 @@
 <?php namespace cmk\blank\Core;
 
+use cmk\blank\Admin\Options;
+
 defined( 'ABSPATH' ) || exit;
 
 class DisableComments {
@@ -14,7 +16,10 @@ class DisableComments {
 	}
 
 	private function __construct() {
-		if ( true === apply_filters( 'blank_disable_comments', '__return_true' ) ) {
+
+		$options = Options::read_options();
+		
+		if ( true === $options['blank_disable_comments'] ) {
 			add_action(
 				'admin_init',
 				function (): void {

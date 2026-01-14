@@ -261,6 +261,8 @@ add_filter('blank_rest_post_acf', function( array $acf_fields, int $post_id ): a
 }, 10, 2);
 ```
 
+### `blank_rest_attachments_per_post`
+
 ### `blank_rest_attachment`
 **Description:** Filter the properties of each attachment returned by the `/blank/v1/<post_type>/images` endpoint.
 
@@ -285,6 +287,8 @@ add_filter('blank_rest_attachment', function($filtered_image, $img_id) {
   return $filtered_image;
 }, 10, 2);
 ```
+
+#### `blank_rest_attachment_acf`
 
 ### `blank_rest_term`
 **Description:** Filter the REST API response for each taxonomy term before it is returned.
@@ -339,11 +343,13 @@ add_filter('blank_rest_term_acf', function( array $acf_fields, int $term_id ): a
 
 **Example:**
 ```php
-add_filter('blank_rest_site_data', function( array $data ): array {
+add_filter( 'blank_rest_site_data', function( array $data ): array {
   $data['identity']['custom_field'] = 'Custom Value';
   return $data;
 }, 10, 1);
 ```
+
+#### `blank_rest_site_data_acf`
 
 ### `blank_rest_menus`
 **Description:** Filter the menus array before it is returned by the REST API.
@@ -353,8 +359,8 @@ add_filter('blank_rest_site_data', function( array $data ): array {
 
 **Example:**
 ```php
-add_filter('blank_rest_menus', function( array $menus ): array {
-  // Add custom properties to menu items
+add_filter(' blank_rest_menus', function( array $menus ): array {
+  // Add custom properties to menu items.
   foreach ($menus as $location => &$menu_items) {
     foreach ($menu_items as &$item) {
       $item['custom_icon'] = get_post_meta($item['id'], 'menu_icon', true);
@@ -388,6 +394,15 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
   return $blank_menu_item;
 }, 10, 2);
 ```
+
+#### `blank_rest_menu_item_acf`
+
+### `blank_redirect_url`
+### `blank_show_admin_options_in_rest`
+### `blank_theme_%admin_option_key%`
+### `blank_use_multisite_options`
+### `blank_rest_api_max_per_page`
+### `blank_application_webhook_body_payload`
 
 ## ChangeLog
 
