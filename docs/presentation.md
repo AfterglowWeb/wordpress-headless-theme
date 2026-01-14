@@ -10,7 +10,9 @@ By default, Blank redirect all WordPress templates to a blank home page. It is t
 
 From the WordPress admin interface, you can configure the following options:
 
-- Select post types to be flattened and exposed
+- Select post types to be exposed
+
+- Flatten post types: works like the _fields and _embed REST parameters. The goals are to narrow down the number of relevant fields, resolve author, term, and attachment relationships on the server side, and remove the need to construct complex queries on the front end.
 
 - Restrict WordPress application credentials to a single user
 

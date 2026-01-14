@@ -115,11 +115,26 @@ export default function App() {
 						<Box sx={{ minWidth: 120 }}>
 							{postTypes && <MultipleSelect 
 							name="blank_allowed_post_types" 
-							label={__('Handle Post Types', 'blank')} 
+							label={__('Expose Post Types', 'blank')} 
 							value={form.blank_allowed_post_types} 
 							options={postTypes} 
 							onChange={setField} />}
 						</Box>
+
+						<FormControl>
+							<FormControlLabel
+								control={
+									<Switch
+										checked={!!form.rest_api_flatten_posts}
+										name="rest_api_flatten_posts"
+										onChange={setField}
+									/>
+								}
+								label={__('Flatten Posts', 'blank')}
+
+							/>
+							<FormHelperText>{__('This will act as the WordPress REST API _fields and _embed parameters.', 'blank')}</FormHelperText>
+						</FormControl>
 
 						<TextField
 							label={__('Posts Per Page', 'blank')}
