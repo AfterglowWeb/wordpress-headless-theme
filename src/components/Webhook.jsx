@@ -155,7 +155,7 @@ export default function Webhook({form, setField}) {
                 helperText={!webhookSecret && form.application_webhook_secret_generated ?
                     __('Used to sign webhook requests. Store this value securely in your application environment.', 'blank')
                     :
-                    __('Used to sign webhook requests. The secret has already been revelead once.', 'blank')
+                    __('The secret has already been revelead once.', 'blank')
 
                 }
                 fullWidth
@@ -172,7 +172,7 @@ export default function Webhook({form, setField}) {
 
             <Alert severity="info">
                     {__(
-                        'You can edit the payload through the "blank_application_webhook_body_payload" filter hook.',
+                        'You can edit the webhook payload through the "blank_application_webhook_body_payload" filter hook.',
                         'blank'
                     )}
             </Alert>

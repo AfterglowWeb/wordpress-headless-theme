@@ -101,6 +101,13 @@ class Options {
 				'rest_expose'       => false,
 			),
 
+			'rest_api_flatten_posts'                => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
 			'blank_filter_wp_rest_post_types'         => array(
 				'default_value'     => true,
 				'type'              => 'bool',

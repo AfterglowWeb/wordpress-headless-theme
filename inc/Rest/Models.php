@@ -6,6 +6,10 @@ use cmk\blank\Core\Acf;
 
 class Models {
 
+	public function __construct() {
+		//todo: rest_api_flatten_posts option integration
+	}
+
 	public static function post_model( $post ): array {
 
 			$filtered_post = array(
