@@ -178,7 +178,7 @@ class Theme {
 	public function disable_gutenberg( $current_status, $post_type ) {
 
 		$admin_options                = Options::read_options();
-		$disable_gutenberg_post_types = (array) apply_filters( 'blank_disable_gutenberg_post_types', $admin_options['blank_allowed_post_types'] );
+		$disable_gutenberg_post_types = (array) $admin_options['blank_allowed_post_types'];
 
 		if ( empty( $disable_gutenberg_post_types ) ) {
 			return $current_status;
@@ -197,7 +197,7 @@ class Theme {
 			return $file;
 		}
 
-		$max_file_size = (int) apply_filters( 'blank_max_upload_size', 500 * 1024 ); // 500Ko.
+		$max_file_size = (int) 500 * 1024; // 500Ko.
 
 		if ( strpos( $file['type'], 'image' ) !== false && $file['size'] > $max_file_size ) {
 			$file['error'] = sprintf(

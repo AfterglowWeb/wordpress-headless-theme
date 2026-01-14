@@ -83,7 +83,7 @@ class Models {
 		}
 
 		$attachments = array_filter( $attachments );
-		return (array) apply_filters( 'blank_model_attachments_per_post_model', $attachments );
+		return (array) apply_filters( 'blank_rest_attachments_per_post', $attachments );
 		return $attachments;
 	}
 
