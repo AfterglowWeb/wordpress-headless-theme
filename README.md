@@ -1,31 +1,44 @@
-# Blank Headless WordPress Theme
+# Blank – Headless WordPress Theme
 
-A WordPress theme designed exclusively for **headless CMS** usage with external front-end applications like Next.js, React, Vue, or any other framework capable of consuming a REST API.
+Blank is a WordPress theme designed exclusively for headless usage. It acts as a secure and simplifier data layer for headless WordPress architectures. It integrates seamlessly with external front-end applications built with Next.js, React, Vue, or any other framework capable of consuming a REST API.
 
-<details>
-<summary>Purpose<summary>
+Blank can be configured to exposes flattened posts, attachments, menus, and site identity through custom REST API endpoints, protected by reinforced WordPress application authentication. It can also be configured to send data to your application via webhooks.
 
-This theme serves as a secure data layer for headless architectures. 
-By default, templates are all redirected to a blank home page. Then it is up to you to deploy it behind a bridge.
+By default, Blank redirect all WordPress templates to a blank home page. It is then up to you to deploy the theme behind a bridge (such as a front-end application or proxy).
 
-It exposes flattened posts, menus and site identity through custom REST API endpoints protected by an Application token authentication.
-It allows you to control the following options in Wordpress admin:
+From the WordPress admin interface, you can configure the following options:
 
-- Disable wp/v2 endpoints
+- Select post types to be flattened and exposed
+
+- Restrict WordPress application credentials to a single user
+
+- Rate-limit the WordPress application user
+
+- Restrict and rate-limit front-facing wp/v2 endpoints
+
 - Disable Gutenberg
-- Disable Comments
-- Select Post Types to be Exposed
-- Advanced Custom Fields (ACF) support (Options page and fields)
-- Restric WordPress application credentials further
-- Setup a Webhook to flush front static files / cache (up to your needs)
-- Custom Post Types via JSON configuration
-- Custom Taxonomies via JSON configuration
-- Custom Menus via JSON configuration
 
-A list of filter hooks is listed below for further customization.
-If you tend to use this approach, you should create a child theme.
+- Disable comments
 
-</details>
+- Limit image file size
+
+- Set up a webhook to send payloads to your front-end application
+
+- Enable Advanced Custom Fields (ACF) support on flattened data (posts, terms, attachments, options page)
+
+You can use JSON files located in ./config/custom_*.json to:
+
+- Define custom post types
+
+- Define custom taxonomies
+
+- Define custom menus
+
+To ensure that your configuration is preserved across Blank theme updates, you should create a child theme and add a config directory at its root, for example: `blank-child/config`
+You can then copy the configuration files from the parent theme into this directory and customize them as needed.
+
+A list of available filter hooks is provided below for further customization.
+If you plan to extend this approach, it is recommended to create a child theme.
 
 <details>
 <summary>Requirements<summary>
@@ -36,7 +49,7 @@ If you tend to use this approach, you should create a child theme.
 </details>
 
 <details>
-<summary>Installation<summary>
+<summary>Getting Start<summary>
 
 1. Download or clone this repository into your `wp-content/themes/` directory:
 ```bash
@@ -46,11 +59,9 @@ git clone https://github.com/AfterglowWeb/wordpress-headless-theme.git blank
 
 2. Activate the theme from WordPress admin panel
 
-3. Configure custom post types, taxonomies, and menus using JSON files in `/config` directory (see Configuration section)
+3. Create a child theme
 
-4. Setup an application password on an admin or editor user.
-
-5. Setup a webhook password on an admin or editor user.
+4. Configure custom post types, taxonomies, and menus using JSON files in ``blank-child/config` directory (see Configuration section)
 
 6. Go through the setup options in the theme admin page located at the bottom of the admin menu.
 
@@ -66,19 +77,17 @@ By default, the theme validates the Bearer token against **User ID 1** (typicall
 1. Go to **Users > Profile** in WordPress admin
 2. Scroll to **Application Passwords** section
 3. Create a new application password
-4. **Important:** Go back in Copy the generated token 
-5. Store it in your front-end `.env` file (without spaces):
+4. **Important:** Copy the generated token 
+5. Store it in your front-end `.env` file
    ```
-   WORDPRESS_BEARER_TOKEN=abcdefghijklmnop
+   WORDPRESS_BEARER_TOKEN=abcd efg hijk lmnop
    ```
-6. Use it in your API requests with pipe delimiter format:
+6. Use it in your API requests with pipe delimiter format: `Bearer|token`
 
 ```bash
-curl -H "Authorization: Bearer|abcdefghijklmnop" \
+curl -H "Authorization: Bearer|abcd efg hijk lmnop" \
      https://your-site.com/wp-json/blank/v1/data
 ```
-
-**Token Format:** `Bearer|token` (pipe delimiter, no spaces in token)
 
 </details>
 
@@ -119,41 +128,26 @@ Retrieves site identity data and menu items.
 Returns a flat array of all post objects belonging to the `post_type` parameter.
 This endpoint is intended to bulk serve Wordpress posts in a minimal and secured way so you can easyly launch async workers from a middelware to import json objects in your application.
 
-*! It does not handle requests number limiting.*
-Your may want to handle this aspect yourself in your child theme or directly in your server configuration.
-
-**Authentication:**  
-Requires Bearer token (see above).
-
 **Parameters:**
-- `post_type` (string, required): The slug of the WordPress post type (e.g. `portfolio`, `post`, `page`). Must be 2–20 characters, only letters, numbers, underscores, or hyphens.
+- `post_type` (string, required)
 
 ### GET /wp-json/blank/v1/{post_type}/images
 
 **Description:**  
 Returns a flat array of all image objects attached to post belonging to the `post_type` parameter.
-all published posts of a given post type will be explored for:
+All the published posts of a given post type will be explored for:
 - WordPress featured image, 
 - ACF image and gallery fields
 
 This endpoint is intended to bulk serve images in a minimal and secured way so you can easyly launch async workers from a middelware to copy them in your application.
-
-*! It does not handle requests number limiting.*
-*! It does not hide images from default Wordpress endpoints.*
-Your may want to handle these aspects yourself.
-
 The images src are filtered out to remove wordpress domain and upload folder. Up to you to reconstruct your assets path inside your server application.
-The image props are filtered out to keep the minimal: id, src, alt, width, height, mime_type
+The image props are filtered out to keep: id, src, alt, width, height, mime_type
 
-You can use the filter `blank_allowed_post_types` to control wich post_type images to expose.
 You can use the filter `blank_rest_image` to control wich image props you want to expose.
 See Filters section.
 
-**Authentication:**  
-Requires Bearer token (see above).
-
 **Parameters:**
-- `post_type` (string, required): The slug of the WordPress post type (e.g. `portfolio`, `post`, `page`). Must be 2–20 characters, only letters, numbers, underscores, or hyphens.
+- `post_type` (string, required)
 
 **Example Request:**
 
@@ -178,9 +172,6 @@ Authorization: Bearer|yourtoken
   ...
 ]
 ```
-
-### Standard WordPress REST API
-Standard WordPress REST API endpoints (`/wp/v2/*`) remain publicly accessible.
 
 </details>
 
@@ -241,24 +232,7 @@ Define taxonomies in `config/custom_taxonomies.json`:
 }
 ```
 
-## ACF (Advanced Custom Fields) Plugin Integration
-
-By default, the site identity data (`/blank/v1/data` endpoint) includes:
-- Basic WordPress site info (name, description, URL, favicon)
-- Any additional data added via the `blank_rest_site_identity` filter
-- **If ACF is installed:** All fields from the ACF Options Page (using `get_fields('options')`)
-
-The theme automatically:
-   - Saves ACF field groups as JSON in `/config` directory
-   - Loads field groups from `/config` directory
-
-## Disable Comments
-
-By default, the theme disables comments support through posts and and comments admin screens. You can enable theme by using the filter `blank_blank_disable_comments`.
-
 ## Available Filters (Hooks)
-
-Below are all the filters (hooks) available in this theme's REST API extension, with their arguments and expected usage. All filters follow WordPress best practices for extensibility and security.
 
 ### `blank_rest_post`
 **Description:** Filter the REST API response for each post before it is returned.
@@ -407,12 +381,12 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 }, 10, 2);
 ```
 
-### `blank_rest_image`
-**Description:** Filter the properties of each image returned by the `/blank/v1/images/<post_type>` endpoint.
+### `blank_rest_attachment`
+**Description:** Filter the properties of each attachment returned by the `/blank/v1/<post_type>/images` endpoint.
 
 **Arguments:**
-- `$filtered_image` *(array)*: The associative array of image data.
-- `$img_id` *(int)*: The image attachment ID.
+- `$filtered_image` *(array)*: The associative array of attachment data.
+- `$img_id` *(int)*: The attachment ID.
 
 **Default props in `$filtered_image`:**
   - `id` (int)
@@ -426,130 +400,24 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 
 **Example:**
 ```php
-add_filter('blank_rest_image', function($filtered_image, $img_id) {
+add_filter('blank_rest_attachment', function($filtered_image, $img_id) {
   $filtered_image['custom_prop'] = 'value';
   return $filtered_image;
 }, 10, 2);
 ```
 
-### `blank_allowed_post_types`
-**Description:** Filter the allowed post types for the `/blank/v1/images/<post_type>` endpoint.
-
-**Arguments:**
-- `$post_types` *(array)*: The allowed post type slugs.
-
-**Example:**
-```php
-add_filter('blank_allowed_post_types', function($post_types) {
-  $post_types[] = 'my_custom_type';
-  return $post_types;
-}, 10, 1);
-```
-
-### `blank_rest_api_user_id`
-**Description:** Filter the user ID used for bearer token authentication.
-
-**Arguments:**
-- `$user_id` *(int)*: The user ID to validate the token against.
-
-**Example:**
-```php
-add_filter('blank_rest_api_user_id', function($user_id): int {
-  return 2; // Use User ID 2 instead of 1
-}, 10, 1);
-```
-
-### `blank_rest_api_password_name`
-**Description:**  Setup the password name you previously registered in the user profile for bearer token authentication.
-
-**Arguments:**
-- `$password_key` *(string)*: The name of the password containing the token used on the REST API.
-
-**Example:**
-```php
-add_filter('blank_rest_api_password_name', function( string $password_key ): string {
-  return 'my_password';
-}, 10, 1);
-```
-
-### `blank_application_user_id`
-**Description:** Filter the user ID used to trigger your application webhook.
-
-**Arguments:**
-- `$user_id` *(int)*: The user ID to validate the token against.
-
-**Example:**
-```php
-add_filter('blank_application_user_id', function($user_id): int {
-  return 2; // Use User ID 2 instead of 1
-}, 10, 1);
-```
-
-### `blank_application_password_name`
-**Description:**  Setup the password name you previously registered in the user profile for your application webhook.
-
-**Arguments:**
-- `$password_key` *(string)*: The name of the password containing the token to send to your application webhook.
-
-**Example:**
-```php
-add_filter('blank_application_password_name', function( string $password_key ): string {
-  return 'my_password';
-}, 10, 1);
-```
-
-### `blank_application_host`
-**Description:**  Setup your application host
-
-**Arguments:**
-- `$host` *(string)*: Your application host with protocol and no trailing slash.
-
-**Example:**
-```php
-add_filter('blank_application_host', function( string $host ): string {
-  return 'https://www.my-host.com';
-}, 10, 1);
-```
-
-### `blank_application_webhook_endpoint`
-**Description:**  Setup your application cache route.
-
-**Arguments:**
-- `$route` *(string)*: Your application route used to trigger cache flushing.
-
-**Example:**
-```php
-add_filter('blank_application_webhook_endpoint', function( string $route ): string {
-  return '/api/flush-cache';
-}, 10, 1);
-```
-
-### `blank_blank_disable_comments`
-**Description:** Enable or disable WordPress comments support (default: disabled).
-
-**Arguments:**
-- `$disable` *(bool)*: Whether to disable comments (default: true).
-
-**Example:**
-```php
-add_filter('blank_blank_disable_comments', function($disable): bool {
-  return false; // Enable comments
-}, 10, 1);
-```
-
-### `blank_max_upload_size`
-
-
-**Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
-
 ## ChangeLog
+
+### version 1.0.4
+
+- Complete refacto
 
 ### version 1.0.3b
 
  - Added all front templates redirect to home_url() in cmk\blank\Theme::redirect_front_pages(), can be controlled through `blank_redirect_url`.
  - Added class cmk\blank\Cache to provide a webhook to flush application cache.
- - Added filters: `blank_application_host`, `blank_application_webhook_endpoint`, `blank_application_user_id`, `blank_application_password_name`
-- Added mandatory password identifier.
+ - Added filters: `blank_application_host`, `blank_application_webhook_endpoint`
+ - Added mandatory password identifier.
 
 ### version 1.0.2b
 
