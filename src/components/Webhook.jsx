@@ -170,6 +170,13 @@ export default function Webhook({form, setField}) {
                 </Alert>
             )}
 
+            <Alert severity="info">
+                    {__(
+                        'You can edit the payload through the "blank_application_webhook_body_payload" filter hook.',
+                        'blank'
+                    )}
+            </Alert>
+
             <Stack direction="row" spacing={2} sx={{justifyContent: 'flex-end'}}>
 
                 <Button
