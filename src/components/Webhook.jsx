@@ -105,7 +105,7 @@ export default function Webhook({form, setField}) {
     return (
     <>
     <Typography variant="h6" sx={{fontWeight:600}}>
-        {__('Application Webhook', 'blanl')}
+        {__('Application Webhook', 'blank')}
     </Typography>
     <TextField
         label={__('Application Host', 'blank')}

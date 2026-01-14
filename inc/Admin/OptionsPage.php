@@ -27,15 +27,6 @@ class OptionsPage {
 
 		add_action( 'wp_ajax_blank_theme_update_options', array( $this, 'ajax_update_options' ) );
 		add_action( 'wp_ajax_blank_theme_read_options', array( $this, 'ajax_read_options' ) );
-		add_action(
-			'blank_admin_options_updated',
-			function ( array $new, array $old ) {
-				\cmk\blank\Rest\Permissions::sync_rest_api_user( $new, $old );
-			},
-			10,
-			2
-		);
-
 		add_action( 'wp_ajax_blank_theme_documentation', array(  $this, 'ajax_documentation' ) );
 
 	}

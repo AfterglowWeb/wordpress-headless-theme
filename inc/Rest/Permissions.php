@@ -6,19 +6,19 @@ use cmk\blank\Admin\Options;
 
 class Permissions {
 
-	public static function sync_rest_api_user( array $new, array $old = array() ): void {
+	public static function sync_rest_api_user( int $new_user_id, int $old_user_id = 0 ): void {
 		if (
-			! empty( $old['rest_api_user_id'] )
-			&& (int) $old['rest_api_user_id'] !== (int) $new['rest_api_user_id']
+			! empty( $old_user_id )
+			&& absint( $old_user_id ) !== absint( $new_user_id )
 		) {
-			self::remove_cap_from_user( (int) $old['rest_api_user_id'] );
+			self::remove_cap_from_user( absint( $old_user_id ) );
 		}
 
-		if ( empty( $new['rest_api_user_id'] ) ) {
+		if ( empty( $new_user_id ) ) {
 			return;
 		}
 
-		$user = get_user_by( 'id', (int) $new['rest_api_user_id'] );
+		$user = get_user_by( 'id', absint( $new_user_id ) );
 		if ( ! $user ) {
 			return;
 		}

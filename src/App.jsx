@@ -108,6 +108,10 @@ export default function App() {
 				<form onSubmit={handleSubmit}>
 					<Stack spacing={3}>
 
+						<Typography variant="h6" sx={{fontWeight:600}}>
+							{__('REST API Contents', 'blank')}
+						</Typography>
+
 						<Box sx={{ minWidth: 120 }}>
 							{postTypes && <MultipleSelect 
 							name="blank_allowed_post_types" 
@@ -116,6 +120,24 @@ export default function App() {
 							options={postTypes} 
 							onChange={setField} />}
 						</Box>
+
+						<TextField
+							label={__('Posts Per Page', 'blank')}
+							type="number"
+							min="0"
+							max="1000"
+							helperText={__('This applies to REST collections only, the number of posts per page in Settings > Reading is not modified.', 'blank')}
+							name="rest_api_posts_per_page"
+							value={form.rest_api_posts_per_page}
+							onChange={setField}
+							fullWidth
+						/>
+
+						<Divider />
+
+						<Typography variant="h6" sx={{fontWeight:600}}>
+							{__('REST API Permissions', 'blank')}
+						</Typography>
 
 						<Box sx={{ minWidth: 120 }}>
 							<SimpleSelect 
@@ -177,6 +199,10 @@ export default function App() {
 						<Webhook form={form} setField={setField} />
 
 						<Divider />
+
+						<Typography variant="h6" sx={{fontWeight:600}}>
+							{__('Core options', 'blank')}
+						</Typography>
 
 						<FormControlLabel
 							control={
