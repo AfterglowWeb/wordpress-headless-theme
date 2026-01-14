@@ -27,6 +27,17 @@ class Options {
 				'show_in_rest'      => self::show_in_rest() ? self::rest_schema() : false,
 			)
 		);
+
+		add_action(
+			'blank_admin_option_updated',
+			function ( string $key, $new, $old ) {
+				
+				if('rest_api_user_id' === $key) {
+					\cmk\blank\Rest\Permissions::sync_rest_api_user( $new, $old );
+				}
+
+			},
+			10, 3);
 	}
 
 	public static function show_in_rest(): bool {
@@ -83,6 +94,13 @@ class Options {
 				'rest_expose'       => false,
 			),
 
+			'rest_api_posts_per_page'                => array(
+				'default_value'     => 100,
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
 			'blank_filter_wp_rest_post_types'         => array(
 				'default_value'     => true,
 				'type'              => 'bool',
@@ -114,21 +132,21 @@ class Options {
 			'rest_api_user_id'                     => array(
 				'default_value'     => 1,
 				'type'              => 'int',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
 			),
 
 			'rest_api_rate_limit'                  => array(
 				'default_value'     => 30,
 				'type'              => 'int',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
 			),
 
 			'rest_api_rate_limit_time'             => array(
 				'default_value'     => 60,
 				'type'              => 'int',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
 			),
 
@@ -163,7 +181,7 @@ class Options {
 			'max_upload_size'                      => array(
 				'default_value'     => 1024, // KB.
 				'type'              => 'int',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
 			),
 
