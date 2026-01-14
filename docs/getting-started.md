@@ -381,12 +381,12 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 }, 10, 2);
 ```
 
-### `blank_rest_image`
-**Description:** Filter the properties of each image returned by the `/blank/v1/images/<post_type>` endpoint.
+### `blank_rest_attachment`
+**Description:** Filter the properties of each attachment returned by the `/blank/v1/<post_type>/images` endpoint.
 
 **Arguments:**
-- `$filtered_image` *(array)*: The associative array of image data.
-- `$img_id` *(int)*: The image attachment ID.
+- `$filtered_image` *(array)*: The associative array of attachment data.
+- `$img_id` *(int)*: The attachment ID.
 
 **Default props in `$filtered_image`:**
   - `id` (int)
@@ -400,130 +400,24 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 
 **Example:**
 ```php
-add_filter('blank_rest_image', function($filtered_image, $img_id) {
+add_filter('blank_rest_attachment', function($filtered_image, $img_id) {
   $filtered_image['custom_prop'] = 'value';
   return $filtered_image;
 }, 10, 2);
 ```
 
-### `blank_allowed_post_types`
-**Description:** Filter the allowed post types for the `/blank/v1/images/<post_type>` endpoint.
-
-**Arguments:**
-- `$post_types` *(array)*: The allowed post type slugs.
-
-**Example:**
-```php
-add_filter('blank_allowed_post_types', function($post_types) {
-  $post_types[] = 'my_custom_type';
-  return $post_types;
-}, 10, 1);
-```
-
-### `blank_rest_api_user_id`
-**Description:** Filter the user ID used for bearer token authentication.
-
-**Arguments:**
-- `$user_id` *(int)*: The user ID to validate the token against.
-
-**Example:**
-```php
-add_filter('blank_rest_api_user_id', function($user_id): int {
-  return 2; // Use User ID 2 instead of 1
-}, 10, 1);
-```
-
-### `blank_rest_api_password_name`
-**Description:**  Setup the password name you previously registered in the user profile for bearer token authentication.
-
-**Arguments:**
-- `$password_key` *(string)*: The name of the password containing the token used on the REST API.
-
-**Example:**
-```php
-add_filter('blank_rest_api_password_name', function( string $password_key ): string {
-  return 'my_password';
-}, 10, 1);
-```
-
-### `blank_application_user_id`
-**Description:** Filter the user ID used to trigger your application webhook.
-
-**Arguments:**
-- `$user_id` *(int)*: The user ID to validate the token against.
-
-**Example:**
-```php
-add_filter('blank_application_user_id', function($user_id): int {
-  return 2; // Use User ID 2 instead of 1
-}, 10, 1);
-```
-
-### `blank_application_password_name`
-**Description:**  Setup the password name you previously registered in the user profile for your application webhook.
-
-**Arguments:**
-- `$password_key` *(string)*: The name of the password containing the token to send to your application webhook.
-
-**Example:**
-```php
-add_filter('blank_application_password_name', function( string $password_key ): string {
-  return 'my_password';
-}, 10, 1);
-```
-
-### `blank_application_host`
-**Description:**  Setup your application host
-
-**Arguments:**
-- `$host` *(string)*: Your application host with protocol and no trailing slash.
-
-**Example:**
-```php
-add_filter('blank_application_host', function( string $host ): string {
-  return 'https://www.my-host.com';
-}, 10, 1);
-```
-
-### `blank_application_webhook_endpoint`
-**Description:**  Setup your application cache route.
-
-**Arguments:**
-- `$route` *(string)*: Your application route used to trigger cache flushing.
-
-**Example:**
-```php
-add_filter('blank_application_webhook_endpoint', function( string $route ): string {
-  return '/api/flush-cache';
-}, 10, 1);
-```
-
-### `blank_blank_disable_comments`
-**Description:** Enable or disable WordPress comments support (default: disabled).
-
-**Arguments:**
-- `$disable` *(bool)*: Whether to disable comments (default: true).
-
-**Example:**
-```php
-add_filter('blank_blank_disable_comments', function($disable): bool {
-  return false; // Enable comments
-}, 10, 1);
-```
-
-### `blank_max_upload_size`
-
-
-**Security Note:** When using filters, always sanitize and validate data. Never expose sensitive information like passwords, API keys, or private user data.
-
 ## ChangeLog
+
+### version 1.0.4
+
+- Complete refacto
 
 ### version 1.0.3b
 
  - Added all front templates redirect to home_url() in cmk\blank\Theme::redirect_front_pages(), can be controlled through `blank_redirect_url`.
  - Added class cmk\blank\Cache to provide a webhook to flush application cache.
- - Added filters: `blank_application_host`, `blank_application_webhook_endpoint`, `blank_application_user_id`, `blank_application_password_name`
-- Added mandatory password identifier.
+ - Added filters: `blank_application_host`, `blank_application_webhook_endpoint`
+ - Added mandatory password identifier.
 
 ### version 1.0.2b
 
