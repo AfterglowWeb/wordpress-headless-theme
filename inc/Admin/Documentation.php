@@ -32,13 +32,13 @@ class Documentation {
 
 		$pages = array(
 			array(
-				'slug' => 'getting-started', 
-				'title' => __('Getting Started', 'blank'),
+				'slug' => 'presentation', 
+				'title' => __('Presentation', 'blank'),
 				'html' => '',
 			),
 			array(
-				'slug' => 'options', 
-				'title' => __('Options', 'blank'),
+				'slug' => 'getting-started', 
+				'title' => __('Getting Started', 'blank'),
 				'html' => '',
 			),
 			array(
@@ -46,11 +46,6 @@ class Documentation {
 				'title' => __('Hooks', 'blank'),
 				'html' => '',
 			),
-			array(
-				'slug' => 'faq', 
-				'title' => __('FAQ', 'blank'),
-				'html' => '',
-			)
 		);
 
 		$config = [
@@ -79,6 +74,11 @@ class Documentation {
 		foreach ( $pages as $page ) {
 			
 			$file = realpath( $docs_dir . '/' . $page['slug'] . '.md' );
+			
+			if(false === is_readable( $file) ) {
+				continue;
+			}
+			
 			$markdown = file_get_contents( $file );
 			if ( ! $markdown ) {
 				continue;
@@ -87,12 +87,9 @@ class Documentation {
 			$result = $converter->convert($markdown);
 			$html = $result->getContent();
 
-			$slug  = sanitize_title( basename( $file, '.md' ) );
-			$title = ucwords( str_replace( '-', ' ', $slug ) );
-
 			$pages[] = [
-				'slug'  => $slug,
-				'title' => $title,
+				'slug'  => $page['slug'],
+				'title' => $page['title'],
 				'html'  => $html,
 			];
 		}
