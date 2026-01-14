@@ -10,6 +10,29 @@ class Routes {
 	public static function register() {
 
 		add_filter(
+			'rest_pre_dispatch',
+			function ( $result, $server, $request ) {
+				if ( strpos( $request->get_route(), '/settings' ) === false ) {
+					return $result;
+				}
+
+				$auth = \cmk\blank\Rest\Permissions::validate_rest_api_token();
+				if ( is_wp_error( $auth ) ) {
+					return $auth;
+				}
+
+				$rate = \cmk\blank\Rest\RateLimit::check( $request );
+				if ( is_wp_error( $rate ) ) {
+					return $rate;
+				}
+
+				return $result;
+			},
+			10,
+			3
+		);
+
+		add_filter(
 			'rest_authentication_errors',
 			array( Permissions::class, 'protect_wp_rest_routes' ),
 			20, 1 );
@@ -58,7 +81,7 @@ class Routes {
 					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})/images',
 					array(
 						'methods'             => 'GET',
-						'callback'            => array( Controllers::class, 'images_per_post_type' ),
+						'callback'            => array( Controllers::class, 'attachments_per_post_type' ),
 						'permission_callback' => array( Routes::class, 'permission_check' ),
 						'args'                => array(
 							'post_type' => array(

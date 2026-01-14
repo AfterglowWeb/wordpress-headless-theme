@@ -37,7 +37,7 @@ class Controllers {
 		return $response;
 	}
 
-	public static function images_per_post_type( \WP_REST_Request $request ): \WP_REST_Response {
+	public static function attachments_per_post_type( \WP_REST_Request $request ): \WP_REST_Response {
 
 		$post_type = $request->get_param( 'post_type' );
 
