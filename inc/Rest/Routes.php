@@ -81,7 +81,7 @@ class Routes {
 					'/(?P<post_type>[a-zA-Z0-9_-]{2,20})/images',
 					array(
 						'methods'             => 'GET',
-						'callback'            => array( Controllers::class, 'images_per_post_type' ),
+						'callback'            => array( Controllers::class, 'attachments_per_post_type' ),
 						'permission_callback' => array( Routes::class, 'permission_check' ),
 						'args'                => array(
 							'post_type' => array(

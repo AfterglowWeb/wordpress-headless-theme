@@ -26,7 +26,7 @@ class OptionsPage {
 		add_action( 'admin_footer', array( $this, 'print_inline_styles' ), 20 );
 
 		add_action( 'wp_ajax_blank_theme_update_options', array( $this, 'ajax_update_options' ) );
-		add_action( 'wp_ajax_blank_theme_read_options', array( $this, 'ajax_ajax_read_options' ) );
+		add_action( 'wp_ajax_blank_theme_read_options', array( $this, 'ajax_read_options' ) );
 		add_action(
 			'blank_admin_options_updated',
 			function ( array $new, array $old ) {
@@ -35,6 +35,9 @@ class OptionsPage {
 			10,
 			2
 		);
+
+		add_action( 'wp_ajax_blank_theme_documentation', array(  $this, 'ajax_documentation' ) );
+
 	}
 
 	public function register_admin_page() {
@@ -114,6 +117,17 @@ class OptionsPage {
 		$options = Options::read_options();
 		wp_send_json_success( $options );
 	}
+
+	public function ajax_documentation() {
+		check_ajax_referer( 'blank_theme_read_options_nonce', 'nonce' );
+		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized', 'blank' ) ), 401 );
+		}
+
+		$documentation_pages = Documentation::read_pages();
+		wp_send_json_success( $documentation_pages );
+	}
+
 
 	public function ajax_update_options() {
 		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );

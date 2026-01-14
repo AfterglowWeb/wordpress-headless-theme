@@ -6,6 +6,7 @@ import AppTheme from './AppTheme';
 import Header from './Header';
 import Footer from './Footer';
 import { AdminDataProvider } from './contexts/AdminDataContext';
+import { DocumentationProvider } from './contexts/DocumentationContext';
 
 const App = lazy( () => import( './App' ) );
 
@@ -18,6 +19,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			<AdminDataProvider
 				adminData={ adminData }
 			>
+				<DocumentationProvider>
 				<AppTheme>
 					<Suspense fallback={ <HeaderSkeleton /> }>
 						<Header />
@@ -29,6 +31,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 						<Footer />
 					</Suspense>
 				</AppTheme>
+				</DocumentationProvider>
 			</AdminDataProvider>
 		);
 	}

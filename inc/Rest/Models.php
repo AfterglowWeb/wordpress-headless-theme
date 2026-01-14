@@ -2,7 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Acf;
+use cmk\blank\Core\Acf;
 
 class Models {
 
@@ -48,7 +48,7 @@ class Models {
 		$mime  = get_post_mime_type( $img_id );
 		$title = get_the_title( $img_id );
 
-		$filtered_image = array(
+		$filtered_attachment = array(
 			'id'        => $img_id,
 			'src'       => $src,
 			'alt'       => $alt ? $alt : $title,
@@ -59,27 +59,27 @@ class Models {
             'length'    => isset( $meta['length'] ) ? absint( $meta['length'] ) : null,
 			'parent_id' => $post_id ? absint( $post_id ) : null,
 			'field_key' => $field_key,
-			'acf'       => apply_filters( 'blank_rest_image_acf', $img_id ),
+			'acf'       => apply_filters( 'blank_rest_attachment_acf', $img_id ),
 		);
 
-		return (array) apply_filters( 'blank_rest_image', $filtered_image, $img_id );
+		return (array) apply_filters( 'blank_rest_attachment', $filtered_attachment, $img_id );
 	}
 
 	public static function attachments_per_post_model( $post ): array {
 		
 		$attachments    = array();
-		$image_ids = array();
+		$attachment_ids = array();
 
 		$thumb_id = get_post_thumbnail_id( $post->ID );
 		if ( $thumb_id ) {
-			$image_ids[] = $thumb_id;
+			$attachment_ids[] = $thumb_id;
 		}
 
-		$image_ids = array_merge( $image_ids, Acf::get_acf_image_ids( $post->ID) );
+		$attachment_ids = array_merge( $attachment_ids, Acf::get_acf_attachment_ids( $post->ID) );
 
-		foreach ( $image_ids as $index => $image_id ) {
-			$field_key = 1 === $index ? 'featured_image' : 'gallery';
-			$attachments[]  = self::attachment_model( $image_id, $post->ID, $field_key );
+		foreach ( $attachment_ids as $index => $attachment_id ) {
+			$field_key = 1 === $index ? 'featured_attachment' : 'gallery';
+			$attachments[]  = self::attachment_model( $attachment_id, $post->ID, $field_key );
 		}
 
 		$attachments = array_filter( $attachments );

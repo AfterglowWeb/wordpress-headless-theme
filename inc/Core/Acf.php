@@ -1,4 +1,4 @@
-<?php namespace cmk\blank;
+<?php namespace cmk\blank\Core;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -49,7 +49,7 @@ class Acf {
 		return function_exists( 'get_fields' ) ? (array) get_fields( $object_id ) : array();
 	}
 
-	public static function get_acf_image_ids( $post_id ): array {
+	public static function get_acf_attachment_ids( $post_id ): array {
 
 		if ( ! function_exists( 'get_fields' ) ) {
 			return array();

@@ -1,4 +1,4 @@
-<?php namespace cmk\blank;
+<?php namespace cmk\blank\Core;
 
 defined( 'ABSPATH' ) || exit;
 

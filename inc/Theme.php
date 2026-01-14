@@ -74,22 +74,6 @@ class Theme {
 		remove_action( 'wp_print_styles', 'print_emoji_styles' );
 	}
 
-	public function disable_gutenberg( $current_status, $post_type ) {
-
-		$admin_options                = Options::read_options();
-		$disable_gutenberg_post_types = (array) apply_filters( 'blank_disable_gutenberg_post_types', $admin_options['blank_allowed_post_types'] );
-
-		if ( empty( $disable_gutenberg_post_types ) ) {
-			return $current_status;
-		}
-
-		if ( in_array( $post_type, $disable_gutenberg_post_types, true ) ) {
-			return false;
-		}
-
-		return $current_status;
-	}
-
 	public function theme_menus(): void {
 
 		try {
@@ -174,6 +158,58 @@ class Theme {
 		}
 	}
 
+	public function remove_empty_p_tags( $content ): string {
+		$to_fix = array(
+			'<p></p>' => '',
+			'<p>['    => '[',
+			']</p>'   => ']',
+			']<br />' => ']',
+		);
+		return strtr( $content, $to_fix );
+	}
+
+	public function mime_support( $mimes ): array {
+		$mimes['svg']  = 'image/svg+xml';
+		$mimes['webp'] = 'image/webp';
+		$mimes['csv']  = 'text/csv';
+		return $mimes;
+	}
+
+	public function disable_gutenberg( $current_status, $post_type ) {
+
+		$admin_options                = Options::read_options();
+		$disable_gutenberg_post_types = (array) apply_filters( 'blank_disable_gutenberg_post_types', $admin_options['blank_allowed_post_types'] );
+
+		if ( empty( $disable_gutenberg_post_types ) ) {
+			return $current_status;
+		}
+
+		if ( in_array( $post_type, $disable_gutenberg_post_types, true ) ) {
+			return false;
+		}
+
+		return $current_status;
+	}
+
+	public function max_upload_size( $file ) {
+
+		if ( ! isset( $file['type'] ) || ! isset( $file['size'] ) ) {
+			return $file;
+		}
+
+		$max_file_size = (int) apply_filters( 'blank_max_upload_size', 500 * 1024 ); // 500Ko.
+
+		if ( strpos( $file['type'], 'image' ) !== false && $file['size'] > $max_file_size ) {
+			$file['error'] = sprintf(
+				/* translators: %d is the image weight in ko */
+				esc_html__( 'The maximum file size for images is %d Ko. Try the .webp format to reduce the file size.', 'blank' ),
+				(int) round( $max_file_size / 1024 )
+			);
+		}
+
+		return $file;
+	}
+
 	public function redirect_front(): void {
 
 		global $wp;
@@ -198,41 +234,5 @@ class Theme {
 		}
 
 		return false;
-	}
-
-	public function remove_empty_p_tags( $content ): string {
-		$to_fix = array(
-			'<p></p>' => '',
-			'<p>['    => '[',
-			']</p>'   => ']',
-			']<br />' => ']',
-		);
-		return strtr( $content, $to_fix );
-	}
-
-	public function mime_support( $mimes ): array {
-		$mimes['svg']  = 'image/svg+xml';
-		$mimes['webp'] = 'image/webp';
-		$mimes['csv']  = 'text/csv';
-		return $mimes;
-	}
-
-	public function max_upload_size( $file ) {
-
-		if ( ! isset( $file['type'] ) || ! isset( $file['size'] ) ) {
-			return $file;
-		}
-
-		$max_file_size = (int) apply_filters( 'blank_max_upload_size', 500 * 1024 ); // 500Ko.
-
-		if ( strpos( $file['type'], 'image' ) !== false && $file['size'] > $max_file_size ) {
-			$file['error'] = sprintf(
-				/* translators: %d is the image weight in ko */
-				esc_html__( 'The maximum file size for images is %d Ko. Try the .webp format to reduce the file size.', 'blank' ),
-				(int) round( $max_file_size / 1024 )
-			);
-		}
-
-		return $file;
 	}
 }
