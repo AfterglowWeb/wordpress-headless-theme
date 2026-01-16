@@ -23,69 +23,69 @@ class Documentation {
 	private function __construct() {}
 
 	public static function read_pages() {
-		
+
 		$docs_dir = trailingslashit( get_template_directory() ) . 'docs';
 
 		if ( ! is_dir( $docs_dir ) ) {
 			return [];
 		}
 
-		$pages = array(
-			array(
-				'slug' => 'presentation', 
-				'title' => __('Presentation', 'blank'),
-				'html' => '',
-			),
-			array(
-				'slug' => 'getting-started', 
-				'title' => __('Getting Started', 'blank'),
-				'html' => '',
-			),
-			array(
-				'slug' => 'hooks', 
-				'title' => __('Hooks', 'blank'),
-				'html' => '',
-			),
-		);
-
-		$config = [
-			'heading_permalink' => [
-				'html_class' => 'blank-docs-heading-permalink',
-				'id_prefix' => 'blank_docs',
-				'apply_id_to_heading' => false,
-				'heading_class' => '',
-				'fragment_prefix' => 'blank_docs',
-				'insert' => 'before',
-				'min_heading_level' => 1,
-				'max_heading_level' => 6,
-				'title' => 'Permalink',
-				'symbol' => HeadingPermalinkRenderer::DEFAULT_SYMBOL,
-				'aria_hidden' => true,
+		$pages = [
+			[
+				'slug'  => 'presentation',
+				'title' => __( 'Presentation', 'blank' ),
+				'html'  => '',
+			],
+			[
+				'slug'  => 'getting-started',
+				'title' => __( 'Getting Started', 'blank' ),
+				'html'  => '',
+			],
+			[
+				'slug'  => 'hooks',
+				'title' => __( 'Hooks', 'blank' ),
+				'html'  => '',
 			],
 		];
 
-		$environment = new Environment($config);
-		$environment->addExtension(new SmartPunctExtension());
-		$environment->addExtension(new StrikethroughExtension());
-		$environment->addExtension(new HeadingPermalinkExtension());
+		$config = [
+			'heading_permalink' => [
+				'html_class'          => 'blank-docs-heading-permalink',
+				'id_prefix'           => 'blank_docs',
+				'apply_id_to_heading' => false,
+				'heading_class'       => '',
+				'fragment_prefix'     => 'blank_docs',
+				'insert'              => 'before',
+				'min_heading_level'   => 1,
+				'max_heading_level'   => 6,
+				'title'               => 'Permalink',
+				'symbol'              => HeadingPermalinkRenderer::DEFAULT_SYMBOL,
+				'aria_hidden'         => true,
+			],
+		];
 
-		$converter = new MarkdownConverter($environment);
-		
+		$environment = new Environment( $config );
+		$environment->addExtension( new SmartPunctExtension() );
+		$environment->addExtension( new StrikethroughExtension() );
+		$environment->addExtension( new HeadingPermalinkExtension() );
+
+		$converter = new MarkdownConverter( $environment );
+
 		foreach ( $pages as $page ) {
-			
+
 			$file = realpath( $docs_dir . '/' . $page['slug'] . '.md' );
-			
-			if(false === is_readable( $file) ) {
+
+			if ( false === is_readable( $file ) ) {
 				continue;
 			}
-			
+
 			$markdown = file_get_contents( $file );
 			if ( ! $markdown ) {
 				continue;
 			}
 
-			$result = $converter->convert($markdown);
-			$html = $result->getContent();
+			$result = $converter->convert( $markdown );
+			$html   = $result->getContent();
 
 			$pages[] = [
 				'slug'  => $page['slug'],
@@ -96,6 +96,4 @@ class Documentation {
 
 		return $pages;
 	}
-
-
 }

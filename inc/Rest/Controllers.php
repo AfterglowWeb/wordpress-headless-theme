@@ -2,7 +2,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Rest\Models;
+
 class Controllers {
+	
 
 	public static function site_data(): \WP_REST_Response {
 
@@ -10,10 +13,10 @@ class Controllers {
 
 		if ( empty( $data ) ) {
 			return new \WP_REST_Response(
-				array(
+				[
 					'status'  => 'error',
 					'message' => esc_html__( 'No data available', 'blank' ),
-				),
+				],
 				404
 			);
 		}
@@ -41,13 +44,13 @@ class Controllers {
 
 		$post_type = $request->get_param( 'post_type' );
 
-		$args   = array(
+		$args   = [
 			'post_type'      => $post_type,
 			'posts_per_page' => -1,
 			'post_status'    => 'publish',
-		);
+		];
 		$query  = new \WP_Query( $args );
-		$images = array();
+		$images = [];
 
 		foreach ( $query->posts as $post ) {
 			$images = array_merge( $images, Models::attachments_per_post_model( $post ) );
@@ -61,7 +64,7 @@ class Controllers {
 					$carry[ $img['id'] ] = $img;
 					return $carry;
 				},
-				array()
+				[]
 			)
 		);
 
@@ -69,16 +72,15 @@ class Controllers {
 	}
 
 	public static function posts_per_post_type( \WP_REST_Request $request ): \WP_REST_Response {
-
 		$post_type = $request->get_param( 'post_type' );
 
-		$args  = array(
+		$args  = [
 			'post_type'      => $post_type,
 			'posts_per_page' => -1,
 			'post_status'    => 'publish',
-		);
+		];
 		$query = new \WP_Query( $args );
-		$posts = array();
+		$posts = [];
 
 		foreach ( $query->posts as $post ) {
 			$posts[] = Models::post_model( $post );
@@ -89,20 +91,20 @@ class Controllers {
 
 	public static function site_data_flat(): array {
 
-		$default_options = array(
+		$default_options = [
 			'name'        => (string) sanitize_text_field( get_bloginfo( 'name' ) ),
 			'description' => (string) sanitize_text_field( get_bloginfo( 'description' ) ),
 			'url'         => (string) sanitize_url( get_bloginfo( 'url' ) ),
 			'favicon'     => (string) get_site_icon_url() ? sanitize_url( get_site_icon_url() ) : '',
-		);
+		];
 
-		$data = array(
+		$data = [
 			'menus'    => self::menus_flat(),
 			'identity' => array_merge(
 				$default_options,
 				apply_filters( 'blank_rest_site_data_acf', 'options' )
 			),
-		);
+		];
 
 		/**
 		 * Filter the site identity data before returning to REST API.
@@ -118,10 +120,10 @@ class Controllers {
 	private static function menus_flat(): array {
 		$locations = get_nav_menu_locations();
 		if ( empty( $locations ) ) {
-			return array();
+			return [];
 		}
 
-		$flattened_menus = array();
+		$flattened_menus = [];
 
 		foreach ( $locations as $location => $menu_id ) {
 			$flattened_menu = self::menu_flat( $menu_id );
@@ -133,7 +135,7 @@ class Controllers {
 		}
 
 		if ( empty( $flattened_menus ) ) {
-			return array();
+			return [];
 		}
 
 		/**
@@ -148,21 +150,21 @@ class Controllers {
 	private static function menu_flat( $menu_id ): array {
 		$menu_id = (int) $menu_id;
 		if ( empty( $menu_id ) ) {
-			return array();
+			return [];
 		}
 
 		$menu = wp_get_nav_menu_items( $menu_id );
 
 		if ( ! is_array( $menu ) || empty( $menu ) ) {
-			return array();
+			return [];
 		}
 
-		$menu_map = array();
+		$menu_map = [];
 		foreach ( $menu as $item ) {
 			$menu_map[ $item->ID ] = Models::menu_item_model( $item );
 		}
 
-		$hierarchical_menu = array();
+		$hierarchical_menu = [];
 		foreach ( $menu_map as $id => $item ) {
 			if ( ! empty( $item['parent'] ) && isset( $menu_map[ $item['parent'] ] ) ) {
 				$menu_map[ $item['parent'] ]['children'][] = &$menu_map[ $id ];

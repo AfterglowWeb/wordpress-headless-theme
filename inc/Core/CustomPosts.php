@@ -14,32 +14,12 @@ class CustomPosts {
 	}
 
 	private function __construct() {
-		add_action( 'init', array( $this, 'register_custom_posts' ) );
-		add_action( 'init', array( $this, 'register_custom_taxonomies' ) );
-
-		$post_types = get_post_types( array( 'public' => true ) );
-		$post_types = array_filter(
-			$post_types,
-			function ( $post_type ) {
-				return 'attachment' !== $post_type;
-			}
-		);
-		$this->add_admin_column(
-			'Image',
-			$post_types,
-			function ( $post_id ) {
-				$thumbnail_id = get_post_thumbnail_id( $post_id );
-				if ( $thumbnail_id ) {
-					$thumbnail = wp_get_attachment_image( $thumbnail_id, array( 50, 50 ), false, array( 'style' => 'box-shadow: 0 0px 3px rgba(0,0,0,0.1); border-radius: 0;' ) );
-					echo wp_kses_post( $thumbnail );
-				} else {
-					echo '<span style="color: #999;">Aucune image</span>';
-				}
-			}
-		);
+		add_action( 'init', [ CustomPosts::class, 'register_custom_posts' ] );
+		add_action( 'init', [ CustomPosts::class, 'register_custom_taxonomies' ] );
+		add_action( 'init', [ CustomPosts::class, 'hook_admin_column'] );
 	}
 
-	public function register_custom_posts(): void {
+	public static function register_custom_posts(): void {
 		try {
 			$json_file = get_stylesheet_directory() . '/config/custom_posts.json';
 			if ( ! file_exists( $json_file ) ) {
@@ -55,39 +35,41 @@ class CustomPosts {
 
 			foreach ( $custom_posts['custom_posts'] as $post_type ) {
 
-				$required_fields = array( 'name', 'singular_name', 'slug' );
+				$required_fields = [ 'name', 'singular_name', 'slug' ];
 				foreach ( $required_fields as $field ) {
 					if ( ! isset( $post_type[ $field ] ) ) {
 						new \WP_Error( "Missing required field: {$field} for {$post_type['name']}" );
 					}
 				}
 
-				$name          = sanitize_text_field( $post_type['name'] );
-				$singular_name = sanitize_text_field( $post_type['singular_name'] );
+				$name                = sanitize_text_field( $post_type['name'] );
+				$singular_name       = sanitize_text_field( $post_type['singular_name'] );
+				$lower_singular_name = strtolower( $singular_name );
 
-				$labels = array(
+
+				$labels = [
 					'name'               => $name,
 					'singular_name'      => $singular_name,
 					'menu_name'          => $name,
 					/* translators: %s is a singular name */
-					'add_new'            => sprintf( esc_html__( 'Add %s', 'blank' ), strtolower( $singular_name ) ),
+					'add_new'            => sprintf( esc_html__( 'Add %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'add_new_item'       => sprintf( esc_html__( 'Add New %s', 'blank' ), strtolower( $singular_name ) ),
+					'add_new_item'       => sprintf( esc_html__( 'Add New %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'edit_item'          => sprintf( esc_html__( 'Edit %s', 'blank' ), strtolower( $singular_name ) ),
+					'edit_item'          => sprintf( esc_html__( 'Edit %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'new_item'           => sprintf( esc_html__( 'New %s', 'blank' ), strtolower( $singular_name ) ),
+					'new_item'           => sprintf( esc_html__( 'New %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'view_item'          => sprintf( esc_html__( 'View %s', 'blank' ), strtolower( $singular_name ) ),
+					'view_item'          => sprintf( esc_html__( 'View %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a plural name */
 					'search_items'       => sprintf( esc_html__( 'Search %s', 'blank' ), strtolower( $name ) ),
 					/* translators: %s is a singular name */
-					'not_found'          => sprintf( esc_html__( 'No %s found', 'blank' ), strtolower( $singular_name ) ),
+					'not_found'          => sprintf( esc_html__( 'No %s found', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'not_found_in_trash' => sprintf( esc_html__( 'No %s found in trash', 'blank' ), strtolower( $singular_name ) ),
-				);
+					'not_found_in_trash' => sprintf( esc_html__( 'No %s found in trash', 'blank' ), $lower_singular_name ),
+				];
 
-				$args = array(
+				$args = [
 					'labels'             => $labels,
 					'public'             => $post_type['public'] ?? true,
 					'publicly_queryable' => $post_type['publicly_queryable'] ?? true,
@@ -96,21 +78,21 @@ class CustomPosts {
 					'show_in_rest'       => $post_type['show_in_rest'] ?? true,
 					'query_var'          => $post_type['query_var'] ?? true,
 					'rewrite'            => isset( $post_type['rewrite'] ) ?
-						array(
+						[
 							'slug'       => $post_type['rewrite'],
 							'with_front' => false,
-						) :
-						array(
+						] :
+						[
 							'slug' => $post_type['slug'],
-						),
+						],
 					'capability_type'    => $post_type['capability_type'] ?? 'post',
 					'has_archive'        => $post_type['has_archive'] ?? false,
 					'hierarchical'       => $post_type['hierarchical'] ?? false,
 					'menu_position'      => $post_type['menu_position'] ?? null,
 					'menu_icon'          => $post_type['menu_icon'] ?? 'dashicons-admin-post',
-					'supports'           => $post_type['supports'] ?? array( 'title', 'editor' ),
-					'taxonomies'         => $post_type['taxonomies'] ?? array(),
-				);
+					'supports'           => $post_type['supports'] ?? [ 'title', 'editor' ],
+					'taxonomies'         => $post_type['taxonomies'] ?? [],
+				];
 
 				register_post_type( $post_type['slug'], $args );
 			}
@@ -119,7 +101,7 @@ class CustomPosts {
 		}
 	}
 
-	public function register_custom_taxonomies(): void {
+	public static function register_custom_taxonomies(): void {
 		try {
 			$json_file = get_stylesheet_directory() . '/config/custom_taxonomies.json';
 			if ( ! file_exists( $json_file ) ) {
@@ -139,43 +121,44 @@ class CustomPosts {
 
 			foreach ( $custom_taxonomies['taxonomies'] as $taxonomy ) {
 
-				$required_fields = array( 'name', 'singular_name', 'slug', 'post_types' );
+				$required_fields = [ 'name', 'singular_name', 'slug', 'post_types' ];
 				foreach ( $required_fields as $field ) {
 					if ( ! isset( $taxonomy[ $field ] ) ) {
 						new \WP_Error( "Missing required field: {$field}" );
 					}
 				}
 
-				$name          = sanitize_text_field( $taxonomy['name'] );
-				$singular_name = sanitize_text_field( $taxonomy['singular_name'] );
+				$name                = sanitize_text_field( $taxonomy['name'] );
+				$singular_name       = sanitize_text_field( $taxonomy['singular_name'] );
+				$lower_singular_name = strtolower( $singular_name );
 
-				$labels = array(
+				$labels = [
 					'name'              => $name,
 					'singular_name'     => $singular_name,
 					'menu_name'         => $name,
 					/* translators: %s is a singular name */
-					'parent_item'       => sprintf( esc_html__( 'Parent %s', 'blank' ), strtolower( $singular_name ) ),
+					'parent_item'       => sprintf( esc_html__( 'Parent %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'parent_item_colon' => sprintf( esc_html__( 'Parent %s:', 'blank' ), strtolower( $singular_name ) ),
+					'parent_item_colon' => sprintf( esc_html__( 'Parent %s:', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'update_item'       => sprintf( esc_html__( 'Update %s', 'blank' ), strtolower( $singular_name ) ),
+					'update_item'       => sprintf( esc_html__( 'Update %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'add_new'           => sprintf( esc_html__( 'Add New %s', 'blank' ), strtolower( $singular_name ) ),
+					'add_new'           => sprintf( esc_html__( 'Add New %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'add_new_item'      => sprintf( esc_html__( 'Add New %s', 'blank' ), strtolower( $singular_name ) ),
+					'add_new_item'      => sprintf( esc_html__( 'Add New %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'new_item'          => sprintf( esc_html__( 'New %s', 'blank' ), strtolower( $singular_name ) ),
+					'new_item'          => sprintf( esc_html__( 'New %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'edit_item'         => sprintf( esc_html__( 'Edit %s', 'blank' ), strtolower( $singular_name ) ),
+					'edit_item'         => sprintf( esc_html__( 'Edit %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
-					'view_item'         => sprintf( esc_html__( 'View %s', 'blank' ), strtolower( $singular_name ) ),
+					'view_item'         => sprintf( esc_html__( 'View %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a plural name */
 					'all_items'         => sprintf( esc_html__( '%s list', 'blank' ), strtolower( $name ) ),
 					/* translators: %s is a plural name */
 					'search_items'      => sprintf( esc_html__( 'Search %s', 'blank' ), strtolower( $name ) ),
-				);
+				];
 
-				$args = array(
+				$args = [
 					'labels'            => $labels,
 					'hierarchical'      => $taxonomy['hierarchical'] ?? false,
 					'public'            => $taxonomy['public'] ?? true,
@@ -185,8 +168,8 @@ class CustomPosts {
 					'show_tagcloud'     => $taxonomy['show_tagcloud'] ?? true,
 					'show_in_rest'      => $taxonomy['show_in_rest'] ?? true,
 					'query_var'         => $taxonomy['query_var'] ?? true,
-					'rewrite'           => $taxonomy['rewrite'] ?? array( 'slug' => $taxonomy['slug'] ),
-				);
+					'rewrite'           => $taxonomy['rewrite'] ?? [ 'slug' => $taxonomy['slug'] ],
+				];
 
 				register_taxonomy(
 					$taxonomy['slug'],
@@ -199,7 +182,39 @@ class CustomPosts {
 		}
 	}
 
-	private function add_admin_column(
+	public static function hook_admin_column(): void { 
+		$post_type_names = get_post_types([
+				'public'       => true,
+				'show_in_rest' => true,
+			]);
+
+		if(empty($post_type_names)) {
+			return;
+		}
+
+		foreach($post_type_names as $post_type_name) {
+			self::add_admin_column(
+				'Image',
+				$post_type_name,
+				function ( $post_id ) {
+					$thumbnail_id = get_post_thumbnail_id( $post_id );
+					if ( $thumbnail_id ) {
+						$thumbnail = wp_get_attachment_image( 
+							$thumbnail_id, 
+							[ 50, 50 ], 
+							false, 
+							[ 'style' => 'box-shadow: 0 0px 3px rgba(0,0,0,0.1); border-radius: 0;' ] 
+							);
+						echo wp_kses_post( $thumbnail );
+					} else {
+						echo '<span style="color: #999;">Aucune image</span>';
+					}
+				}
+			);
+		}
+	}
+
+	private static function add_admin_column(
 		$column_title,
 		$post_types,
 		$callback,
@@ -209,7 +224,7 @@ class CustomPosts {
 	): void {
 
 		if ( ! is_array( $post_types ) ) {
-			$post_types = array( $post_types );
+			$post_types = [ $post_types ];
 		}
 
 		foreach ( $post_types as $post_type ) {

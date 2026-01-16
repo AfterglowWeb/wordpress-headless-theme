@@ -46,22 +46,22 @@ class Acf {
 	}
 
 	public function get_acf_fields( $object_id ): array {
-		return function_exists( 'get_fields' ) ? (array) get_fields( $object_id ) : array();
+		return function_exists( 'get_fields' ) ? (array) get_fields( $object_id ) : [];
 	}
 
 	public static function get_acf_attachment_ids( $post_id ): array {
 
 		if ( ! function_exists( 'get_fields' ) ) {
-			return array();
+			return [];
 		}
 
 		$admin_options = Options::read_options();
 		if ( false === $admin_options['blank_enable_acf_support'] ) {
-			return array();
+			return [];
 		}
 
-		$image_ids = array();
-		$fields = get_fields( $post_id );
+		$image_ids = [];
+		$fields    = get_fields( $post_id );
 
 		foreach ( $fields as $field_key => $value ) {
 
@@ -78,7 +78,6 @@ class Acf {
 						$image_ids[] = absint( $sub_value['ID'] );
 					}
 				}
-
 			}
 		}
 

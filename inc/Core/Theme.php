@@ -1,4 +1,4 @@
-<?php namespace cmk\blank;
+<?php namespace cmk\blank\Core;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -26,7 +26,7 @@ class Theme {
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
 		add_filter( 'mime_types', array( $this, 'mime_support' ), 10, 1 );
-		add_filter( 'wp_handle_upload_prefilter', array( $this, 'max_upload_size' ) );
+		add_filter( 'wp_handle_upload_prefilter', array( $this, 'max_upload_size' ), 10, 1 );
 		add_filter( 'the_content', array( $this, 'remove_empty_p_tags' ), 10, 1 );
 		add_action(
 			'switch_theme',
@@ -37,10 +37,7 @@ class Theme {
 					return;
 				}
 
-				$caps = array(
-					'blank_api_access',
-					'blank_edit_theme_options',
-				);
+				$caps = [ 'blank_edit_theme_options' ];
 
 				foreach ( $caps as $cap ) {
 					$role->remove_cap( $cap );
@@ -50,16 +47,15 @@ class Theme {
 	}
 
 	public function theme_supports(): void {
-		add_theme_support( 'automatic-feed-links' );
 		add_theme_support( 'title-tag' );
 		add_theme_support( 'post-thumbnails' );
 		add_theme_support(
 			'html5',
-			array(
+			[
 				'search-form',
 				'gallery',
 				'caption',
-			)
+			]
 		);
 		add_theme_support( 'menus' );
 	}
@@ -89,7 +85,7 @@ class Theme {
 				new \WP_Error( 'Invalid custom menus configuration' );
 			}
 
-			$formated_menus = array();
+			$formated_menus = [];
 
 			foreach ( $custom_menus['custom_menus'] as $menu ) {
 				$formated_menus[ $menu['slug'] ] = $menu['name'];
@@ -103,14 +99,14 @@ class Theme {
 	}
 
 	public function theme_lang(): void {
+		$handle = false;
 		if ( defined( 'WP_LANG_DIR' ) ) {
-
-			$this->may_copy_theme_lang_to_languages_dir();
-
-			load_theme_textdomain( 'blank', WP_LANG_DIR . '/themes' );
-		} else {
+			$handle = load_theme_textdomain( 'blank' );
+		}
+		if( false === $handle) {
 			load_theme_textdomain( 'blank', get_stylesheet_directory() . '/languages' );
 		}
+		
 	}
 
 	private function may_copy_theme_lang_to_languages_dir(): void {
@@ -120,9 +116,6 @@ class Theme {
 		}
 
 		$theme_lang_dir = realpath( get_stylesheet_directory() . '/languages' );
-		if ( false === is_admin() || false === defined( 'WP_LANG_DIR' ) ) {
-			return;
-		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		global $wp_filesystem;
@@ -134,8 +127,8 @@ class Theme {
 			return;
 		}
 
-		$extensions        = array( 'mo', 'po', 'json' );
-		$source_lang_files = array();
+		$extensions        = [ 'mo', 'po', 'json' ];
+		$source_lang_files = [];
 		foreach ( $extensions as $ext ) {
 			$files = glob( $theme_lang_dir . '/*.' . $ext );
 			if ( is_array( $files ) && ! empty( $files ) ) {
@@ -159,12 +152,12 @@ class Theme {
 	}
 
 	public function remove_empty_p_tags( $content ): string {
-		$to_fix = array(
+		$to_fix = [
 			'<p></p>' => '',
 			'<p>['    => '[',
 			']</p>'   => ']',
 			']<br />' => ']',
-		);
+		];
 		return strtr( $content, $to_fix );
 	}
 
@@ -175,7 +168,7 @@ class Theme {
 		return $mimes;
 	}
 
-	public function disable_gutenberg( $current_status, $post_type ) {
+	public function disable_gutenberg( bool $current_status, string $post_type ): bool {
 
 		$admin_options                = Options::read_options();
 		$disable_gutenberg_post_types = (array) $admin_options['blank_allowed_post_types'];

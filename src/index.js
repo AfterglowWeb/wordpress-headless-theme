@@ -7,6 +7,7 @@ import Header from './Header';
 import Footer from './Footer';
 import { AdminDataProvider } from './contexts/AdminDataContext';
 import { DocumentationProvider } from './contexts/DocumentationContext';
+import { ModelsProvider } from './contexts/ModelsContext';
 
 const App = lazy( () => import( './App' ) );
 
@@ -19,19 +20,21 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			<AdminDataProvider
 				adminData={ adminData }
 			>
-				<DocumentationProvider>
-				<AppTheme>
-					<Suspense fallback={ <HeaderSkeleton /> }>
-						<Header />
-					</Suspense>
-					<Suspense fallback={ <ContentSkeleton /> }>
-						<App />
-					</Suspense>
-					<Suspense fallback={ <FooterSkeleton /> }>
-						<Footer />
-					</Suspense>
-				</AppTheme>
-				</DocumentationProvider>
+				<ModelsProvider>
+					<DocumentationProvider>
+					<AppTheme>
+						<Suspense fallback={ <HeaderSkeleton /> }>
+							<Header />
+						</Suspense>
+						<Suspense fallback={ <ContentSkeleton /> }>
+							<App />
+						</Suspense>
+						<Suspense fallback={ <FooterSkeleton /> }>
+							<Footer />
+						</Suspense>
+					</AppTheme>
+					</DocumentationProvider>
+				</ModelsProvider>
 			</AdminDataProvider>
 		);
 	}

@@ -20,7 +20,7 @@ class RateLimit {
 			return new \WP_Error(
 				'blank_rate_limited',
 				'Too many requests.',
-				array( 'status' => 429 )
+				[ 'status' => 429 ]
 			);
 		}
 
