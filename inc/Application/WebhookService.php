@@ -2,6 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Admin\Permissions;
 use cmk\blank\Admin\Options;
 
 class WebhookService {
@@ -22,27 +23,18 @@ class WebhookService {
 		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_button' ), 100 );
 	}
 
-	public function ajax_trigger_application_webhook() {
+	public function ajax_trigger_application_webhook(): void {
 
-		check_ajax_referer( 'blank_theme_webhook_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error(
-				array(
-					'error' => esc_html__( 'Unauthorized', 'blank' ),
-				),
-				401
-			);
+		if ( false === Permissions::validate_ajax_crud_webhook() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
 		}
 
 		$payload = (array) apply_filters(
 			'blank_application_webhook_body_payload',
-			array(
-				'action' => 'flush_cache',
-			)
+			[ 'action' => 'flush_cache' ]
 		);
 
-		$sanitized_payload = array();
+		$sanitized_payload = [];
 		foreach ( $payload as $key => $value ) {
 			$sanitized_payload[ sanitize_key( $key ) ] = sanitize_text_field( $value );
 		}
@@ -51,7 +43,7 @@ class WebhookService {
 
 		try {
 			$response = WebhookClient::post(
-				$admin_options['application_webhook_endpoint'],
+				$admin_options[ 'application_webhook_endpoint' ],
 				$sanitized_payload
 			);
 		} catch ( \WP_Error $error ) {
@@ -61,57 +53,43 @@ class WebhookService {
 		wp_send_json_success( $response );
 	}
 
-	public function ajax_update_application_webhook_secret() {
+	public function ajax_update_application_webhook_secret(): void {
 
-		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
-			wp_send_json_error(
-				array(
-					'error' => esc_html__( 'Unauthorized', 'blank' ),
-				),
-				401
-			);
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
 		}
 
 		wp_send_json_success(
-			array(
+			[
 				'secret'  => $this->update_webhook_secret(),
 				'message' => esc_html__(
 					'Copy this secret now. You will not be able to view it again.',
 					'blank'
 				),
-			),
+			],
 			200
 		);
 	}
 
-	public function ajax_delete_application_webhook_secret() {
+	public function ajax_delete_application_webhook_secret(): void {
 
-		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
-			wp_send_json_error(
-				array(
-					'error' => esc_html__( 'Unauthorized', 'blank' ),
-				),
-				401
-			);
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
 		}
 
-		if( true === $this->delete_webhook_secret() ) {
+		if ( true === $this->delete_webhook_secret() ) {
 			wp_send_json_success(
-				array(
-					'message' => esc_html__( 'Webhook secret deleted.', 'blank'),
-				),
+				[
+					'message' => esc_html__( 'Webhook secret deleted.', 'blank' ),
+				],
 				200
 			);
 		}
 
 		wp_send_json_error(
-			array(
+			[
 				'error' => esc_html__( 'An error occured while deleting Webhook secret.', 'blank' ),
-			),
+			],
 			500
 		);
 	}
@@ -130,7 +108,7 @@ class WebhookService {
 		return $result;
 	}
 
-	public function enqueue_scripts() {
+	public function enqueue_scripts(): void {
 
 		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
 			return;
@@ -150,25 +128,25 @@ class WebhookService {
 		wp_localize_script(
 			'blank-theme-webhook',
 			'blankWebhookService',
-			array(
+			[
 				'nonce'          => wp_create_nonce( 'blank_theme_webhook_nonce' ),
 				'ajaxurl'        => admin_url( 'admin-ajax.php' ),
 				'confirmMessage' => esc_html__( 'Flush Application Cache?', 'blank' ),
-			)
+			]
 		);
 	}
 
-	public function add_admin_bar_button( $admin_bar ) {
+	public function add_admin_bar_button( $admin_bar ): void {
 		$admin_bar->add_node(
-			array(
+			[
 				'id'    => 'blank-trigger-webhook',
 				'title' => esc_html__( 'Flush Cache', 'blank' ),
 				'href'  => '#',
-				'meta'  => array(
+				'meta'  => [
 					'title'   => esc_html__( 'Flush Cache', 'blank' ),
 					'onclick' => 'blankTriggerWebhook(); return false;',
-				),
-			)
+				],
+			]
 		);
 	}
 }

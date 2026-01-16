@@ -7,34 +7,44 @@ use cmk\blank\Core\Acf;
 class Models {
 
 	public function __construct() {
-		//todo: rest_api_flatten_posts option integration
+		// todo: rest_api_flatten_posts option integration
 	}
 
 	public static function post_model( $post ): array {
 
-			$filtered_post = array(
-				'id'       => (int) $post->ID,
-				'type'     => (string) sanitize_text_field( $post->post_type ),
-				'title'    => (string) sanitize_text_field( $post->post_title ),
-				'slug'     => (string) sanitize_text_field( $post->post_name ),
-				'date'     => (string) get_the_date( 'c', $post->ID ),
-				'modified' => (string) get_the_modified_date( 'c', $post->ID ),
-				'link'     => (string) sanitize_url( get_permalink( $post->ID ) ),
-				'content'  => (string) apply_filters( 'the_content', $post->post_content ),
-				'excerpt'  => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
-				'terms'    => array_map(
-					function ( $taxonomy ) use ( $post ) {
+			$filtered_post = [
+				'id'             => (int)    $post->ID,
+				'type'           => (string) sanitize_text_field( $post->post_type ),
+				'title'          => (string) sanitize_text_field( $post->post_title ),
+				'featured_media' => (int)    get_post_thumbnail_id( $post ), //self::featured_media_per_post( $post ),
+ 				'slug'           => (string) sanitize_text_field( $post->post_name ),
+				'date'           => (string) get_the_date( 'c', $post->ID ),
+				'modified'       => (string) get_the_modified_date( 'c', $post->ID ),
+				'link'           => (string) sanitize_url( get_permalink( $post->ID ) ),
+				'content'        => (string) apply_filters( 'the_content', $post->post_content ),
+				'excerpt'        => (string) apply_filters( 'the_excerpt', $post->post_excerpt ),
+				'terms'          => array_map(
+					static function ( string $taxonomy ) use ( $post ): array {
+
 						$terms = get_the_terms( $post->ID, $taxonomy );
+
 						if ( is_wp_error( $terms ) || empty( $terms ) ) {
-							return array();
+							return [];
 						}
-						return array_map( array( self::class, 'term_model' ), $terms );
+
+						return array_map(
+							static fn ( \WP_Term $term ) => self::term_model( $term ),
+							$terms
+						);
 					},
-					get_object_taxonomies( (string) sanitize_text_field( $post->post_type ), 'names' )
+					get_object_taxonomies(
+						sanitize_text_field( $post->post_type ),
+						'names'
+					)
 				),
 				'images'   => self::attachments_per_post_model( $post ),
 				'acf'      => apply_filters( 'blank_rest_post_acf', $post->ID ),
-			);
+			];
 
 			return apply_filters( 'blank_rest_post', $filtered_post, $post );
 	}
@@ -52,38 +62,49 @@ class Models {
 		$mime  = get_post_mime_type( $img_id );
 		$title = get_the_title( $img_id );
 
-		$filtered_attachment = array(
+		$filtered_attachment = [
 			'id'        => $img_id,
 			'src'       => $src,
 			'alt'       => $alt ? $alt : $title,
 			'width'     => isset( $meta['width'] ) ? absint( $meta['width'] ) : null,
 			'height'    => isset( $meta['height'] ) ? absint( $meta['height'] ) : null,
 			'mime_type' => $mime,
-            'filesize'  => isset( $meta['filesize'] ) ? absint( $meta['filesize'] ) : null,
-            'length'    => isset( $meta['length'] ) ? absint( $meta['length'] ) : null,
+			'filesize'  => isset( $meta['filesize'] ) ? absint( $meta['filesize'] ) : null,
+			'length'    => isset( $meta['length'] ) ? absint( $meta['length'] ) : null,
 			'parent_id' => $post_id ? absint( $post_id ) : null,
 			'field_key' => $field_key,
 			'acf'       => apply_filters( 'blank_rest_attachment_acf', $img_id ),
-		);
+		];
 
 		return (array) apply_filters( 'blank_rest_attachment', $filtered_attachment, $img_id );
 	}
 
-	public static function attachments_per_post_model( $post ): array {
-		
-		$attachments    = array();
-		$attachment_ids = array();
+	public static function featured_media_per_post( $post ): array {
 
-		$thumb_id = get_post_thumbnail_id( $post->ID );
-		if ( $thumb_id ) {
-			$attachment_ids[] = $thumb_id;
+		$thumbnail_id = get_post_thumbnail_id( $post );
+		if ( $thumbnail_id ) {
+			$attachment_image = self::attachment_model( $thumbnail_id, $post->ID, 'featured_media' );
+			return $attachment_image ;
 		}
 
-		$attachment_ids = array_merge( $attachment_ids, Acf::get_acf_attachment_ids( $post->ID) );
+		return [];
+	}
+
+	public static function attachments_per_post_model( $post ): array {
+
+		$attachments    = [];
+		$attachment_ids = [];
+
+		$thumbnail_id = get_post_thumbnail_id( $post->ID );
+		if ( $thumbnail_id ) {
+			$attachment_ids[] = $thumbnail_id;
+		}
+
+		$attachment_ids = array_merge( $attachment_ids, Acf::get_acf_attachment_ids( $post->ID ) );
 
 		foreach ( $attachment_ids as $index => $attachment_id ) {
-			$field_key = 1 === $index ? 'featured_attachment' : 'gallery';
-			$attachments[]  = self::attachment_model( $attachment_id, $post->ID, $field_key );
+			$field_key     = 1 === $index ? 'featured_attachment' : 'gallery';
+			$attachments[] = self::attachment_model( $attachment_id, $post->ID, $field_key );
 		}
 
 		$attachments = array_filter( $attachments );
@@ -92,20 +113,20 @@ class Models {
 	}
 
 	public static function term_model( $term ): array {
-		$filtered_term = array(
+		$filtered_term = [
 			'id'          => (int) $term->term_id,
 			'name'        => (string) sanitize_text_field( $term->name ),
 			'slug'        => (string) sanitize_text_field( $term->slug ),
 			'description' => (string) sanitize_text_field( $term->description ),
 			'count'       => (int) $term->count,
 			'acf'         => apply_filters( 'blank_rest_term_acf', $term ),
-		);
+		];
 
 		return (array) apply_filters( 'blank_rest_term', $filtered_term, $term );
 	}
 
 	public static function menu_item_model( $menu_item ): array {
-		$filtered_menu_item = array(
+		$filtered_menu_item = [
 			'id'         => (int) sanitize_text_field( $menu_item->ID ),
 			'title'      => (string) sanitize_text_field( $menu_item->title ),
 			'url'        => (string) sanitize_url( $menu_item->url ),
@@ -116,7 +137,7 @@ class Models {
 			'attr_title' => (string) sanitize_text_field( $menu_item->attr_title ),
 			'acf'        => apply_filters( 'blank_rest_menu_item_acf', $menu_item->ID ),
 
-		);
+		];
 
 		return (array) apply_filters( 'blank_rest_menu_item', $filtered_menu_item, $menu_item );
 	}

@@ -36,14 +36,19 @@ if (file_exists(get_template_directory() . '/vendor/autoload.php')) {
 	require_once realpath(get_template_directory() . '/vendor/autoload.php');
 }
 
-Theme::get_instance();
+Core\Theme::get_instance();
 Core\CustomPosts::get_instance();
 Core\DisableComments::get_instance();
 Core\Acf::get_instance();
+Admin\OptionsPage::get_instance();
 
 Rest\Routes::register();
+
+Models\ModelRepository::get_instance();
+Models\SchemaService::get_instance();
+
 Application\WebhookService::get_instance();
-Admin\OptionsPage::get_instance();
+
 
 function is_admin_screen( $screen_name ) {
 	if ( ! is_admin() ) {

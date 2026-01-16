@@ -2,11 +2,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin\Options;
+use \cmk\blank\Rest\Permissions;
+use \cmk\blank\Rest\RateLimit;
+use \cmk\blank\Rest\Controllers;
+use \cmk\blank\Admin\Options;
 
 class Routes {
 
-	
+
 	public static function register() {
 
 		add_filter(
@@ -34,13 +37,17 @@ class Routes {
 
 		add_filter(
 			'rest_authentication_errors',
-			array( Permissions::class, 'protect_wp_rest_routes' ),
-			20, 1 );
+			array( \cmk\blank\Rest\Permissions::class, 'protect_wp_rest_routes' ),
+			20,
+			1
+		);
 
 		add_filter(
 			'rest_pre_dispatch',
-			array( Permissions::class, 'filter_wp_rest_post_types' ),
-			10, 3 );
+			array( \cmk\blank\Rest\Permissions::class, 'filter_wp_rest_post_types' ),
+			10,
+			3
+		);
 
 		add_action(
 			'rest_api_init',
@@ -65,12 +72,11 @@ class Routes {
 						'methods'             => 'GET',
 						'callback'            => array( Controllers::class, 'posts_per_post_type' ),
 						'permission_callback' => array( Routes::class, 'permission_check' ),
-
 						'args'                => array(
 							'post_type' => array(
 								'required'          => true,
 								'sanitize_callback' => 'sanitize_key',
-								'validate_callback' => array( Routes::class, 'is_post_type_allowed' ),
+								'validate_callback' => array( Permissions::class, 'is_post_type_allowed' ),
 							),
 						),
 					)
@@ -87,8 +93,8 @@ class Routes {
 							'post_type' => array(
 								'required'          => true,
 								'sanitize_callback' => 'sanitize_key',
-								'validate_callback' => array( Routes::class, 'is_post_type_allowed' ),
-							)
+								'validate_callback' => array( Permissions::class, 'is_post_type_allowed' ),
+							),
 						),
 					)
 				);
@@ -97,12 +103,12 @@ class Routes {
 	}
 
 	public static function permission_check( \WP_REST_Request $request ) {
-		$auth = \cmk\blank\Rest\Permissions::validate_rest_api_token();
+		$auth = Permissions::validate_rest_api_token();
 		if ( is_wp_error( $auth ) ) {
 			return $auth;
 		}
 
-		$rate = \cmk\blank\Rest\RateLimit::check( $request );
+		$rate = RateLimit::check( $request );
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
 		}
@@ -110,26 +116,15 @@ class Routes {
 		return true;
 	}
 
-	public static function is_post_type_allowed( string $param ) {
-		if ( false === Permissions::is_post_type_allowed( $param ) ) {
-			return new \WP_Error(
-				'forbidden_post_type',
-				__( 'This post type is not allowed.', 'blank' ),
-				array( 'status' => 403 )
-			);
-		}
-		return true;
-	}
-
 	public static function set_posts_per_page(): void {
-		$admin_options      = \cmk\blank\Admin\Options::read_options();
+		$admin_options      = Options::read_options();
 		$allowed_post_types = $admin_options['blank_allowed_post_types'];
 
 		foreach ( $allowed_post_types as $allowed_post_type ) {
 			add_filter(
 				'rest_' . $allowed_post_type . '_collection_params',
 				function ( $query_params ) {
-					$admin_options = \cmk\blank\Admin\Options::read_options();
+					$admin_options = Options::read_options();
 					$max_per_page  = $admin_options['rest_api_posts_per_page'];
 
 					if ( isset( $query_params['per_page'] ) ) {
@@ -137,8 +132,10 @@ class Routes {
 						$query_params['per_page']['maximum'] = $max_per_page;
 					}
 					return $query_params;
-				}, 10, 2 );
+				},
+				10,
+				2
+			);
 		}
 	}
-
 }

@@ -3,6 +3,9 @@ namespace cmk\blank\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Admin\Permissions;
+use cmk\blank\Core\Utils;
+
 class OptionsPage {
 	protected static $instance = null;
 
@@ -27,8 +30,7 @@ class OptionsPage {
 
 		add_action( 'wp_ajax_blank_theme_update_options', array( $this, 'ajax_update_options' ) );
 		add_action( 'wp_ajax_blank_theme_read_options', array( $this, 'ajax_read_options' ) );
-		add_action( 'wp_ajax_blank_theme_documentation', array(  $this, 'ajax_documentation' ) );
-
+		add_action( 'wp_ajax_blank_theme_documentation', array( $this, 'ajax_documentation' ) );
 	}
 
 	public function register_admin_page() {
@@ -41,6 +43,50 @@ class OptionsPage {
 			'dashicons-hidden',
 			99
 		);
+	}
+
+	public function ajax_read_options() {
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+		}
+
+		$options = Options::read_options();
+		wp_send_json_success( $options );
+	}
+
+	public function ajax_update_options() {
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+		}
+
+		if ( isset( $_POST['action'] ) && 'blank_theme_update_options' === $_POST['action'] && isset( $_POST['options'] ) ) {
+
+			$options = json_decode( sanitize_text_field( wp_unslash( $_POST['options'] ) ), true );
+			if ( ! is_array( $options ) ) {
+				wp_send_json_error( [ 'error' => esc_html__( 'Invalid options data', 'blank' ) ], 400 );
+			}
+
+			$options = Options::update_options( $options );
+
+			wp_send_json_success(
+				[
+					'message' => esc_html__( 'Options saved', 'blank' ),
+					'options' => $options,
+				]
+			);
+		} else {
+			$options = Options::read_options();
+			wp_send_json_success( $options );
+		}
+	}
+
+	public function ajax_documentation() {
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+		}
+
+		$documentation_pages = Documentation::read_pages();
+		wp_send_json_success( $documentation_pages );
 	}
 
 	public function render_admin_page() {
@@ -56,7 +102,7 @@ class OptionsPage {
 		wp_enqueue_style( 'editor-buttons' );
 
 		$mui_config       = $this->load_script_config( get_template_directory() . '/build/mui.asset.php' );
-		$mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : array();
+		$mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : [];
 		wp_enqueue_script(
 			'blank-theme-mui',
 			get_template_directory_uri() . '/build/mui.js',
@@ -66,7 +112,7 @@ class OptionsPage {
 		);
 
 		$script_config = $this->load_script_config( get_template_directory() . '/build/index.asset.php' );
-		$dependencies  = ! empty( $script_config ) && isset( $script_config['dependencies'] ) ? $script_config['dependencies'] : array();
+		$dependencies  = ! empty( $script_config ) && isset( $script_config['dependencies'] ) ? $script_config['dependencies'] : [];
 		wp_enqueue_script(
 			'blank-theme-admin',
 			get_template_directory_uri() . '/build/index.js',
@@ -87,8 +133,8 @@ class OptionsPage {
 			array(
 				'nonce'         => wp_create_nonce( 'blank_theme_update_options_nonce' ),
 				'ajaxurl'       => admin_url( 'admin-ajax.php' ),
-				'users'         => self::list_users(),
-				'post_types'    => self::list_post_types(),
+				'users'         => Utils::list_users(),
+				'post_types'    => Utils::list_post_types(),
 				'admin_options' => Options::read_options(),
 				'theme_name'    => $theme_object ? sanitize_text_field( $theme_object->get( 'Name' ) ) : '',
 				'theme_domain'  => $theme_object ? sanitize_key( $theme->get( 'Domain' ) ) : '',
@@ -97,54 +143,6 @@ class OptionsPage {
 				'home_url'      => get_home_url( '/' ),
 			)
 		);
-	}
-
-	public function ajax_read_options() {
-		check_ajax_referer( 'blank_theme_read_options_nonce', 'nonce' );
-		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized', 'blank' ) ), 401 );
-		}
-
-		$options = Options::read_options();
-		wp_send_json_success( $options );
-	}
-
-	public function ajax_documentation() {
-		check_ajax_referer( 'blank_theme_read_options_nonce', 'nonce' );
-		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized', 'blank' ) ), 401 );
-		}
-
-		$documentation_pages = Documentation::read_pages();
-		wp_send_json_success( $documentation_pages );
-	}
-
-
-	public function ajax_update_options() {
-		check_ajax_referer( 'blank_theme_update_options_nonce', 'nonce' );
-		if ( ! current_user_can( 'blank_edit_theme_options' ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized', 'blank' ) ), 401 );
-		}
-
-		if ( isset( $_POST['action'] ) && 'blank_theme_update_options' === $_POST['action'] && isset( $_POST['options'] ) ) {
-
-			$options = json_decode( sanitize_text_field( wp_unslash( $_POST['options'] ) ), true );
-			if ( ! is_array( $options ) ) {
-				wp_send_json_error( array( 'error' => esc_html__( 'Invalid options data', 'blank' ) ), 400 );
-			}
-
-			$options = Options::update_options( $options );
-
-			wp_send_json_success(
-				array(
-					'message' => esc_html__( 'Options saved', 'blank' ),
-					'options' => $options,
-				)
-			);
-		} else {
-			$options = Options::read_options();
-			wp_send_json_success( $options );
-		}
 	}
 
 	public function print_inline_styles() {
@@ -184,64 +182,11 @@ class OptionsPage {
 		echo '<style type="text/css">' . $custom_css . '</style>';
 	}
 
-	private static function list_users(): array {
-
-		$users       = get_users(
-			array(
-				'role__in' => array( 'administrator' ),
-			)
-		);
-		$users_array = array();
-
-		if ( is_array( $users ) && count( $users ) > 0 ) {
-			foreach ( $users as $user ) {
-				if ( false === is_a( $user, 'WP_User' ) ) {
-					continue;
-				}
-
-				$user_id = isset( $user->ID ) ? (int) sanitize_text_field( wp_unslash( $user->ID ) ) : 0;
-
-				$users_array[] = array(
-					'value'        => $user_id,
-					'label'        => isset( $user->display_name ) ? sanitize_text_field( $user->display_name ) : '',
-					'admin_url'    => isset( $user->user_url ) ? sanitize_url( get_edit_user_link( $user_id ) ) : '',
-					'current_user' => get_current_user_id() === $user_id ? 1 : 0,
-				);
-			}
-		}
-		return $users_array;
-	}
-
-	private static function list_post_types() {
-
-		$post_types = get_post_types(
-			array(
-				'public' => true,
-			),
-			'objects'
-		);
-		if ( empty( $post_types ) ) {
-			return;
-		}
-
-		$post_types = array_map(
-			function ( $post_type ) {
-				return array(
-					'value' => $post_type->name,
-					'label' => $post_type->labels->singular_name,
-				);
-			},
-			$post_types
-		);
-
-		return array_values( $post_types );
-	}
-
 	private static function load_script_config( $file_path ): array {
-		$config = array();
+		$config = [];
 		if ( is_readable( $file_path ) ) {
 			$raw_config             = include realpath( $file_path );
-			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_key', $raw_config['dependencies'] ) : array();
+			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_key', $raw_config['dependencies'] ) : [];
 			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : '1.0.0';
 		}
 		return $config;

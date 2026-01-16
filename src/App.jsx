@@ -31,6 +31,7 @@ import Chip from '@mui/material/Chip';
 import Webhook from './components/Webhook';
 
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import Models from './components/Models/Models';
 
 export default function App() {
 	const { adminData, updateAdminData } = useAdminData();
@@ -133,6 +134,7 @@ export default function App() {
 								label={__('Flatten Posts', 'blank')}
 
 							/>
+							<Models />
 							<FormHelperText>{__('This will act as the WordPress REST API _fields and _embed parameters.', 'blank')}</FormHelperText>
 						</FormControl>
 

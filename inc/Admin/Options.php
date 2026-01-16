@@ -14,30 +14,31 @@ class Options {
 	}
 
 	private function __construct() {
-		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_init', [ $this, 'register_settings' ] );
 	}
 
 	public function register_settings(): void {
 		register_setting(
 			'blank_theme_options_group',
 			'blank_theme_options',
-			array(
-				'sanitize_callback' => array( self::class, 'sanitize_options' ),
+			[
+				'sanitize_callback' => [ self::class, 'sanitize_options' ],
 				'default'           => self::default_options(),
 				'show_in_rest'      => self::show_in_rest() ? self::rest_schema() : false,
-			)
+			]
 		);
 
 		add_action(
 			'blank_admin_option_updated',
 			function ( string $key, $new, $old ) {
-				
-				if('rest_api_user_id' === $key) {
+
+				if ( 'rest_api_user_id' === $key ) {
 					\cmk\blank\Rest\Permissions::sync_rest_api_user( $new, $old );
 				}
-
 			},
-			10, 3);
+			10,
+			3
+		);
 	}
 
 	public static function show_in_rest(): bool {
@@ -48,10 +49,10 @@ class Options {
 	}
 
 	public static function rest_schema(): array {
-		$schema = array(
+		$schema = [
 			'type'       => 'object',
-			'properties' => array(),
-		);
+			'properties' => [],
+		];
 
 		foreach ( self::options_config() as $key => $config ) {
 			if ( empty( $config['rest_expose'] ) ) {
@@ -76,133 +77,133 @@ class Options {
 					break;
 			}
 
-			$schema['properties'][ $key ] = array(
+			$schema['properties'][ $key ] = [
 				'type' => $type,
-			);
+			];
 		}
 
-		return array( 'schema' => $schema );
+		return [ 'schema' => $schema ];
 	}
 
 	public static function options_config(): array {
-		return array(
-			
-			'blank_allowed_post_types'             => array(
-				'default_value'     => array( 'post', 'page' ),
+		return [
+
+			'blank_allowed_post_types'             => [
+				'default_value'     => [ 'post', 'page' ],
 				'type'              => 'array',
 				'sanitize_callback' => 'sanitize_key',
 				'rest_expose'       => false,
-			),
+			],
 
-			'rest_api_posts_per_page'                => array(
+			'rest_api_posts_per_page'              => [
 				'default_value'     => 100,
 				'type'              => 'int',
 				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
-			),
+			],
 
-			'rest_api_flatten_posts'                => array(
+			'rest_api_flatten_posts'               => [
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'blank_filter_wp_rest_post_types'         => array(
+			'blank_filter_wp_rest_post_types'      => [
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'blank_disable_gutenberg'              => array(
+			'blank_disable_gutenberg'              => [
 				'default_value'     => false,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'blank_disable_comments'               => array(
+			'blank_disable_comments'               => [
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'blank_enable_acf_support'             => array(
+			'blank_enable_acf_support'             => [
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'rest_api_user_id'                     => array(
+			'rest_api_user_id'                     => [
 				'default_value'     => 1,
 				'type'              => 'int',
 				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
-			),
+			],
 
-			'rest_api_rate_limit'                  => array(
+			'rest_api_rate_limit'                  => [
 				'default_value'     => 30,
 				'type'              => 'int',
 				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
-			),
+			],
 
-			'rest_api_rate_limit_time'             => array(
+			'rest_api_rate_limit_time'             => [
 				'default_value'     => 60,
 				'type'              => 'int',
 				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
-			),
+			],
 
-			'blank_protect_wp_rest_routes'         => array(
+			'blank_protect_wp_rest_routes'         => [
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'application_host'                     => array(
+			'application_host'                     => [
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'rest_expose'       => false,
-			),
+			],
 
-			'application_webhook_endpoint'         => array(
+			'application_webhook_endpoint'         => [
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'rest_expose'       => false,
-			),
+			],
 
-			'application_webhook_secret_generated' => array(
+			'application_webhook_secret_generated' => [
 				'default_value'     => false,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
+			],
 
-			'max_upload_size'                      => array(
+			'max_upload_size'                      => [
 				'default_value'     => 1024, // KB.
 				'type'              => 'int',
 				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
-			),
+			],
 
-			'enable_max_upload_size'               => array(
+			'enable_max_upload_size'               => [
 				'default_value'     => false,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
-			),
-		);
+			],
+		];
 	}
 
 	public static function default_options(): array {
-		$defaults = array();
+		$defaults = [];
 
 		foreach ( self::options_config() as $key => $config ) {
 			$defaults[ $key ] = $config['default_value'];
@@ -212,7 +213,7 @@ class Options {
 	}
 
 	public static function hook_filters(): array {
-		$filtered = array();
+		$filtered = [];
 
 		foreach ( self::read_options() as $option_key => $value ) {
 			$filtered[ $option_key ] = self::sanitize_option( $option_key, apply_filters( 'blank_theme_' . $option_key, $value ) );
@@ -222,11 +223,11 @@ class Options {
 	}
 
 	public static function sanitize_options( array $options ): array {
-		$options_config  = self::options_config();
-		$default_values  = self::default_options();
+		$options_config = self::options_config();
+		$default_values = self::default_options();
 
 		$options   = wp_parse_args( $options, $default_values );
-		$sanitized = array();
+		$sanitized = [];
 
 		foreach ( $options_config as $option_key => $config ) {
 			$sanitized_key = sanitize_key( $option_key );
@@ -264,7 +265,7 @@ class Options {
 			case 'array':
 				return is_array( $option_value )
 					? array_map( $callback, $option_value )
-					: array();
+					: [];
 
 			case 'string':
 			default:
@@ -273,11 +274,11 @@ class Options {
 	}
 
 	public static function read_options(): array {
-		return self::sanitize_options( self::multisite_get_option( 'blank_theme_options', array() ) );
+		return self::sanitize_options( self::multisite_get_option( 'blank_theme_options', [] ) );
 	}
 
 	public static function read_option( string $option_key ) {
-		$options = self::sanitize_options( self::multisite_get_option( 'blank_theme_options', array() ) );
+		$options = self::sanitize_options( self::multisite_get_option( 'blank_theme_options', [] ) );
 		return isset( $options[ $option_key ] ) ? $options[ $option_key ] : false;
 	}
 
@@ -295,8 +296,8 @@ class Options {
 
 	public static function update_option( string $option_key, $new_option ) {
 
-		$old_option       = self::read_option( $option_key );
-		if( false === $old_option) {
+		$old_option = self::read_option( $option_key );
+		if ( false === $old_option ) {
 			return false;
 		}
 
@@ -315,7 +316,7 @@ class Options {
 			&& apply_filters( 'blank_use_multisite_options', false );
 	}
 
-	public static function multisite_get_option( string $option, $default = array() ): array {
+	public static function multisite_get_option( string $option, $default = [] ): array {
 		if ( self::is_multisite_mode() ) {
 			return get_site_option( $option, $default );
 		}

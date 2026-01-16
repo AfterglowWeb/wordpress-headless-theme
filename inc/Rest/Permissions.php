@@ -40,6 +40,10 @@ class Permissions {
 
 	public static function is_post_type_allowed( string $post_type ): bool {
 
+		if ( is_user_logged_in() ) {
+			return true;
+		}
+
 		if ( ! post_type_exists( $post_type ) ) {
 			return false;
 		}
@@ -55,7 +59,7 @@ class Permissions {
 	}
 
 	public static function protect_wp_rest_routes( $result ) {
-		
+
 		if ( $result instanceof \WP_Error ) {
 			return $result;
 		}
@@ -84,7 +88,7 @@ class Permissions {
 			return $result;
 		}
 
-		$auth = Permissions::validate_rest_api_token();
+		$auth = self::validate_rest_api_token();
 		if ( is_wp_error( $auth ) ) {
 			return $auth;
 		}
@@ -114,18 +118,18 @@ class Permissions {
 			return $result;
 		}
 
-		$parts = explode( '/', trim( $route, '/' ) );
+		$parts     = explode( '/', trim( $route, '/' ) );
 		$post_type = $parts[2] ?? null;
 
 		if ( ! $post_type ) {
 			return $result;
 		}
 
-		if ( false === Permissions::is_post_type_allowed( $post_type ) ) {
+		if ( false === self::is_post_type_allowed( $post_type ) ) {
 			return new \WP_Error(
 				'forbidden_post_type',
 				__( 'This post type is not allowed.', 'blank' ),
-				array( 'status' => 403 )
+				[ 'status' => 403 ]
 			);
 		}
 
