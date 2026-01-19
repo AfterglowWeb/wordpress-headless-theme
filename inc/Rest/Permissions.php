@@ -40,18 +40,17 @@ class Permissions {
 
 	public static function is_post_type_allowed( string $post_type ): bool {
 
-		if ( is_user_logged_in() ) {
-			return true;
-		}
-
 		if ( ! post_type_exists( $post_type ) ) {
 			return false;
 		}
 
-		$admin_options            = Options::read_options();
-		$blank_allowed_post_types = (array) $admin_options['blank_allowed_post_types'];
+		$allowed_post_types = Options::read_option( 'blank_allowed_post_types' );
 
-		if ( ! in_array( $post_type, $blank_allowed_post_types, true ) ) {
+		if( empty( $allowed_post_types )) { // If option is not set, all posts are allowed
+			return true;
+		} 
+
+		if ( ! in_array( $post_type, $allowed_post_types, true ) ) {
 			return false;
 		}
 
@@ -64,24 +63,8 @@ class Permissions {
 			return $result;
 		}
 
-		if ( is_admin() ) {
-			return $result;
-		}
-
-		$route = $request->get_route();
-
-		$options = Options::read_options();
-
-		if ( empty( $options['blank_protect_wp_rest_routes'] ) ) {
-			return $result;
-		}
-
-		if ( ! str_starts_with( $route, '/wp/v2/' ) ) {
-			return $result;
-		}
-
-		$parts     = explode( '/', trim( $route, '/' ) );
-		$post_type = $parts[2] ?? null;
+		$parts     = explode( '/', trim( $request->get_route(), '/' ) );
+		$post_type = isset( $parts[2] ) ? sanitize_key( $parts[2] ) : null;
 
 		if ( ! $post_type ) {
 			return $result;
