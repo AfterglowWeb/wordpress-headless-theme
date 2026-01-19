@@ -12,29 +12,6 @@ class Routes {
 
 	public static function register() {
 
-		add_filter(
-			'rest_pre_dispatch',
-			function ( $result, $server, $request ) {
-				if ( strpos( $request->get_route(), '/settings' ) === false ) {
-					return $result;
-				}
-
-				$auth = Permissions::validate_rest_api_token();
-				if ( is_wp_error( $auth ) ) {
-					return $auth;
-				}
-
-				$rate = RateLimit::check( $request );
-				if ( is_wp_error( $rate ) ) {
-					return $rate;
-				}
-
-				return $result;
-			},
-			10,
-			3
-		);
-
 
 		add_filter(
 			'rest_authentication_errors',
