@@ -28,7 +28,6 @@ class SchemaService {
 
 		$post_types_schemas = self::read_post_types_schemas();
 		$taxonomies_schemas = self::read_taxonomies_schemas();
-error_log( 'POST TYPES SCHEMAS: ' . print_r( $post_types_schemas, true ) );
 
 		if ( empty( $post_types_schemas ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid REST type' ), 422 );

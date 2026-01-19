@@ -19,12 +19,12 @@ class Routes {
 					return $result;
 				}
 
-				$auth = \cmk\blank\Rest\Permissions::validate_rest_api_token();
+				$auth = Permissions::validate_rest_api_token();
 				if ( is_wp_error( $auth ) ) {
 					return $auth;
 				}
 
-				$rate = \cmk\blank\Rest\RateLimit::check( $request );
+				$rate = RateLimit::check( $request );
 				if ( is_wp_error( $rate ) ) {
 					return $rate;
 				}
@@ -35,11 +35,31 @@ class Routes {
 			3
 		);
 
+
 		add_filter(
 			'rest_authentication_errors',
-			array( \cmk\blank\Rest\Permissions::class, 'protect_wp_rest_routes' ),
-			20,
-			1
+			function ( $result ) {
+
+				if ( is_wp_error( $result ) ) {
+					return $result;
+				}
+
+				$option = Options::read_option( 'blank_protect_wp_rest_routes' );
+				if ( empty( $option ) ) {
+					return $result;
+				}
+
+				if ( false === Permissions::validate_rest_api_token() ) {
+					return new \WP_Error(
+						'rest_forbidden',
+						__( 'Authentication required.' ),
+						[ 'status' => 401 ]
+					);
+				}
+
+				return $result;
+			}, 10,
+			3
 		);
 
 		add_filter(

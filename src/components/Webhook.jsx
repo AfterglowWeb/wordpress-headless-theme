@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { useAdminData } from '../contexts/AdminDataContext';
 
 import Box from '@mui/material/Box';
@@ -25,7 +25,11 @@ export default function Webhook({form, setField}) {
     const { adminData } = useAdminData();
 
     const { __ } = wp.i18n || {};
+
+    const [hasSecret, setHasSecret] = useState(null);
     const [webhookSecret, setWebhookSecret] = useState(null);
+    const isRevealed = webhookSecret !== null;
+    const isLoading = hasSecret === null;
 
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarSeverity, setSnackbarSeverity] = useState('');
@@ -35,53 +39,80 @@ export default function Webhook({form, setField}) {
     const confirmOpen = Boolean(confirmAction);
 
 
-    const regenerateWebhookSecret = async () => {
-        const _response = await fetch(adminData.ajaxurl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-			},
-			body: new URLSearchParams({
-				action: 'update_application_webhook_secret',
-				nonce: adminData.nonce
-			}),
-		});
+    useEffect(() => {
+        const checkSecret = async () => {
+            const response = await fetch(adminData.ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: new URLSearchParams({
+                    action: 'has_application_webhook_secret',
+                    nonce: adminData.nonce,
+                }),
+            });
 
-		const response = await _response.json();
-        if(response && response.data) {
-            setWebhookSecret(response.data.secret);
-            setField('application_webhook_secret_generated', true);
-            
+            const result = await response.json();
+
+            if (result?.success) {
+                setHasSecret(Boolean(result.data.has_secret));
+                setWebhookSecret(null);
+            }
+        };
+
+        checkSecret();
+    }, [adminData]);
+
+
+    const regenerateWebhookSecret = async () => {
+        const response = await fetch(adminData.ajaxurl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            },
+            body: new URLSearchParams({
+                action: 'update_application_webhook_secret',
+                nonce: adminData.nonce
+            }),
+        });
+
+        const result = await response.json();
+
+        if (result?.success) {
+            setWebhookSecret(result.data.secret); // 👈 reveal now
+            setHasSecret(true);
+
             setSnackbarOpen(true);
             setSnackbarSeverity('success');
             setSnackbarContent(__('Application webhook secret generated successfully.', 'blank'));
         }
-
     };
 
-    const deleteWebhookSecret = async () => {
-        const _response = await fetch(adminData.ajaxurl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-			},
-			body: new URLSearchParams({
-				action: 'delete_application_webhook_secret',
-				nonce: adminData.nonce
-			}),
-		});
 
-		const response = await _response.json();
-        if(response && response.data) {
+    const deleteWebhookSecret = async () => {
+        const response = await fetch(adminData.ajaxurl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            },
+            body: new URLSearchParams({
+                action: 'delete_application_webhook_secret',
+                nonce: adminData.nonce
+            }),
+        });
+
+        const result = await response.json();
+
+        if (result?.success) {
             setWebhookSecret(null);
-            setField('application_webhook_secret_generated', false);
+            setHasSecret(false);
 
             setSnackbarOpen(true);
             setSnackbarSeverity('success');
-            setSnackbarContent(__('Application webhook secret deleted successfully.', 'blank'));
+            setSnackbarContent(result.data.message || '');
         }
-
     };
+
 
     const confirmConfig = {
         delete: {
@@ -128,43 +159,44 @@ export default function Webhook({form, setField}) {
     <Box mt={2}>
         <Stack spacing={1.5}>
             <TextField
-                label={__('Application Webhook Secret', 'blank')}
-                value={!webhookSecret && form.application_webhook_secret_generated
-                            ? '••••••••••••••••••••••••'
-                            : ( webhookSecret ? webhookSecret : __('Not generated', 'blank') )
-                }
-                type={webhookSecret ? 'text' : 'password'}
-                slotProps={{
-                    input:{
-                        readOnly: true,
-                        endAdornment: webhookSecret && (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    aria-label={__('Copy webhook secret', 'blank')}
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(webhookSecret);
-                                    }}
-                                    edge="end"
-                                >
-                                    <ContentCopyIcon fontSize="small" />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    }
-                }}
-                helperText={!webhookSecret && form.application_webhook_secret_generated ?
-                    __('Used to sign webhook requests. Store this value securely in your application environment.', 'blank')
-                    :
-                    __('The secret has already been revelead once.', 'blank')
+    label={__('Application Webhook Secret', 'blank')}
+    value={
+        isLoading
+            ? __('Checking…', 'blank')
+            : !hasSecret
+                ? __('Not generated', 'blank')
+                : isRevealed
+                    ? webhookSecret
+                    : '••••••••••••••••••••••••••••••••'
+    }
+    type={isRevealed ? 'text' : 'password'}
+    disabled={false}
+    slotProps={{
+        input: {
+            readOnly: true,
+            endAdornment: isRevealed && (
+                <InputAdornment position="end">
+                    <IconButton
+                        onClick={() => navigator.clipboard.writeText(webhookSecret)}
+                    >
+                        <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                </InputAdornment>
+            ),
+        }
+    }}
+    helperText={
+        !hasSecret
+            ? __('No webhook secret generated yet.', 'blank')
+            : __('Used to sign webhook requests.', 'blank')
+    }
+    fullWidth
+/>
 
-                }
-                fullWidth
-            />
-
-            {webhookSecret && (
+            {isRevealed && (
                 <Alert severity="info">
                     {__(
-                        'This secret is shown only once. Copy it now and store it securely. You will not be able to view it again.',
+                        'This secret is shown only once. Copy it now and store it securely.',
                         'blank'
                     )}
                 </Alert>
@@ -183,6 +215,7 @@ export default function Webhook({form, setField}) {
                     variant="outlined"
                     startIcon={<DeleteOutlineIcon />}
                     onClick={() => setConfirmAction('delete')}
+                    disabled={!hasSecret}
                 >
                     {__('Revoke Secret', 'blank')}
                 </Button>

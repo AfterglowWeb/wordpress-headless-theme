@@ -18,7 +18,6 @@ export default function useSettingsForm({
 		rest_api_posts_per_page: 100,
 		application_host: '',
 		application_webhook_endpoint: '',
-		application_webhook_secret_generated: false,
 		max_upload_size: 1024,
 		enable_max_upload_size: false,
 	});
@@ -49,7 +48,6 @@ export default function useSettingsForm({
 			rest_api_posts_per_page: Number(adminOptions.rest_api_posts_per_page ?? 100),
 			application_host: adminOptions.application_host ?? '',
 			application_webhook_endpoint: adminOptions.application_webhook_endpoint ?? '',
-			application_webhook_secret_generated: Boolean(adminOptions.application_webhook_secret_generated),
 			max_upload_size: Number(adminOptions.max_upload_size ?? 1024),
 			enable_max_upload_size: Boolean(adminOptions.enable_max_upload_size),
 		});
@@ -100,7 +98,6 @@ export default function useSettingsForm({
 		rest_api_posts_per_page: form.rest_api_posts_per_page,
 		application_host: form.application_host,
 		application_webhook_endpoint: form.application_webhook_endpoint,
-		application_webhook_secret_generated: form.application_webhook_secret_generated,
 		max_upload_size: form.max_upload_size,
 		enable_max_upload_size: form.enable_max_upload_size,
 	}), []);

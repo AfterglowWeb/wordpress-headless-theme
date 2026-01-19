@@ -19,7 +19,9 @@ class WebhookService {
 	private function __construct() {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'wp_ajax_trigger_application_webhook', array( $this, 'ajax_trigger_application_webhook' ) );
+		add_action( 'wp_ajax_has_application_webhook_secret', array( $this, 'ajax_has_application_webhook_secret' ) );
 		add_action( 'wp_ajax_update_application_webhook_secret', array( $this, 'ajax_update_application_webhook_secret' ) );
+		add_action( 'wp_ajax_delete_application_webhook_secret', array( $this, 'ajax_delete_application_webhook_secret' ) );
 		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_button' ), 100 );
 	}
 
@@ -53,22 +55,36 @@ class WebhookService {
 		wp_send_json_success( $response );
 	}
 
+	public function ajax_has_application_webhook_secret(): void {
+
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+		}
+
+		$has_secret = (bool) get_option('blank_theme_application_webhook_secret');
+
+		wp_send_json_success([
+			'has_secret' => $has_secret,
+		], 200 );
+	}
+
 	public function ajax_update_application_webhook_secret(): void {
 
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
 			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
 		}
 
+		$secret = wp_generate_password( 64, true );
+		update_option( 'blank_theme_application_webhook_secret', $secret );
+
 		wp_send_json_success(
 			[
-				'secret'  => $this->update_webhook_secret(),
+				'secret'  => $secret,
 				'message' => esc_html__(
 					'Copy this secret now. You will not be able to view it again.',
 					'blank'
 				),
-			],
-			200
-		);
+			], 200 );
 	}
 
 	public function ajax_delete_application_webhook_secret(): void {
@@ -77,10 +93,22 @@ class WebhookService {
 			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
 		}
 
-		if ( true === $this->delete_webhook_secret() ) {
+		$webhook = get_option( 'blank_theme_application_webhook_secret' );
+
+		if ( ! empty($webhook) ) {
+				
+				update_option( 'blank_theme_application_webhook_secret', false );
+				
+				wp_send_json_success(
+					[
+						'message' => esc_html__( 'Webhook secret deleted.', 'blank' ),
+					],
+					200
+				);
+		} else {
 			wp_send_json_success(
 				[
-					'message' => esc_html__( 'Webhook secret deleted.', 'blank' ),
+					'message' => esc_html__( 'Webhook secret does not exists.', 'blank' ),
 				],
 				200
 			);
@@ -90,22 +118,8 @@ class WebhookService {
 			[
 				'error' => esc_html__( 'An error occured while deleting Webhook secret.', 'blank' ),
 			],
-			500
+			200
 		);
-	}
-
-	private function update_webhook_secret(): string {
-		$secret = wp_generate_password( 64, true );
-		update_option( 'blank_theme_application_webhook_secret', $secret );
-		Options::update_option( 'application_webhook_secret_generated', true );
-
-		return $secret;
-	}
-
-	private function delete_webhook_secret(): bool {
-		$result = update_option( 'blank_theme_application_webhook_secret', false );
-		Options::update_option( 'application_webhook_secret_generated', false );
-		return $result;
 	}
 
 	public function enqueue_scripts(): void {
