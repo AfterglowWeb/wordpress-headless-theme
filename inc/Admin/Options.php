@@ -3,6 +3,8 @@ namespace cmk\blank\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Rest\Permissions;
+
 class Options {
 	protected static $instance = null;
 
@@ -14,18 +16,188 @@ class Options {
 	}
 
 	private function __construct() {
-		add_action( 'admin_init', [ $this, 'register_settings' ] );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
+	}
+
+	public static function options_config(): array {
+		return array(
+
+			// Models
+			'blank_use_core_rest_enabled'             => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_relative_url_enabled'              => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_embed_featured_attachment_enabled' => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_embed_post_attachments_enabled'    => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_relative_attachment_url_enabled'   => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_embed_terms_enabled'               => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_embed_authors_enabled'             => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_with_acf_enabled'                  => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			// Enforce preset on collections.
+
+			'rest_api_posts_per_page'                 => array(
+				'default_value'     => 100,
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
+			'rest_api_attachments_per_page'           => array(
+				'default_value'     => 100,
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
+			// Permissions.
+
+			'rest_api_restrict_post_types_enabled'    => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'rest_api_allowed_post_types'             => array(
+				'default_value'     => array( 'post', 'page' ),
+				'type'              => 'array',
+				'sanitize_callback' => 'sanitize_key',
+				'rest_expose'       => false,
+			),
+
+			'rest_api_protect_wp_rest_routes'         => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'rest_api_user_id'                        => array(
+				'default_value'     => 1,
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
+			'rest_api_rate_limit'                     => array(
+				'default_value'     => 30,
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
+			'rest_api_rate_limit_time'                => array(
+				'default_value'     => 60,
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
+			// Application.
+
+			'application_host'                        => array(
+				'default_value'     => '',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'rest_expose'       => false,
+			),
+
+			'application_webhook_endpoint'            => array(
+				'default_value'     => '',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'rest_expose'       => false,
+			),
+
+
+			// Core.
+
+			'core_disable_gutenberg_enabled'          => array(
+				'default_value'     => false,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'core_disable_comments_enabled'           => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'core_max_upload_size'                    => array(
+				'default_value'     => 1024, // KB.
+				'type'              => 'int',
+				'sanitize_callback' => 'absint',
+				'rest_expose'       => false,
+			),
+
+			'core_max_upload_size_enabled'            => array(
+				'default_value'     => false,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+		);
 	}
 
 	public function register_settings(): void {
 		register_setting(
 			'blank_theme_options_group',
 			'blank_theme_options',
-			[
-				'sanitize_callback' => [ self::class, 'sanitize_options' ],
+			array(
+				'sanitize_callback' => array( self::class, 'sanitize_options' ),
 				'default'           => self::default_options(),
 				'show_in_rest'      => self::show_in_rest() ? self::rest_schema() : false,
-			]
+			)
 		);
 
 		add_action(
@@ -33,7 +205,7 @@ class Options {
 			function ( string $key, $new, $old ) {
 
 				if ( 'rest_api_user_id' === $key ) {
-					\cmk\blank\Rest\Permissions::sync_rest_api_user( $new, $old );
+					Permissions::sync_rest_api_user( $new, $old );
 				}
 			},
 			10,
@@ -49,10 +221,10 @@ class Options {
 	}
 
 	public static function rest_schema(): array {
-		$schema = [
+		$schema = array(
 			'type'       => 'object',
-			'properties' => [],
-		];
+			'properties' => array(),
+		);
 
 		foreach ( self::options_config() as $key => $config ) {
 			if ( empty( $config['rest_expose'] ) ) {
@@ -77,133 +249,18 @@ class Options {
 					break;
 			}
 
-			$schema['properties'][ $key ] = [
+			$schema['properties'][ $key ] = array(
 				'type' => $type,
-			];
+			);
 		}
 
-		return [ 'schema' => $schema ];
+		return array( 'schema' => $schema );
 	}
 
-	public static function options_config(): array {
-		return [
 
-			'blank_allowed_post_types'             => [
-				'default_value'     => [ 'post', 'page' ],
-				'type'              => 'array',
-				'sanitize_callback' => 'sanitize_key',
-				'rest_expose'       => false,
-			],
-
-			'rest_api_posts_per_page'              => [
-				'default_value'     => 100,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			],
-
-			'rest_api_flatten_posts'               => [
-				'default_value'     => true,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'blank_filter_wp_rest_post_types'      => [
-				'default_value'     => true,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'blank_disable_gutenberg'              => [
-				'default_value'     => false,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'blank_disable_comments'               => [
-				'default_value'     => true,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'blank_enable_acf_support'             => [
-				'default_value'     => true,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'rest_api_user_id'                     => [
-				'default_value'     => 1,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			],
-
-			'rest_api_rate_limit'                  => [
-				'default_value'     => 30,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			],
-
-			'rest_api_rate_limit_time'             => [
-				'default_value'     => 60,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			],
-
-			'blank_protect_wp_rest_routes'         => [
-				'default_value'     => true,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'application_host'                     => [
-				'default_value'     => '',
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-				'rest_expose'       => false,
-			],
-
-			'application_webhook_endpoint'         => [
-				'default_value'     => '',
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-				'rest_expose'       => false,
-			],
-
-			'application_webhook_secret_generated' => [
-				'default_value'     => false,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-
-			'max_upload_size'                      => [
-				'default_value'     => 1024, // KB.
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			],
-
-			'enable_max_upload_size'               => [
-				'default_value'     => false,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			],
-		];
-	}
 
 	public static function default_options(): array {
-		$defaults = [];
+		$defaults = array();
 
 		foreach ( self::options_config() as $key => $config ) {
 			$defaults[ $key ] = $config['default_value'];
@@ -213,7 +270,7 @@ class Options {
 	}
 
 	public static function hook_filters(): array {
-		$filtered = [];
+		$filtered = array();
 
 		foreach ( self::read_options() as $option_key => $value ) {
 			$filtered[ $option_key ] = self::sanitize_option( $option_key, apply_filters( 'blank_theme_' . $option_key, $value ) );
@@ -227,7 +284,7 @@ class Options {
 		$default_values = self::default_options();
 
 		$options   = wp_parse_args( $options, $default_values );
-		$sanitized = [];
+		$sanitized = array();
 
 		foreach ( $options_config as $option_key => $config ) {
 			$sanitized_key = sanitize_key( $option_key );
@@ -265,7 +322,7 @@ class Options {
 			case 'array':
 				return is_array( $option_value )
 					? array_map( $callback, $option_value )
-					: [];
+					: array();
 
 			case 'string':
 			default:
@@ -274,11 +331,11 @@ class Options {
 	}
 
 	public static function read_options(): array {
-		return self::sanitize_options( self::multisite_get_option( 'blank_theme_options', [] ) );
+		return self::sanitize_options( self::multisite_get_option( 'blank_theme_options', array() ) );
 	}
 
 	public static function read_option( string $option_key ) {
-		$options = self::sanitize_options( self::multisite_get_option( 'blank_theme_options', [] ) );
+		$options = self::sanitize_options( self::multisite_get_option( 'blank_theme_options', array() ) );
 		return isset( $options[ $option_key ] ) ? $options[ $option_key ] : false;
 	}
 
@@ -316,7 +373,7 @@ class Options {
 			&& apply_filters( 'blank_use_multisite_options', false );
 	}
 
-	public static function multisite_get_option( string $option, $default = [] ): array {
+	public static function multisite_get_option( string $option, $default = array() ): array {
 		if ( self::is_multisite_mode() ) {
 			return get_site_option( $option, $default );
 		}

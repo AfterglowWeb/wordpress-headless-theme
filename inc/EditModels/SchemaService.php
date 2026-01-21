@@ -1,4 +1,4 @@
-<?php namespace cmk\blank\Models;
+<?php namespace cmk\blank\EditModels;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -45,7 +45,7 @@ class SchemaService {
 	public static function read_post_types_schemas(): array {
 
 		$post_types = Utils::list_post_types();
-		$schemas    = [];
+		$schemas    = array();
 
 		foreach ( $post_types as $post_type ) {
 
@@ -58,11 +58,11 @@ class SchemaService {
 				continue;
 			}
 
-			$schemas[ $type ] = [
+			$schemas[ $type ] = array(
 				'kind'   => 'post_type',
 				'label'  => $label,
 				'fields' => $fields,
-			];
+			);
 		}
 
 		return $schemas;
@@ -71,7 +71,7 @@ class SchemaService {
 	public static function read_taxonomies_schemas(): array {
 
 		$taxonomies = Utils::list_taxonomies();
-		$schemas    = [];
+		$schemas    = array();
 
 		foreach ( $taxonomies as $taxonomy ) {
 
@@ -84,11 +84,11 @@ class SchemaService {
 				continue;
 			}
 
-			$schemas[ $type ] = [
+			$schemas[ $type ] = array(
 				'kind'   => 'taxonomy',
 				'label'  => $label,
 				'fields' => $fields,
-			];
+			);
 		}
 
 		return $schemas;
@@ -99,16 +99,16 @@ class SchemaService {
 		$controller = self::get_rest_controller( $object_type, $subtype );
 
 		if ( ! $controller || ! method_exists( $controller, 'get_item_schema' ) ) {
-			return [];
+			return array();
 		}
 
 		$schema = $controller->get_item_schema();
 
 		if ( empty( $schema['properties'] ) || ! is_array( $schema['properties'] ) ) {
-			return [];
+			return array();
 		}
 
-		$fields = [];
+		$fields = array();
 
 		foreach ( $schema['properties'] as $key => $property ) {
 
@@ -124,7 +124,7 @@ class SchemaService {
 
 			// 3. Keep only view / embed contexts.
 			$contexts = array_values(
-				array_intersect( $property['context'], [ 'view', 'embed' ] )
+				array_intersect( $property['context'], array( 'view', 'embed' ) )
 			);
 
 			if ( empty( $contexts ) ) {
@@ -136,18 +136,18 @@ class SchemaService {
 
 			if ( is_array( $type ) ) {
 				$type = array_values(
-					 array_diff( $type, [ 'null' ] )
+					array_diff( $type, array( 'null' ) )
 				)[0] ?? 'mixed';
 			}
 
-			$fields[ $key ] = [
+			$fields[ $key ] = array(
 				'original_key' => $key,
 				'key'          => $key,
 				'type'         => $type,
 				'description'  => isset( $property['description'] ) ? $property['description'] : '',
 				'context'      => $contexts,
 				'active'       => false,
-			];
+			);
 		}
 
 		return $fields;
@@ -190,5 +190,4 @@ class SchemaService {
 
 		return new $controller_class( $object_type );
 	}
-
 }

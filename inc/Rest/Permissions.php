@@ -4,6 +4,12 @@ defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Options;
 
+/**
+ *  Options::read_option( 'rest_api_protect_wp_rest_routes' );
+ *  Options::read_option( 'rest_api_allowed_post_types' )
+ *  Options::read_option( 'rest_api_restrict_post_types_enabled' )
+ */
+
 class Permissions {
 
 	public static function sync_rest_api_user( int $new_user_id, int $old_user_id = 0 ): void {
@@ -19,23 +25,59 @@ class Permissions {
 		}
 
 		$user = get_user_by( 'id', absint( $new_user_id ) );
-		if ( ! $user ) {
+		if ( false === $user instanceof \WP_User ) {
 			return;
 		}
 
 		$user->add_cap( 'blank_api_access' );
 	}
 
-	public static function remove_cap_from_user( int $user_id ): void {
+	private static function remove_cap_from_user( int $user_id ): void {
 		$user = get_user_by( 'id', $user_id );
-		if ( $user ) {
+		if ( $user instanceof \WP_User ) {
 			$user->remove_cap( 'blank_api_access' );
 		}
 	}
 
-	public static function validate_rest_api_token(): bool {
-		return is_user_logged_in()
+	private static function validate_rest_api_token(): bool {
+		return (bool) is_user_logged_in()
 			&& current_user_can( 'blank_api_access' );
+	}
+
+	public static function permission_check( \WP_REST_Request $request ) {
+
+		if ( false === self::validate_rest_api_token() ) {
+			return false;
+		}
+
+		$rate = RateLimit::check( $request );
+		if ( is_wp_error( $rate ) ) {
+			return $rate;
+		}
+
+		return true;
+	}
+
+	public static function protect_wp_rest_route( $result ) {
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+			$option = Options::read_option( 'rest_api_protect_wp_rest_routes' );
+		if ( empty( $option ) ) {
+			return $result;
+		}
+
+		if ( false === self::validate_rest_api_token() ) {
+			return new \WP_Error(
+				'rest_forbidden',
+				__( 'Authentication required.' ),
+				array( 'status' => 401 )
+			);
+		}
+
+			return $result;
 	}
 
 	public static function is_post_type_allowed( string $post_type ): bool {
@@ -44,11 +86,11 @@ class Permissions {
 			return false;
 		}
 
-		$allowed_post_types = Options::read_option( 'blank_allowed_post_types' );
+		$allowed_post_types = Options::read_option( 'rest_api_allowed_post_types' );
 
-		if( empty( $allowed_post_types )) { // If option is not set, all posts are allowed
+		if ( empty( $allowed_post_types ) ) { // If option is not set, all posts are allowed
 			return true;
-		} 
+		}
 
 		if ( ! in_array( $post_type, $allowed_post_types, true ) ) {
 			return false;
@@ -59,7 +101,11 @@ class Permissions {
 
 	public static function filter_wp_rest_post_types( $result, $server, \WP_REST_Request $request ) {
 
-		if ( $result instanceof \WP_Error ) {
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( false === Options::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
 			return $result;
 		}
 
@@ -74,7 +120,7 @@ class Permissions {
 			return new \WP_Error(
 				'forbidden_post_type',
 				__( 'This post type is not allowed.', 'blank' ),
-				[ 'status' => 403 ]
+				array( 'status' => 403 )
 			);
 		}
 

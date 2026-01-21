@@ -19,7 +19,7 @@ class DisableComments {
 
 		$options = Options::read_options();
 
-		if ( true === $options['blank_disable_comments'] ) {
+		if ( true === $options['core_disable_comments_enabled'] ) {
 			add_action(
 				'admin_init',
 				function (): void {

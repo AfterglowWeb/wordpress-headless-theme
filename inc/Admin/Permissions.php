@@ -21,7 +21,7 @@ class Permissions {
 			'sanitize_key',
 			apply_filters(
 				'blank_webhook_capabilities',
-				[ 'manage_options', 'blank_edit_theme_options' ]
+				array( 'manage_options', 'blank_edit_theme_options' )
 			)
 		);
 	}

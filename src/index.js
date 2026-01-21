@@ -20,21 +20,19 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			<AdminDataProvider
 				adminData={ adminData }
 			>
-				<ModelsProvider>
-					<DocumentationProvider>
-					<AppTheme>
-						<Suspense fallback={ <HeaderSkeleton /> }>
-							<Header />
-						</Suspense>
-						<Suspense fallback={ <ContentSkeleton /> }>
-							<App />
-						</Suspense>
-						<Suspense fallback={ <FooterSkeleton /> }>
-							<Footer />
-						</Suspense>
-					</AppTheme>
-					</DocumentationProvider>
-				</ModelsProvider>
+				<DocumentationProvider>
+				<AppTheme>
+					<Suspense fallback={ <HeaderSkeleton /> }>
+						<Header />
+					</Suspense>
+					<Suspense fallback={ <ContentSkeleton /> }>
+						<App />
+					</Suspense>
+					<Suspense fallback={ <FooterSkeleton /> }>
+						<Footer />
+					</Suspense>
+				</AppTheme>
+				</DocumentationProvider>
 			</AdminDataProvider>
 		);
 	}

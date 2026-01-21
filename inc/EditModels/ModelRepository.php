@@ -1,4 +1,4 @@
-<?php namespace cmk\blank\Models;
+<?php namespace cmk\blank\EditModels;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -29,16 +29,16 @@ class ModelRepository {
 				self::$config_dir = realpath( $dir );
 			}
 		);
-		add_action( 'wp_ajax_blank_crud_model', [ $this, 'ajax_crud_model' ] );
+		add_action( 'wp_ajax_blank_crud_model', array( $this, 'ajax_crud_model' ) );
 	}
 
 	public function ajax_crud_model() {
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
-			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
 		if ( ! isset( $_POST['data'] ) || ! isset( $_POST['method'] ) ) {
-			wp_send_json_error( [ 'message' => 'Missing Parameter' ], 422 );
+			wp_send_json_error( array( 'message' => 'Missing Parameter' ), 422 );
 		}
 
 		$json_content = sanitize_text_field( wp_unslash( $_POST['data'] ) );
@@ -47,10 +47,10 @@ class ModelRepository {
 		try {
 			$data = json_decode( $json_content, true, 512, JSON_THROW_ON_ERROR );
 		} catch ( \JsonException $exception ) {
-			wp_send_json_error( [ 'message' => $exception->getMessage() ], 500 );
+			wp_send_json_error( array( 'message' => $exception->getMessage() ), 500 );
 		}
 
-		$model_entry = [];
+		$model_entry = array();
 
 		switch ( $method ) {
 			case 'create':
@@ -81,14 +81,14 @@ class ModelRepository {
 				}
 
 				if ( false === self::delete_model( $uuid ) ) {
-					wp_send_json_error( [ 'error' => 'An error occured deleting the model.' ], 500 );
+					wp_send_json_error( array( 'error' => 'An error occured deleting the model.' ), 500 );
 				}
-				wp_send_json_success( [ 'message' => 'Model deleted successfully.' ], 200 );
+				wp_send_json_success( array( 'message' => 'Model deleted successfully.' ), 200 );
 				break;
 		}
 
 		if ( empty( $model_entry ) ) {
-			wp_send_json_error( [ 'message' => 'Data is corrupt.' ], 500 );
+			wp_send_json_error( array( 'message' => 'Data is corrupt.' ), 500 );
 		}
 
 		return wp_send_json_success( $model_entry, 200 );
@@ -111,7 +111,7 @@ class ModelRepository {
 		$existing = self::read_model( $uuid );
 
 		if ( empty( $existing ) ) {
-			return [];
+			return array();
 		}
 
 		$model             = self::sanitize_model_instance( $data, $existing );
@@ -129,12 +129,12 @@ class ModelRepository {
 		$file = self::$config_dir . '/' . sanitize_file_name( $uuid ) . '.json';
 
 		if ( ! is_readable( $file ) ) {
-			return [];
+			return array();
 		}
 
 		$data = json_decode( file_get_contents( $file ), true );
 
-		return is_array( $data ) ? $data : [];
+		return is_array( $data ) ? $data : array();
 	}
 
 	public static function delete_model( string $uuid ): bool {
@@ -148,11 +148,11 @@ class ModelRepository {
 		return unlink( $file );
 	}
 
-	private static function sanitize_model_instance( array $input, array $existing = [] ): array {
+	private static function sanitize_model_instance( array $input, array $existing = array() ): array {
 
 		$rest_post_type = sanitize_key( $input['rest_post_type'] ?? $existing['rest_post_type'] ?? '' );
 
-		return [ 
+		return array(
 			'title'                 => sanitize_text_field( $input['title'] ?? $existing['title'] ?? '' ),
 
 			'rest_post_type'        => $rest_post_type,
@@ -165,10 +165,10 @@ class ModelRepository {
 			),
 
 			'fields'                => self::sanitize_fields(
-				$input['fields'] ?? [],
+				$input['fields'] ?? array(),
 				$rest_post_type
 			),
-		];
+		);
 	}
 
 	private static function sanitize_fields( array $fields, string $rest_post_type ): array {
@@ -176,25 +176,25 @@ class ModelRepository {
 		$schema = SchemaService::read_schema( $rest_post_type );
 
 		if ( empty( $schema ) ) {
-			return [];
+			return array();
 		}
 
-		$user_fields = [];
+		$user_fields = array();
 		foreach ( $fields as $field ) {
 			if ( isset( $field['original_key'] ) ) {
 				$user_fields[ $field['original_key'] ] = $field;
 			}
 		}
 
-		$sanitized = [];
+		$sanitized = array();
 
 		foreach ( $schema as $schema_field ) {
 
 			$key = $schema_field['original_key'];
 
-			$user = $user_fields[ $key ] ?? [];
+			$user = $user_fields[ $key ] ?? array();
 
-			$sanitized[] = [
+			$sanitized[] = array(
 				'original_key'      => $key,
 
 				'key'               => isset( $user['key'] )
@@ -212,7 +212,7 @@ class ModelRepository {
 				'active'            => isset( $user_fields[ $key ] )
 					? (bool) ( $user['active'] ?? false )
 					: false,
-			];
+			);
 		}
 
 		return $sanitized;

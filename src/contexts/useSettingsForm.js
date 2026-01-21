@@ -7,19 +7,32 @@ export default function useSettingsForm({
 }) {
 	const [adminOptions, setAdminOptions] = useState({});
 	const [form, setForm] = useState({
-		blank_protect_wp_rest_routes: false,
-		blank_allowed_post_types: [],
-		blank_disable_gutenberg: false,
-		blank_disable_comments: false,
-		blank_enable_acf_support: true,
+
+		blank_use_core_rest_enabled:false,
+		blank_relative_url_enabled:false,
+		blank_embed_featured_attachment_enabled:false,
+		blank_embed_post_attachments_enabled:false,
+		blank_relative_attachment_url_enabled:false,
+		blank_embed_terms_enabled:false,
+		blank_embed_authors_enabled:false,
+		blank_with_acf_enabled:false,
+		
+		rest_api_posts_per_page: 100,
+		rest_api_attachments_per_page: 100,
+		rest_api_restrict_post_types_enabled: false,
+		rest_api_allowed_post_types: [],
+		rest_api_protect_wp_rest_routes: false,
 		rest_api_user_id: '',
 		rest_api_rate_limit: 30,
 		rest_api_rate_limit_time: 60,
-		rest_api_posts_per_page: 100,
+
 		application_host: '',
 		application_webhook_endpoint: '',
-		max_upload_size: 1024,
-		enable_max_upload_size: false,
+
+		core_disable_gutenberg_enabled: false,
+		core_disable_comments_enabled: false,
+		core_max_upload_size: 1024,
+		core_max_upload_size_enabled: false,
 	});
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
@@ -35,21 +48,33 @@ export default function useSettingsForm({
 		if (!adminOptions) return;
 
 		setForm({
-			blank_protect_wp_rest_routes: Boolean(adminOptions.blank_protect_wp_rest_routes),
-			blank_allowed_post_types: Array.isArray(adminOptions.blank_allowed_post_types)
-				? adminOptions.blank_allowed_post_types
+			blank_use_core_rest_enabled: Boolean(adminOptions.blank_use_core_rest_enabled),
+			blank_embed_featured_attachment_enabled: Boolean(adminOptions.blank_embed_featured_attachment_enabled),
+			blank_embed_authors_enabled: Boolean(adminOptions.blank_embed_authors_enabled),
+			blank_relative_url_enabled: Boolean(adminOptions.blank_relative_url_enabled),
+			blank_embed_post_attachments_enabled: Boolean(adminOptions.blank_embed_post_attachments_enabled),
+			blank_relative_attachment_url_enabled: Boolean(adminOptions.blank_relative_attachment_url_enabled),
+			blank_embed_terms_enabled: Boolean(adminOptions.blank_embed_terms_enabled),
+			blank_with_acf_enabled: Boolean(adminOptions.blank_with_acf_enabled),
+
+			rest_api_protect_wp_rest_routes: Boolean(adminOptions.rest_api_protect_wp_rest_routes),
+			rest_api_allowed_post_types: Array.isArray(adminOptions.rest_api_allowed_post_types)
+				? adminOptions.rest_api_allowed_post_types
 				: [],
-			blank_disable_gutenberg: Boolean(adminOptions.blank_disable_gutenberg),
-			blank_disable_comments: Boolean(adminOptions.blank_disable_comments),
-			blank_enable_acf_support: Boolean(adminOptions.blank_enable_acf_support),
 			rest_api_user_id: adminOptions.rest_api_user_id ?? '',
 			rest_api_rate_limit: Number(adminOptions.rest_api_rate_limit ?? 30),
 			rest_api_rate_limit_time: Number(adminOptions.rest_api_rate_limit_time ?? 60),
 			rest_api_posts_per_page: Number(adminOptions.rest_api_posts_per_page ?? 100),
+			rest_api_attachments_per_page: Number(adminOptions.rest_api_attachments_per_page ?? 100),
+			rest_api_restrict_post_types_enabled: Boolean(adminOptions.rest_api_restrict_post_types_enabled),
+			
 			application_host: adminOptions.application_host ?? '',
 			application_webhook_endpoint: adminOptions.application_webhook_endpoint ?? '',
-			max_upload_size: Number(adminOptions.max_upload_size ?? 1024),
-			enable_max_upload_size: Boolean(adminOptions.enable_max_upload_size),
+
+			core_disable_gutenberg_enabled: Boolean(adminOptions.core_disable_gutenberg_enabled),
+			core_disable_comments_enabled: Boolean(adminOptions.core_disable_comments_enabled),
+			core_max_upload_size: Number(adminOptions.core_max_upload_size ?? 1024),
+			core_max_upload_size_enabled: Boolean(adminOptions.core_max_upload_size_enabled),
 		});
 	}, [adminOptions]);
 
@@ -87,19 +112,32 @@ export default function useSettingsForm({
 	}, []);
 
 	const mapFormToAdminOptions = useCallback((form) => ({
-		blank_protect_wp_rest_routes: form.blank_protect_wp_rest_routes,
-		blank_allowed_post_types: form.blank_allowed_post_types,
-		blank_disable_gutenberg: form.blank_disable_gutenberg,
-		blank_disable_comments: form.blank_disable_comments,
-		blank_enable_acf_support: form.blank_enable_acf_support,
+		blank_use_core_rest_enabled: form.blank_use_core_rest_enabled,
+		blank_embed_featured_attachment_enabled: form.blank_embed_featured_attachment_enabled,
+		blank_relative_url_enabled: form.blank_relative_url_enabled,
+		blank_embed_post_attachments_enabled: form.blank_embed_post_attachments_enabled,
+		blank_relative_attachment_url_enabled: form.blank_relative_attachment_url_enabled,
+		blank_embed_terms_enabled: form.blank_embed_terms_enabled,
+		blank_embed_authors_enabled: form.blank_embed_authors_enabled,
+		blank_with_acf_enabled: form.blank_with_acf_enabled,
+
+		rest_api_protect_wp_rest_routes: form.rest_api_protect_wp_rest_routes,
+		rest_api_allowed_post_types: form.rest_api_allowed_post_types,
+		rest_api_restrict_post_types_enabled: form.rest_api_restrict_post_types_enabled,
 		rest_api_user_id: form.rest_api_user_id,
 		rest_api_rate_limit: form.rest_api_rate_limit,
 		rest_api_rate_limit_time: form.rest_api_rate_limit_time,
 		rest_api_posts_per_page: form.rest_api_posts_per_page,
+		rest_api_attachments_per_page: form.rest_api_attachments_per_page,
+
 		application_host: form.application_host,
 		application_webhook_endpoint: form.application_webhook_endpoint,
-		max_upload_size: form.max_upload_size,
-		enable_max_upload_size: form.enable_max_upload_size,
+
+		core_max_upload_size: form.core_max_upload_size,
+		core_max_upload_size_enabled: form.core_max_upload_size_enabled,
+		core_disable_gutenberg_enabled: form.core_disable_gutenberg_enabled,
+		core_disable_comments_enabled: form.core_disable_comments_enabled,
+		
 	}), []);
 
 	const submit = useCallback(async () => {

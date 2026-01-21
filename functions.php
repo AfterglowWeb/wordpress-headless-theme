@@ -44,12 +44,12 @@ Admin\OptionsPage::get_instance();
 
 Rest\Routes::register();
 
-Models\ModelRepository::get_instance();
-Models\SchemaService::get_instance();
+//Models\ModelRepository::get_instance();
+//Models\SchemaService::get_instance();
 
 Application\WebhookService::get_instance();
 
-
+                    
 function is_admin_screen( $screen_name ) {
 	if ( ! is_admin() ) {
 		return false;

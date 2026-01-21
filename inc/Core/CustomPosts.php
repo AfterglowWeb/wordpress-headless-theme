@@ -14,9 +14,9 @@ class CustomPosts {
 	}
 
 	private function __construct() {
-		add_action( 'init', [ CustomPosts::class, 'register_custom_posts' ] );
-		add_action( 'init', [ CustomPosts::class, 'register_custom_taxonomies' ] );
-		add_action( 'init', [ CustomPosts::class, 'hook_admin_column'] );
+		add_action( 'init', array( self::class, 'register_custom_posts' ) );
+		add_action( 'init', array( self::class, 'register_custom_taxonomies' ) );
+		add_action( 'init', array( self::class, 'hook_admin_column' ) );
 	}
 
 	public static function register_custom_posts(): void {
@@ -35,7 +35,7 @@ class CustomPosts {
 
 			foreach ( $custom_posts['custom_posts'] as $post_type ) {
 
-				$required_fields = [ 'name', 'singular_name', 'slug' ];
+				$required_fields = array( 'name', 'singular_name', 'slug' );
 				foreach ( $required_fields as $field ) {
 					if ( ! isset( $post_type[ $field ] ) ) {
 						new \WP_Error( "Missing required field: {$field} for {$post_type['name']}" );
@@ -46,8 +46,7 @@ class CustomPosts {
 				$singular_name       = sanitize_text_field( $post_type['singular_name'] );
 				$lower_singular_name = strtolower( $singular_name );
 
-
-				$labels = [
+				$labels = array(
 					'name'               => $name,
 					'singular_name'      => $singular_name,
 					'menu_name'          => $name,
@@ -67,9 +66,9 @@ class CustomPosts {
 					'not_found'          => sprintf( esc_html__( 'No %s found', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a singular name */
 					'not_found_in_trash' => sprintf( esc_html__( 'No %s found in trash', 'blank' ), $lower_singular_name ),
-				];
+				);
 
-				$args = [
+				$args = array(
 					'labels'             => $labels,
 					'public'             => $post_type['public'] ?? true,
 					'publicly_queryable' => $post_type['publicly_queryable'] ?? true,
@@ -78,21 +77,21 @@ class CustomPosts {
 					'show_in_rest'       => $post_type['show_in_rest'] ?? true,
 					'query_var'          => $post_type['query_var'] ?? true,
 					'rewrite'            => isset( $post_type['rewrite'] ) ?
-						[
+						array(
 							'slug'       => $post_type['rewrite'],
 							'with_front' => false,
-						] :
-						[
+						) :
+						array(
 							'slug' => $post_type['slug'],
-						],
+						),
 					'capability_type'    => $post_type['capability_type'] ?? 'post',
 					'has_archive'        => $post_type['has_archive'] ?? false,
 					'hierarchical'       => $post_type['hierarchical'] ?? false,
 					'menu_position'      => $post_type['menu_position'] ?? null,
 					'menu_icon'          => $post_type['menu_icon'] ?? 'dashicons-admin-post',
-					'supports'           => $post_type['supports'] ?? [ 'title', 'editor' ],
-					'taxonomies'         => $post_type['taxonomies'] ?? [],
-				];
+					'supports'           => $post_type['supports'] ?? array( 'title', 'editor' ),
+					'taxonomies'         => $post_type['taxonomies'] ?? array(),
+				);
 
 				register_post_type( $post_type['slug'], $args );
 			}
@@ -121,7 +120,7 @@ class CustomPosts {
 
 			foreach ( $custom_taxonomies['taxonomies'] as $taxonomy ) {
 
-				$required_fields = [ 'name', 'singular_name', 'slug', 'post_types' ];
+				$required_fields = array( 'name', 'singular_name', 'slug', 'post_types' );
 				foreach ( $required_fields as $field ) {
 					if ( ! isset( $taxonomy[ $field ] ) ) {
 						new \WP_Error( "Missing required field: {$field}" );
@@ -132,7 +131,7 @@ class CustomPosts {
 				$singular_name       = sanitize_text_field( $taxonomy['singular_name'] );
 				$lower_singular_name = strtolower( $singular_name );
 
-				$labels = [
+				$labels = array(
 					'name'              => $name,
 					'singular_name'     => $singular_name,
 					'menu_name'         => $name,
@@ -153,12 +152,12 @@ class CustomPosts {
 					/* translators: %s is a singular name */
 					'view_item'         => sprintf( esc_html__( 'View %s', 'blank' ), $lower_singular_name ),
 					/* translators: %s is a plural name */
-					'all_items'         => sprintf( esc_html__( '%s list', 'blank' ), strtolower( $name ) ),
+					'all_items'         => sprintf( esc_html__( '%s list', 'blank' ), $name ),
 					/* translators: %s is a plural name */
 					'search_items'      => sprintf( esc_html__( 'Search %s', 'blank' ), strtolower( $name ) ),
-				];
+				);
 
-				$args = [
+				$args = array(
 					'labels'            => $labels,
 					'hierarchical'      => $taxonomy['hierarchical'] ?? false,
 					'public'            => $taxonomy['public'] ?? true,
@@ -168,8 +167,8 @@ class CustomPosts {
 					'show_tagcloud'     => $taxonomy['show_tagcloud'] ?? true,
 					'show_in_rest'      => $taxonomy['show_in_rest'] ?? true,
 					'query_var'         => $taxonomy['query_var'] ?? true,
-					'rewrite'           => $taxonomy['rewrite'] ?? [ 'slug' => $taxonomy['slug'] ],
-				];
+					'rewrite'           => $taxonomy['rewrite'] ?? array( 'slug' => $taxonomy['slug'] ),
+				);
 
 				register_taxonomy(
 					$taxonomy['slug'],
@@ -182,29 +181,31 @@ class CustomPosts {
 		}
 	}
 
-	public static function hook_admin_column(): void { 
-		$post_type_names = get_post_types([
+	public static function hook_admin_column(): void {
+		$post_type_names = get_post_types(
+			array(
 				'public'       => true,
 				'show_in_rest' => true,
-			]);
+			)
+		);
 
-		if(empty($post_type_names)) {
+		if ( empty( $post_type_names ) ) {
 			return;
 		}
 
-		foreach($post_type_names as $post_type_name) {
+		foreach ( $post_type_names as $post_type_name ) {
 			self::add_admin_column(
 				'Image',
 				$post_type_name,
 				function ( $post_id ) {
 					$thumbnail_id = get_post_thumbnail_id( $post_id );
 					if ( $thumbnail_id ) {
-						$thumbnail = wp_get_attachment_image( 
-							$thumbnail_id, 
-							[ 50, 50 ], 
-							false, 
-							[ 'style' => 'box-shadow: 0 0px 3px rgba(0,0,0,0.1); border-radius: 0;' ] 
-							);
+						$thumbnail = wp_get_attachment_image(
+							$thumbnail_id,
+							array( 50, 50 ),
+							false,
+							array( 'style' => 'box-shadow: 0 0px 3px rgba(0,0,0,0.1); border-radius: 0;' )
+						);
 						echo wp_kses_post( $thumbnail );
 					} else {
 						echo '<span style="color: #999;">Aucune image</span>';
@@ -224,7 +225,7 @@ class CustomPosts {
 	): void {
 
 		if ( ! is_array( $post_types ) ) {
-			$post_types = [ $post_types ];
+			$post_types = array( $post_types );
 		}
 
 		foreach ( $post_types as $post_type ) {

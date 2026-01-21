@@ -26,7 +26,7 @@ class Theme {
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'show_admin_bar', '__return_false' );
 		add_filter( 'mime_types', array( $this, 'mime_support' ), 10, 1 );
-		add_filter( 'wp_handle_upload_prefilter', array( $this, 'max_upload_size' ), 10, 1 );
+		add_filter( 'wp_handle_upload_prefilter', array( $this, 'core_max_upload_size' ), 10, 1 );
 		add_filter( 'the_content', array( $this, 'remove_empty_p_tags' ), 10, 1 );
 		add_action(
 			'switch_theme',
@@ -37,7 +37,7 @@ class Theme {
 					return;
 				}
 
-				$caps = [ 'blank_edit_theme_options' ];
+				$caps = array( 'blank_edit_theme_options' );
 
 				foreach ( $caps as $cap ) {
 					$role->remove_cap( $cap );
@@ -51,11 +51,11 @@ class Theme {
 		add_theme_support( 'post-thumbnails' );
 		add_theme_support(
 			'html5',
-			[
+			array(
 				'search-form',
 				'gallery',
 				'caption',
-			]
+			)
 		);
 		add_theme_support( 'menus' );
 	}
@@ -85,7 +85,7 @@ class Theme {
 				new \WP_Error( 'Invalid custom menus configuration' );
 			}
 
-			$formated_menus = [];
+			$formated_menus = array();
 
 			foreach ( $custom_menus['custom_menus'] as $menu ) {
 				$formated_menus[ $menu['slug'] ] = $menu['name'];
@@ -103,10 +103,9 @@ class Theme {
 		if ( defined( 'WP_LANG_DIR' ) ) {
 			$handle = load_theme_textdomain( 'blank' );
 		}
-		if( false === $handle) {
+		if ( false === $handle ) {
 			load_theme_textdomain( 'blank', get_stylesheet_directory() . '/languages' );
 		}
-		
 	}
 
 	private function may_copy_theme_lang_to_languages_dir(): void {
@@ -127,8 +126,8 @@ class Theme {
 			return;
 		}
 
-		$extensions        = [ 'mo', 'po', 'json' ];
-		$source_lang_files = [];
+		$extensions        = array( 'mo', 'po', 'json' );
+		$source_lang_files = array();
 		foreach ( $extensions as $ext ) {
 			$files = glob( $theme_lang_dir . '/*.' . $ext );
 			if ( is_array( $files ) && ! empty( $files ) ) {
@@ -152,12 +151,12 @@ class Theme {
 	}
 
 	public function remove_empty_p_tags( $content ): string {
-		$to_fix = [
+		$to_fix = array(
 			'<p></p>' => '',
 			'<p>['    => '[',
 			']</p>'   => ']',
 			']<br />' => ']',
-		];
+		);
 		return strtr( $content, $to_fix );
 	}
 
@@ -170,21 +169,21 @@ class Theme {
 
 	public function disable_gutenberg( bool $current_status, string $post_type ): bool {
 
-		$admin_options                = Options::read_options();
-		$disable_gutenberg_post_types = (array) $admin_options['blank_allowed_post_types'];
+		$admin_option       = Options::read_option( 'core_disable_gutenberg_enabled' );
+		$allowed_post_types = Options::read_option( 'rest_api_allowed_post_types' );
 
-		if ( empty( $disable_gutenberg_post_types ) ) {
+		if ( empty( $admin_option ) || empty( $allowed_post_types ) ) {
 			return $current_status;
 		}
 
-		if ( in_array( $post_type, $disable_gutenberg_post_types, true ) ) {
+		if ( in_array( $post_type, $allowed_post_types, true ) ) {
 			return false;
 		}
 
 		return $current_status;
 	}
 
-	public function max_upload_size( $file ) {
+	public function core_max_upload_size( $file ) {
 
 		if ( ! isset( $file['type'] ) || ! isset( $file['size'] ) ) {
 			return $file;

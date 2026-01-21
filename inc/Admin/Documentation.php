@@ -27,29 +27,29 @@ class Documentation {
 		$docs_dir = trailingslashit( get_template_directory() ) . 'docs';
 
 		if ( ! is_dir( $docs_dir ) ) {
-			return [];
+			return array();
 		}
 
-		$pages = [
-			[
+		$pages = array(
+			array(
 				'slug'  => 'presentation',
 				'title' => __( 'Presentation', 'blank' ),
 				'html'  => '',
-			],
-			[
+			),
+			array(
 				'slug'  => 'getting-started',
 				'title' => __( 'Getting Started', 'blank' ),
 				'html'  => '',
-			],
-			[
+			),
+			array(
 				'slug'  => 'hooks',
 				'title' => __( 'Hooks', 'blank' ),
 				'html'  => '',
-			],
-		];
+			),
+		);
 
-		$config = [
-			'heading_permalink' => [
+		$config = array(
+			'heading_permalink' => array(
 				'html_class'          => 'blank-docs-heading-permalink',
 				'id_prefix'           => 'blank_docs',
 				'apply_id_to_heading' => false,
@@ -61,8 +61,8 @@ class Documentation {
 				'title'               => 'Permalink',
 				'symbol'              => HeadingPermalinkRenderer::DEFAULT_SYMBOL,
 				'aria_hidden'         => true,
-			],
-		];
+			),
+		);
 
 		$environment = new Environment( $config );
 		$environment->addExtension( new SmartPunctExtension() );
@@ -87,11 +87,11 @@ class Documentation {
 			$result = $converter->convert( $markdown );
 			$html   = $result->getContent();
 
-			$pages[] = [
+			$pages[] = array(
 				'slug'  => $page['slug'],
 				'title' => $page['title'],
 				'html'  => $html,
-			];
+			);
 		}
 
 		return $pages;
