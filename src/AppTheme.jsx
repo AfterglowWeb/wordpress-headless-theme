@@ -18,7 +18,7 @@ const appTheme = createTheme( {
 			lg: 960,
 			xl: 1280,
 		},
-	}
+	},
 } );
 
 export default function AppTheme( { children } ) {

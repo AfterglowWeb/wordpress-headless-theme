@@ -23,8 +23,5 @@ module.exports = {
 			},
 		},
 	},
-	plugins: [
-		...defaultConfig.plugins,
-		new BundleAnalyzerPlugin(),
-	],
+	plugins: [ ...defaultConfig.plugins, new BundleAnalyzerPlugin() ],
 };

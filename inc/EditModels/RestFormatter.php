@@ -1,4 +1,4 @@
-<?php namespace cmk\blank\Models;
+<?php namespace cmk\blank\EditModels;
 
 defined( 'ABSPATH' ) || exit;
 

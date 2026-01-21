@@ -1,4 +1,4 @@
-<?php namespace cmk\blank\Models;
+<?php namespace cmk\blank\EditModels;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -40,7 +40,7 @@ class ModelApply {
 	}
 
 	public static function map( array $data, array $config ): array {
-		$output = [];
+		$output = array();
 
 		foreach ( $config as $entry ) {
 			$original_key = $entry['original_key'];

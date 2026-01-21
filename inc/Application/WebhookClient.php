@@ -18,7 +18,7 @@ final class WebhookClient {
 		}
 
 		$timestamp = time();
-		$body      = ! empty( $payload ) ? wp_json_encode( $payload ) : [];
+		$body      = ! empty( $payload ) ? wp_json_encode( $payload ) : array();
 
 		$signature = hash_hmac(
 			'sha256',
@@ -28,16 +28,16 @@ final class WebhookClient {
 
 		return wp_remote_post(
 			$host . '/' . $route,
-			[
+			array(
 				'timeout' => 10,
-				'headers' => [
+				'headers' => array(
 					'Content-Type'        => 'application/json',
 					'X-Webhook-Signature' => $signature,
 					'X-Webhook-Timestamp' => $timestamp,
 					'X-Webhook-Source'    => 'wordpress',
-				],
+				),
 				'body'    => $body,
-			]
+			)
 		);
 	}
 }

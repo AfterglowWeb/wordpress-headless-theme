@@ -430,7 +430,7 @@ add_filter('blank_rest_menu_item', function($blank_menu_item, $wp_menu_item) {
 
  - Added filter on menu items 'blank_rest_menu_item' to allow modification of individual menu items before returning in REST API.
  - Added endpoint '/images/{post_type}' to fetch flattened list of images used in specified post type.
- - Changed filter name from 'cmk_blank_allowed_post_types' to 'blank_allowed_post_types' for consistency.
+ - Changed filter name from 'cmk_rest_api_allowed_post_types' to 'rest_api_allowed_post_types' for consistency.
  - Added filter 'blank_rest_image' to allow modification of image properties before returning in REST API.
 
 ## Contributing

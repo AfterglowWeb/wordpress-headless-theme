@@ -47,7 +47,7 @@ class OptionsPage {
 
 	public function ajax_read_options() {
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
-			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
 		$options = Options::read_options();
@@ -56,23 +56,23 @@ class OptionsPage {
 
 	public function ajax_update_options() {
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
-			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
 		if ( isset( $_POST['action'] ) && 'blank_theme_update_options' === $_POST['action'] && isset( $_POST['options'] ) ) {
 
 			$options = json_decode( sanitize_text_field( wp_unslash( $_POST['options'] ) ), true );
 			if ( ! is_array( $options ) ) {
-				wp_send_json_error( [ 'error' => esc_html__( 'Invalid options data', 'blank' ) ], 400 );
+				wp_send_json_error( array( 'error' => esc_html__( 'Invalid options data', 'blank' ) ), 400 );
 			}
 
 			$options = Options::update_options( $options );
 
 			wp_send_json_success(
-				[
+				array(
 					'message' => esc_html__( 'Options saved', 'blank' ),
 					'options' => $options,
-				]
+				)
 			);
 		} else {
 			$options = Options::read_options();
@@ -82,7 +82,7 @@ class OptionsPage {
 
 	public function ajax_documentation() {
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
-			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
 		$documentation_pages = Documentation::read_pages();
@@ -102,7 +102,7 @@ class OptionsPage {
 		wp_enqueue_style( 'editor-buttons' );
 
 		$mui_config       = $this->load_script_config( get_template_directory() . '/build/mui.asset.php' );
-		$mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : [];
+		$mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : array();
 		wp_enqueue_script(
 			'blank-theme-mui',
 			get_template_directory_uri() . '/build/mui.js',
@@ -112,7 +112,7 @@ class OptionsPage {
 		);
 
 		$script_config = $this->load_script_config( get_template_directory() . '/build/index.asset.php' );
-		$dependencies  = ! empty( $script_config ) && isset( $script_config['dependencies'] ) ? $script_config['dependencies'] : [];
+		$dependencies  = ! empty( $script_config ) && isset( $script_config['dependencies'] ) ? $script_config['dependencies'] : array();
 		wp_enqueue_script(
 			'blank-theme-admin',
 			get_template_directory_uri() . '/build/index.js',
@@ -183,10 +183,10 @@ class OptionsPage {
 	}
 
 	private static function load_script_config( $file_path ): array {
-		$config = [];
+		$config = array();
 		if ( is_readable( $file_path ) ) {
 			$raw_config             = include realpath( $file_path );
-			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_key', $raw_config['dependencies'] ) : [];
+			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_key', $raw_config['dependencies'] ) : array();
 			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : '1.0.0';
 		}
 		return $config;
