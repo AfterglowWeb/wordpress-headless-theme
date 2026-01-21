@@ -16,83 +16,83 @@ import MenuIcon from '@mui/icons-material/Menu';
 import contentStyles from './utils/contentStyles';
 
 export default function Documentation() {
-  const {
-    open,
-    openDoc,
-    closeDoc,
-    currentLocation,
-    docs,
-  } = useDocumentation();
+	const { open, openDoc, closeDoc, currentLocation, docs } =
+		useDocumentation();
 
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+	const [ menuAnchorEl, setMenuAnchorEl ] = useState( null );
 
-  const currentDoc = useMemo(
-    () => docs.find((doc) => doc.slug === currentLocation?.page),
-    [docs, currentLocation]
-  );
+	const currentDoc = useMemo(
+		() => docs.find( ( doc ) => doc.slug === currentLocation?.page ),
+		[ docs, currentLocation ]
+	);
 
-  useEffect(() => {
-    if (!currentLocation?.anchor) return;
+	useEffect( () => {
+		if ( ! currentLocation?.anchor ) {
+			return;
+		}
 
-    const el = document.getElementById(currentLocation.anchor);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [currentLocation, currentDoc]);
+		const el = document.getElementById( currentLocation.anchor );
+		if ( el ) {
+			el.scrollIntoView( { behavior: 'smooth', block: 'start' } );
+		}
+	}, [ currentLocation, currentDoc ] );
 
-  return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={closeDoc}
-      sx={{
-        '& .MuiDrawer-paper': {
-          boxSizing: 'border-box',
-          width: '100%',
-          maxWidth: 600,
-        },
-      }}
-    >
-      <Toolbar>
-        <IconButton size="small" onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
-          <MenuIcon />
-        </IconButton>
+	return (
+		<Drawer
+			anchor="right"
+			open={ open }
+			onClose={ closeDoc }
+			sx={ {
+				'& .MuiDrawer-paper': {
+					boxSizing: 'border-box',
+					width: '100%',
+					maxWidth: 600,
+				},
+			} }
+		>
+			<Toolbar>
+				<IconButton
+					size="small"
+					onClick={ ( e ) => setMenuAnchorEl( e.currentTarget ) }
+				>
+					<MenuIcon />
+				</IconButton>
 
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          {__('Help', 'blank')}
-        </Typography>
+				<Typography variant="h6" sx={ { flexGrow: 1 } }>
+					{ __( 'Help', 'blank' ) }
+				</Typography>
 
-        <IconButton onClick={closeDoc}>
-          <CloseIcon />
-        </IconButton>
-      </Toolbar>
+				<IconButton onClick={ closeDoc }>
+					<CloseIcon />
+				</IconButton>
+			</Toolbar>
 
-      {currentDoc && (
-        <Card>
-          <CardContent
-            sx={contentStyles}
-            dangerouslySetInnerHTML={{
-              __html: currentDoc.html,
-            }}
-          />
-        </Card>
-      )}
+			{ currentDoc && (
+				<Card>
+					<CardContent
+						sx={ contentStyles }
+						dangerouslySetInnerHTML={ {
+							__html: currentDoc.html,
+						} }
+					/>
+				</Card>
+			) }
 
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={() => setMenuAnchorEl(null)}
-      >
-        {docs.map((doc) => (
-          <MenuItem
-            key={doc.slug}
-            selected={currentDoc?.slug === doc.slug}
-            onClick={() => openDoc({ page: doc.slug })}
-          >
-            <ListItemText primary={doc.title} />
-          </MenuItem>
-        ))}
-      </Menu>
-    </Drawer>
-  );
+			<Menu
+				anchorEl={ menuAnchorEl }
+				open={ Boolean( menuAnchorEl ) }
+				onClose={ () => setMenuAnchorEl( null ) }
+			>
+				{ docs.map( ( doc ) => (
+					<MenuItem
+						key={ doc.slug }
+						selected={ currentDoc?.slug === doc.slug }
+						onClick={ () => openDoc( { page: doc.slug } ) }
+					>
+						<ListItemText primary={ doc.title } />
+					</MenuItem>
+				) ) }
+			</Menu>
+		</Drawer>
+	);
 }

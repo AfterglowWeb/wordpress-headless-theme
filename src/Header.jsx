@@ -79,15 +79,16 @@ const VersionBadge = styled( Box )( ( { theme } ) => ( {
 } ) );
 
 export default function Header() {
-	const {adminData} = useAdminData();
+	const { adminData } = useAdminData();
 
-	useEffect(() => {
-		if (!adminData ) {
-			return;
+	useEffect( () => {
+		if ( ! adminData ) {
 		}
-	}, [adminData]);
+	}, [ adminData ] );
 
-	if (!adminData) return null;
+	if ( ! adminData ) {
+		return null;
+	}
 
 	return (
 		<AppHeader>
@@ -96,28 +97,33 @@ export default function Header() {
 					<AppLogo>abc.</AppLogo>
 
 					<BrandInfo>
-						<AppName 
+						<AppName
 							dangerouslySetInnerHTML={ {
 								__html: sanitizeHtml( adminData?.theme_name ),
-							} } 
-						/>
-					</BrandInfo>
-					
-						<VersionBadge
-							dangerouslySetInnerHTML={ {
-								__html: `v${ sanitizeHtml( adminData?.theme_version ) }`,
 							} }
 						/>
+					</BrandInfo>
 
-						<Tooltip title={'Open Theme Github in a new tab'}>
-							<Button size="small" color="primary" href={adminData?.theme_uri} target="_blank" rel="noreferer noopener">
-								Documentation
-							</Button>
-						</Tooltip>
-					
+					<VersionBadge
+						dangerouslySetInnerHTML={ {
+							__html: `v${ sanitizeHtml(
+								adminData?.theme_version
+							) }`,
+						} }
+					/>
+
+					<Tooltip title={ 'Open Theme Github in a new tab' }>
+						<Button
+							size="small"
+							color="primary"
+							href={ adminData?.theme_uri }
+							target="_blank"
+							rel="noreferer noopener"
+						>
+							Documentation
+						</Button>
+					</Tooltip>
 				</BrandSection>
-
-				
 			</MainContainer>
 		</AppHeader>
 	);

@@ -155,7 +155,6 @@ class Options {
 				'rest_expose'       => false,
 			),
 
-
 			// Core.
 
 			'core_disable_gutenberg_enabled'          => array(

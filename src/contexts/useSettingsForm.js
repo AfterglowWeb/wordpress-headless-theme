@@ -1,22 +1,21 @@
 import { useState, useEffect, useCallback } from '@wordpress/element';
 
-export default function useSettingsForm({
+export default function useSettingsForm( {
 	adminData,
 	updateAdminData,
 	action,
-}) {
-	const [adminOptions, setAdminOptions] = useState({});
-	const [form, setForm] = useState({
+} ) {
+	const [ adminOptions, setAdminOptions ] = useState( {} );
+	const [ form, setForm ] = useState( {
+		blank_use_core_rest_enabled: false,
+		blank_relative_url_enabled: false,
+		blank_embed_featured_attachment_enabled: false,
+		blank_embed_post_attachments_enabled: false,
+		blank_relative_attachment_url_enabled: false,
+		blank_embed_terms_enabled: false,
+		blank_embed_authors_enabled: false,
+		blank_with_acf_enabled: false,
 
-		blank_use_core_rest_enabled:false,
-		blank_relative_url_enabled:false,
-		blank_embed_featured_attachment_enabled:false,
-		blank_embed_post_attachments_enabled:false,
-		blank_relative_attachment_url_enabled:false,
-		blank_embed_terms_enabled:false,
-		blank_embed_authors_enabled:false,
-		blank_with_acf_enabled:false,
-		
 		rest_api_posts_per_page: 100,
 		rest_api_attachments_per_page: 100,
 		rest_api_restrict_post_types_enabled: false,
@@ -33,150 +32,208 @@ export default function useSettingsForm({
 		core_disable_comments_enabled: false,
 		core_max_upload_size: 1024,
 		core_max_upload_size_enabled: false,
-	});
+	} );
 
-	const [confirmOpen, setConfirmOpen] = useState(false);
-	const [saving, setSaving] = useState(false);
-	const [justSaved, setJustSaved] = useState(false);
+	const [ confirmOpen, setConfirmOpen ] = useState( false );
+	const [ saving, setSaving ] = useState( false );
+	const [ justSaved, setJustSaved ] = useState( false );
 
-	useEffect(() => {
-		if (!adminData?.admin_options) return;
-		setAdminOptions(adminData.admin_options);
-	}, [adminData]);
+	useEffect( () => {
+		if ( ! adminData?.admin_options ) {
+			return;
+		}
+		setAdminOptions( adminData.admin_options );
+	}, [ adminData ] );
 
-	useEffect(() => {
-		if (!adminOptions) return;
-
-		setForm({
-			blank_use_core_rest_enabled: Boolean(adminOptions.blank_use_core_rest_enabled),
-			blank_embed_featured_attachment_enabled: Boolean(adminOptions.blank_embed_featured_attachment_enabled),
-			blank_embed_authors_enabled: Boolean(adminOptions.blank_embed_authors_enabled),
-			blank_relative_url_enabled: Boolean(adminOptions.blank_relative_url_enabled),
-			blank_embed_post_attachments_enabled: Boolean(adminOptions.blank_embed_post_attachments_enabled),
-			blank_relative_attachment_url_enabled: Boolean(adminOptions.blank_relative_attachment_url_enabled),
-			blank_embed_terms_enabled: Boolean(adminOptions.blank_embed_terms_enabled),
-			blank_with_acf_enabled: Boolean(adminOptions.blank_with_acf_enabled),
-
-			rest_api_protect_wp_rest_routes: Boolean(adminOptions.rest_api_protect_wp_rest_routes),
-			rest_api_allowed_post_types: Array.isArray(adminOptions.rest_api_allowed_post_types)
-				? adminOptions.rest_api_allowed_post_types
-				: [],
-			rest_api_user_id: adminOptions.rest_api_user_id ?? '',
-			rest_api_rate_limit: Number(adminOptions.rest_api_rate_limit ?? 30),
-			rest_api_rate_limit_time: Number(adminOptions.rest_api_rate_limit_time ?? 60),
-			rest_api_posts_per_page: Number(adminOptions.rest_api_posts_per_page ?? 100),
-			rest_api_attachments_per_page: Number(adminOptions.rest_api_attachments_per_page ?? 100),
-			rest_api_restrict_post_types_enabled: Boolean(adminOptions.rest_api_restrict_post_types_enabled),
-			
-			application_host: adminOptions.application_host ?? '',
-			application_webhook_endpoint: adminOptions.application_webhook_endpoint ?? '',
-
-			core_disable_gutenberg_enabled: Boolean(adminOptions.core_disable_gutenberg_enabled),
-			core_disable_comments_enabled: Boolean(adminOptions.core_disable_comments_enabled),
-			core_max_upload_size: Number(adminOptions.core_max_upload_size ?? 1024),
-			core_max_upload_size_enabled: Boolean(adminOptions.core_max_upload_size_enabled),
-		});
-	}, [adminOptions]);
-
-
-	const setField = useCallback((eventOrName, maybeValue) => {
-		if (eventOrName?.target) {
-			const { name, value, type, checked } = eventOrName.target;
-			if (!name) return;
-
-			setForm((prev) => ({
-				...prev,
-				[name]: type === 'checkbox' ? Boolean(checked) : value,
-			}));
+	useEffect( () => {
+		if ( ! adminOptions ) {
 			return;
 		}
 
-		if (typeof eventOrName === 'string') {
-			setForm((prev) => ({
+		setForm( {
+			blank_use_core_rest_enabled: Boolean(
+				adminOptions.blank_use_core_rest_enabled
+			),
+			blank_embed_featured_attachment_enabled: Boolean(
+				adminOptions.blank_embed_featured_attachment_enabled
+			),
+			blank_embed_authors_enabled: Boolean(
+				adminOptions.blank_embed_authors_enabled
+			),
+			blank_relative_url_enabled: Boolean(
+				adminOptions.blank_relative_url_enabled
+			),
+			blank_embed_post_attachments_enabled: Boolean(
+				adminOptions.blank_embed_post_attachments_enabled
+			),
+			blank_relative_attachment_url_enabled: Boolean(
+				adminOptions.blank_relative_attachment_url_enabled
+			),
+			blank_embed_terms_enabled: Boolean(
+				adminOptions.blank_embed_terms_enabled
+			),
+			blank_with_acf_enabled: Boolean(
+				adminOptions.blank_with_acf_enabled
+			),
+
+			rest_api_protect_wp_rest_routes: Boolean(
+				adminOptions.rest_api_protect_wp_rest_routes
+			),
+			rest_api_allowed_post_types: Array.isArray(
+				adminOptions.rest_api_allowed_post_types
+			)
+				? adminOptions.rest_api_allowed_post_types
+				: [],
+			rest_api_user_id: adminOptions.rest_api_user_id ?? '',
+			rest_api_rate_limit: Number(
+				adminOptions.rest_api_rate_limit ?? 30
+			),
+			rest_api_rate_limit_time: Number(
+				adminOptions.rest_api_rate_limit_time ?? 60
+			),
+			rest_api_posts_per_page: Number(
+				adminOptions.rest_api_posts_per_page ?? 100
+			),
+			rest_api_attachments_per_page: Number(
+				adminOptions.rest_api_attachments_per_page ?? 100
+			),
+			rest_api_restrict_post_types_enabled: Boolean(
+				adminOptions.rest_api_restrict_post_types_enabled
+			),
+
+			application_host: adminOptions.application_host ?? '',
+			application_webhook_endpoint:
+				adminOptions.application_webhook_endpoint ?? '',
+
+			core_disable_gutenberg_enabled: Boolean(
+				adminOptions.core_disable_gutenberg_enabled
+			),
+			core_disable_comments_enabled: Boolean(
+				adminOptions.core_disable_comments_enabled
+			),
+			core_max_upload_size: Number(
+				adminOptions.core_max_upload_size ?? 1024
+			),
+			core_max_upload_size_enabled: Boolean(
+				adminOptions.core_max_upload_size_enabled
+			),
+		} );
+	}, [ adminOptions ] );
+
+	const setField = useCallback( ( eventOrName, maybeValue ) => {
+		if ( eventOrName?.target ) {
+			const { name, value, type, checked } = eventOrName.target;
+			if ( ! name ) {
+				return;
+			}
+
+			setForm( ( prev ) => ( {
 				...prev,
-				[eventOrName]: maybeValue,
-			}));
+				[ name ]: type === 'checkbox' ? Boolean( checked ) : value,
+			} ) );
+			return;
 		}
-	}, []);
 
+		if ( typeof eventOrName === 'string' ) {
+			setForm( ( prev ) => ( {
+				...prev,
+				[ eventOrName ]: maybeValue,
+			} ) );
+		}
+	}, [] );
 
-	const setSlider = useCallback((name, value) => {
-		const numericValue = Array.isArray(value)
-			? Number(value[0])
-			: Number(value);
+	const setSlider = useCallback( ( name, value ) => {
+		const numericValue = Array.isArray( value )
+			? Number( value[ 0 ] )
+			: Number( value );
 
-		setForm((prev) => ({
+		setForm( ( prev ) => ( {
 			...prev,
-			[name]: Number.isFinite(numericValue) ? numericValue : 0,
-		}));
-	}, []);
+			[ name ]: Number.isFinite( numericValue ) ? numericValue : 0,
+		} ) );
+	}, [] );
 
-	const mapFormToAdminOptions = useCallback((form) => ({
-		blank_use_core_rest_enabled: form.blank_use_core_rest_enabled,
-		blank_embed_featured_attachment_enabled: form.blank_embed_featured_attachment_enabled,
-		blank_relative_url_enabled: form.blank_relative_url_enabled,
-		blank_embed_post_attachments_enabled: form.blank_embed_post_attachments_enabled,
-		blank_relative_attachment_url_enabled: form.blank_relative_attachment_url_enabled,
-		blank_embed_terms_enabled: form.blank_embed_terms_enabled,
-		blank_embed_authors_enabled: form.blank_embed_authors_enabled,
-		blank_with_acf_enabled: form.blank_with_acf_enabled,
+	const mapFormToAdminOptions = useCallback(
+		( form ) => ( {
+			blank_use_core_rest_enabled: form.blank_use_core_rest_enabled,
+			blank_embed_featured_attachment_enabled:
+				form.blank_embed_featured_attachment_enabled,
+			blank_relative_url_enabled: form.blank_relative_url_enabled,
+			blank_embed_post_attachments_enabled:
+				form.blank_embed_post_attachments_enabled,
+			blank_relative_attachment_url_enabled:
+				form.blank_relative_attachment_url_enabled,
+			blank_embed_terms_enabled: form.blank_embed_terms_enabled,
+			blank_embed_authors_enabled: form.blank_embed_authors_enabled,
+			blank_with_acf_enabled: form.blank_with_acf_enabled,
 
-		rest_api_protect_wp_rest_routes: form.rest_api_protect_wp_rest_routes,
-		rest_api_allowed_post_types: form.rest_api_allowed_post_types,
-		rest_api_restrict_post_types_enabled: form.rest_api_restrict_post_types_enabled,
-		rest_api_user_id: form.rest_api_user_id,
-		rest_api_rate_limit: form.rest_api_rate_limit,
-		rest_api_rate_limit_time: form.rest_api_rate_limit_time,
-		rest_api_posts_per_page: form.rest_api_posts_per_page,
-		rest_api_attachments_per_page: form.rest_api_attachments_per_page,
+			rest_api_protect_wp_rest_routes:
+				form.rest_api_protect_wp_rest_routes,
+			rest_api_allowed_post_types: form.rest_api_allowed_post_types,
+			rest_api_restrict_post_types_enabled:
+				form.rest_api_restrict_post_types_enabled,
+			rest_api_user_id: form.rest_api_user_id,
+			rest_api_rate_limit: form.rest_api_rate_limit,
+			rest_api_rate_limit_time: form.rest_api_rate_limit_time,
+			rest_api_posts_per_page: form.rest_api_posts_per_page,
+			rest_api_attachments_per_page: form.rest_api_attachments_per_page,
 
-		application_host: form.application_host,
-		application_webhook_endpoint: form.application_webhook_endpoint,
+			application_host: form.application_host,
+			application_webhook_endpoint: form.application_webhook_endpoint,
 
-		core_max_upload_size: form.core_max_upload_size,
-		core_max_upload_size_enabled: form.core_max_upload_size_enabled,
-		core_disable_gutenberg_enabled: form.core_disable_gutenberg_enabled,
-		core_disable_comments_enabled: form.core_disable_comments_enabled,
-		
-	}), []);
+			core_max_upload_size: form.core_max_upload_size,
+			core_max_upload_size_enabled: form.core_max_upload_size_enabled,
+			core_disable_gutenberg_enabled: form.core_disable_gutenberg_enabled,
+			core_disable_comments_enabled: form.core_disable_comments_enabled,
+		} ),
+		[]
+	);
 
-	const submit = useCallback(async () => {
-		if (!adminData?.nonce || !adminData?.ajaxurl) {
-			throw new Error('Missing AJAX configuration');
+	const submit = useCallback( async () => {
+		if ( ! adminData?.nonce || ! adminData?.ajaxurl ) {
+			throw new Error( 'Missing AJAX configuration' );
 		}
 
-		setSaving(true);
+		setSaving( true );
 
-		const response = await fetch(adminData.ajaxurl, {
+		const response = await fetch( adminData.ajaxurl, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+				'Content-Type':
+					'application/x-www-form-urlencoded; charset=UTF-8',
 			},
-			body: new URLSearchParams({
+			body: new URLSearchParams( {
 				action,
 				nonce: adminData.nonce,
-				options: JSON.stringify(form),
-			}),
-		});
+				options: JSON.stringify( form ),
+			} ),
+		} );
 
 		const data = await response.json();
 
-		if (!data.success) {
-			setSaving(false);
-			throw new Error(data.data?.error || 'Unknown error');
+		if ( ! data.success ) {
+			setSaving( false );
+			throw new Error( data.data?.error || 'Unknown error' );
 		}
 
-		updateAdminData({
+		updateAdminData( {
 			admin_options: {
 				...adminOptions,
-				...mapFormToAdminOptions(form),
+				...mapFormToAdminOptions( form ),
 			},
-		});
+		} );
 
-		setJustSaved(true);
-		setTimeout(() => setJustSaved(false), 1200);
-		setSaving(false);
-	}, [adminData, form, updateAdminData, adminOptions, mapFormToAdminOptions, action]);
+		setJustSaved( true );
+		setTimeout( () => setJustSaved( false ), 1200 );
+		setSaving( false );
+	}, [
+		adminData,
+		form,
+		updateAdminData,
+		adminOptions,
+		mapFormToAdminOptions,
+		action,
+	] );
 
 	return {
 		form,
@@ -184,8 +241,8 @@ export default function useSettingsForm({
 		setSlider,
 		submit,
 		confirmOpen,
-		openConfirm: () => setConfirmOpen(true),
-		closeConfirm: () => setConfirmOpen(false),
+		openConfirm: () => setConfirmOpen( true ),
+		closeConfirm: () => setConfirmOpen( false ),
 		saving,
 		justSaved,
 	};

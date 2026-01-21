@@ -17,21 +17,19 @@ document.addEventListener( 'DOMContentLoaded', function () {
 	if ( container && adminData ) {
 		const root = createRoot( container );
 		root.render(
-			<AdminDataProvider
-				adminData={ adminData }
-			>
+			<AdminDataProvider adminData={ adminData }>
 				<DocumentationProvider>
-				<AppTheme>
-					<Suspense fallback={ <HeaderSkeleton /> }>
-						<Header />
-					</Suspense>
-					<Suspense fallback={ <ContentSkeleton /> }>
-						<App />
-					</Suspense>
-					<Suspense fallback={ <FooterSkeleton /> }>
-						<Footer />
-					</Suspense>
-				</AppTheme>
+					<AppTheme>
+						<Suspense fallback={ <HeaderSkeleton /> }>
+							<Header />
+						</Suspense>
+						<Suspense fallback={ <ContentSkeleton /> }>
+							<App />
+						</Suspense>
+						<Suspense fallback={ <FooterSkeleton /> }>
+							<Footer />
+						</Suspense>
+					</AppTheme>
 				</DocumentationProvider>
 			</AdminDataProvider>
 		);
@@ -91,9 +89,18 @@ const FooterSkeleton = () => (
 );
 
 const ContentSkeleton = () => (
-	<Box sx={ { display:'flex', flexDirection:'column', gap:2, maxWidth:600, mx:'auto', p: { xs: 2, md: 3 } } }>
-			<Skeleton variant="rounded" height={ 300 } />
-			<Skeleton variant="rounded" height={ 300 } />
-			<Skeleton variant="rounded" height={ 300 } />
+	<Box
+		sx={ {
+			display: 'flex',
+			flexDirection: 'column',
+			gap: 2,
+			maxWidth: 600,
+			mx: 'auto',
+			p: { xs: 2, md: 3 },
+		} }
+	>
+		<Skeleton variant="rounded" height={ 300 } />
+		<Skeleton variant="rounded" height={ 300 } />
+		<Skeleton variant="rounded" height={ 300 } />
 	</Box>
 );
