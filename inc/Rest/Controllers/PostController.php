@@ -17,7 +17,7 @@ class PostController {
 			'blank_relative_url_enabled',
 			function ( string $url ): string {
 
-				$base_url = sanitize_url( site_url( '/' ) );
+				$base_url = wp_unslash( sanitize_url( site_url( '/' ) ) );
 				$parts    = explode( $base_url, $url, 2 );
 				if ( ! empty( $parts ) && isset( $parts[1] ) ) {
 					return $parts[1];
