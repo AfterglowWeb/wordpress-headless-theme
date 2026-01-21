@@ -28,6 +28,24 @@ class Routes {
 			3
 		);
 
+		add_filter(
+	'rest_pre_serve_request',
+	function ( $served, $result, $request, $server ) {
+
+		if ( str_starts_with( $request->get_route(), '/blank/v1/' ) ) {
+			echo wp_json_encode(
+				$result->get_data(),
+				JSON_UNESCAPED_SLASHES
+			);
+			return true;
+		}
+
+		return $served;
+	},
+	10,
+	4
+);
+
 		// Todo: add_filter( 'application_password_is_api_request', '__return_true' );
 
 		add_action(

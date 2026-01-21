@@ -65,7 +65,7 @@ class AttachmentController {
 
 				return $thumbnail_id
 				? self::attachment_model( $thumbnail_id, $post->ID, 'featured_attachment' )
-				: array();
+				: [];
 			},
 			1,
 			10
@@ -82,7 +82,7 @@ class AttachmentController {
 			'post_status'    => 'publish',
 		);
 		$query  = new \WP_Query( $args );
-		$images = array();
+		$images = [];
 
 		foreach ( $query->posts as $post ) {
 			$images = array_merge( $images, self::attachments_per_post_flat( $post ) ); // Models::attachments_per_post( $post )
@@ -96,7 +96,7 @@ class AttachmentController {
 					$carry[ $img['id'] ] = $img;
 					return $carry;
 				},
-				array()
+				[]
 			)
 		);
 
@@ -107,8 +107,8 @@ class AttachmentController {
 
 	public static function attachments_per_post_flat( WP_Post $post ): array {
 
-		$attachments    = array();
-		$attachment_ids = array();
+		$attachments    = [];
+		$attachment_ids = [];
 
 		$thumbnail_id = get_post_thumbnail_id( $post->ID );
 		if ( $thumbnail_id ) {
@@ -144,7 +144,7 @@ class AttachmentController {
 
 			$attachment = get_post( $attachment_id );
 			if ( false === $attachment instanceof WP_Post ) {
-				return array();
+				return [];
 			}
 
 			$controller = new \WP_REST_Attachments_Controller( 'attachment' );
@@ -162,10 +162,10 @@ class AttachmentController {
 	private static function get_acf_attachment_ids( int $post_id ): array {
 
 		if ( ! function_exists( 'get_fields' ) || false === Options::read_option( 'blank_with_acf_enabled' ) ) {
-			return array();
+			return [];
 		}
 
-		$image_ids = array();
+		$image_ids = [];
 		$fields    = get_fields( $post_id );
 
 		foreach ( $fields as $value ) {
