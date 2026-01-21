@@ -4,12 +4,6 @@ defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Options;
 
-/**
- *  Options::read_option( 'rest_api_protect_wp_rest_routes' );
- *  Options::read_option( 'rest_api_allowed_post_types' )
- *  Options::read_option( 'rest_api_restrict_post_types_enabled' )
- */
-
 class Permissions {
 
 	public static function sync_rest_api_user( int $new_user_id, int $old_user_id = 0 ): void {
@@ -39,15 +33,42 @@ class Permissions {
 		}
 	}
 
-	private static function validate_rest_api_token(): bool {
-		return (bool) is_user_logged_in()
-			&& current_user_can( 'blank_api_access' );
+	public static function protect_wp_rest_route( $result ) {
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( ! Options::read_option( 'rest_api_protect_wp_rest_routes' ) ) {
+			return $result;
+		}
+
+		$route = $_SERVER['REQUEST_URI'] ?? '';
+
+		if ( str_contains( $route, '/blank/v1/' ) ) {
+			return $result;
+		}
+		if ( str_contains( $route, '/wp/v2/' ) ) {
+			if ( false === self::validate_wp_application_password() ) {
+				return new \WP_Error(
+					'rest_forbidden',
+					__( 'Authentication required.', 'blank' ),
+					array( 'status' => 401 )
+				);
+			}
+		}
+
+		return $result;
 	}
 
 	public static function permission_check( \WP_REST_Request $request ) {
 
-		if ( false === self::validate_rest_api_token() ) {
-			return false;
+		if ( false === self::validate_wp_application_password() ) {
+			return new \WP_Error(
+				'rest_forbidden',
+				__( 'Invalid application password.', 'blank' ),
+				array( 'status' => 401 )
+			);
 		}
 
 		$rate = RateLimit::check( $request );
@@ -58,29 +79,22 @@ class Permissions {
 		return true;
 	}
 
-	public static function protect_wp_rest_route( $result ) {
+	private static function validate_wp_application_password(): bool {
+		$user = wp_get_current_user();
 
-		if ( is_wp_error( $result ) ) {
-			return $result;
+		if ( ! $user || ! $user->exists() ) {
+			return false;
 		}
 
-			$option = Options::read_option( 'rest_api_protect_wp_rest_routes' );
-		if ( empty( $option ) ) {
-			return $result;
-		}
-
-		if ( false === self::validate_rest_api_token() ) {
-			return new \WP_Error(
-				'rest_forbidden',
-				__( 'Authentication required.' ),
-				array( 'status' => 401 )
-			);
-		}
-
-			return $result;
+		return $user->has_cap( 'blank_api_access' );
 	}
 
+
 	public static function is_post_type_allowed( string $post_type ): bool {
+
+		if ( false === Options::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
+			return true;
+		}
 
 		if ( ! post_type_exists( $post_type ) ) {
 			return false;

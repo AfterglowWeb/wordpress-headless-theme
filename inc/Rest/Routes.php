@@ -28,6 +28,8 @@ class Routes {
 			3
 		);
 
+		// Todo: add_filter( 'application_password_is_api_request', '__return_true' );
+
 		add_action(
 			'rest_api_init',
 			function () {
