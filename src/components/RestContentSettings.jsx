@@ -1,40 +1,95 @@
+import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 
-export default function RestContentSettings( { form, setField } ) {
+
+export default function RestContentSettings( { form, setField, postTypes } ) {
 	const { __ } = wp.i18n || {};
 
 	return (
 		<Stack spacing={ 3 }>
 			<Typography variant="h6" sx={ { fontWeight: 600 } }>
-				{ __( 'REST Content', 'blank' ) }
+				{ __( 'Collections', 'blank' ) }
 			</Typography>
 
 			<FormControl>
 				<FormControlLabel
 					control={
 						<Switch
-							checked={ !! form.blank_use_core_rest_enabled }
-							name="blank_use_core_rest_enabled"
+							checked={
+								!! form.rest_api_restrict_post_types_enabled
+							}
+							name="rest_api_restrict_post_types_enabled"
 							onChange={ setField }
 						/>
 					}
 					label={ __(
-						'Do not use Blank Theme REST Models',
+						'Restict to Posts Types',
 						'blank'
 					) }
 				/>
-				<FormHelperText>
-					{ __(
-						'Use standard WordPress REST models. Deactivate Blank Theme REST models.',
+			</FormControl>
+
+			<Box sx={ { minWidth: 120 } }>
+				{ postTypes && (
+					<MultipleSelect
+						name="rest_api_allowed_post_types"
+						label={ __( 'Expose Post Types', 'blank' ) }
+						value={ form.rest_api_allowed_post_types }
+						helperText={
+							'If empty, default REST settings are applied'
+						}
+						options={ postTypes }
+						onChange={ setField }
+					/>
+				) }
+			</Box>
+
+			<Stack direction="row" gap={2}>
+				<TextField
+					label={ __( 'Posts Per Page', 'blank' ) }
+					type="number"
+					min="0"
+					max="1000"
+					helperText={ __(
+						'Applies to REST collections only',
 						'blank'
 					) }
-				</FormHelperText>
-			</FormControl>
+					name="rest_api_posts_per_page"
+					value={ form.rest_api_posts_per_page }
+					onChange={ setField }
+					fullWidth
+				/>
+
+				<TextField
+					label={ __( 'Attachments Per Page', 'blank' ) }
+					type="number"
+					min="0"
+					max="1000"
+					helperText={ __(
+						'Applies to Blank REST attachment endpoints',
+						'blank'
+					) }
+					name="rest_api_attachments_per_page"
+					value={ form.rest_api_attachments_per_page }
+					onChange={ setField }
+					fullWidth
+				/>
+			</Stack>
+
+			<Typography variant="h6" sx={ { fontWeight: 600 } }>
+				{ __( 'Posts and Terms', 'blank' ) }
+			</Typography>
 
 			<FormControl>
 				<FormControlLabel
@@ -49,7 +104,7 @@ export default function RestContentSettings( { form, setField } ) {
 				/>
 				<FormHelperText>
 					{ __(
-						'Remove protocol and domain from post and term urls (http[s]://www.domain-example.com).',
+						'Remove host from post and term urls (http[s]://www.domain-example.com).',
 						'blank'
 					) }
 				</FormHelperText>
@@ -67,13 +122,13 @@ export default function RestContentSettings( { form, setField } ) {
 						/>
 					}
 					label={ __(
-						'Embed featured attachment on posts',
+						'Embed featured attachments',
 						'blank'
 					) }
 				/>
 				<FormHelperText>
 					{ __(
-						'Replace featured attachment id by a simplified attachment object.',
+						'Replace featured attachment ids by simple objects.',
 						'blank'
 					) }
 				</FormHelperText>
@@ -93,10 +148,15 @@ export default function RestContentSettings( { form, setField } ) {
 					label={ __( 'Embed attachments on posts', 'blank' ) }
 				/>
 				<FormHelperText>
-					{ __(
-						'Add an array of simplified attachments on posts. The data source are: post featured attachment, post ACF fields based on their types.',
+					
+					<Typography variant="caption">{ __(
+						'Add a simplified array of attachments on posts',
 						'blank'
-					) }
+					) }</Typography><br/>
+					<Typography variant="caption">{ __(
+						'Includes featured attachment and ACF fields according to their type.',
+						'blank'
+					) }</Typography>
 				</FormHelperText>
 			</FormControl>
 
@@ -114,10 +174,11 @@ export default function RestContentSettings( { form, setField } ) {
 					label={ __( 'Relative attachment urls', 'blank' ) }
 				/>
 				<FormHelperText>
-					{ __(
-						'Remove domain and uploads path from attachments url (www.domain-example.com/wp-content/uploads).',
+					<Typography variant="caption">{ __(
+						'Remove host and upload path from attachment urls',
 						'blank'
-					) }
+					) }</Typography><br/>
+					<Typography variant="caption">https://www.domain-example.com/wp-content/uploads</Typography>
 				</FormHelperText>
 			</FormControl>
 
@@ -134,7 +195,7 @@ export default function RestContentSettings( { form, setField } ) {
 				/>
 				<FormHelperText>
 					{ __(
-						'Relative terms ids by simplified term objects',
+						'Replace terms ids by simplified term objects',
 						'blank'
 					) }
 				</FormHelperText>
@@ -149,15 +210,103 @@ export default function RestContentSettings( { form, setField } ) {
 							onChange={ setField }
 						/>
 					}
-					label={ __( 'Enable ACF Support', 'blank' ) }
+					label={ __( 'Embed ACF Fields', 'blank' ) }
 				/>
 				<FormHelperText>
 					{ __(
-						'Embed ACF Fields on simplified post and terms objects',
+						'Activate the `acf` property',
+						'blank'
+					) }
+				</FormHelperText>
+			</FormControl>
+
+			<FormControl>
+				<FormControlLabel
+					control={
+						<Switch
+							checked={ !! form.blank_use_core_rest_enabled }
+							name="blank_use_core_rest_enabled"
+							onChange={ setField }
+						/>
+					}
+					label={ __(
+						'Disable Blank Theme REST Models',
+						'blank'
+					) }
+				/>
+				<FormHelperText>
+					{ __(
+						'Use standard WordPress REST models.',
 						'blank'
 					) }
 				</FormHelperText>
 			</FormControl>
 		</Stack>
+	);
+}
+
+
+function MultipleSelect( {
+	label,
+	helperText,
+	name,
+	value,
+	options,
+	onChange,
+} ) {
+	const MenuProps = {
+		PaperProps: {
+			style: {
+				maxHeight: 48 * 4.5 + 8,
+				width: 250,
+			},
+		},
+	};
+
+	const safeValue = Array.isArray( value ) ? value : [];
+
+	return (
+		<FormControl fullWidth>
+			<InputLabel id={ `${ name }-label` }>{ label }</InputLabel>
+
+			<Select
+				labelId={ `${ name }-label` }
+				id={ name }
+				name={ name }
+				multiple
+				value={ safeValue }
+				onChange={ ( e ) => {
+					onChange( e );
+				} }
+				input={ <OutlinedInput label={ label } /> }
+				renderValue={ ( selected ) => (
+					<Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 0.5 } }>
+						{ Array.isArray( selected )
+							? selected.map( ( val ) => {
+									const option = options.find(
+										( o ) => o.value === val
+									);
+									return option ? (
+										<Chip
+											key={ val }
+											label={ option.label }
+										/>
+									) : null;
+							  } )
+							: null }
+					</Box>
+				) }
+				MenuProps={ MenuProps }
+			>
+				{ options.map( ( option ) =>
+					option?.value != null && option?.label ? (
+						<MenuItem key={ option.value } value={ option.value }>
+							{ option.label }
+						</MenuItem>
+					) : null
+				) }
+			</Select>
+			{ helperText && <FormHelperText>{ helperText }</FormHelperText> }
+		</FormControl>
 	);
 }
