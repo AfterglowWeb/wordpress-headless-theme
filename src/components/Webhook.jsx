@@ -20,6 +20,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import Typography from '@mui/material/Typography';
+import FormControl from '@mui/material/FormControl';
 
 export default function Webhook( { form, setField } ) {
 	const { adminData } = useAdminData();
@@ -146,10 +147,12 @@ export default function Webhook( { form, setField } ) {
 	};
 
 	return (
-		<>
+		<Stack>
 			<Typography variant="h6" sx={ { fontWeight: 600 } }>
 				{ __( 'Application Webhook', 'blank' ) }
 			</Typography>
+			
+			<Box mt={ 3 }>
 			<TextField
 				label={ __( 'Application Host', 'blank' ) }
 				name="application_host"
@@ -161,6 +164,7 @@ export default function Webhook( { form, setField } ) {
 				onChange={ setField }
 				fullWidth
 			/>
+	
 
 			<TextField
 				label={ __( 'Application Webhook Endpoint', 'blank' ) }
@@ -173,6 +177,8 @@ export default function Webhook( { form, setField } ) {
 				onChange={ setField }
 				fullWidth
 			/>
+						</Box>
+
 
 			<Box mt={ 2 }>
 				<Stack spacing={ 1.5 }>
@@ -305,6 +311,6 @@ export default function Webhook( { form, setField } ) {
 					{ snackbarContent }
 				</Alert>
 			</Snackbar>
-		</>
+		</Stack>
 	);
 }

@@ -1,4 +1,4 @@
-<?php namespace cmk\blank\Rest;
+<?php namespace cmk\blank\Rest\Routes;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -7,6 +7,7 @@ use cmk\blank\Rest\Controllers\PostController;
 use cmk\blank\Rest\Controllers\SiteDataController;
 use cmk\blank\Rest\Controllers\AttachmentController;
 use cmk\blank\Admin\Options;
+use WP_REST_Request;
 
 class Routes {
 
@@ -28,25 +29,63 @@ class Routes {
 			3
 		);
 
+		/*add_filter(
+		'rest_pre_serve_request',
+		function ( $served, $result, $request, $server ) {
+
+			if ( str_starts_with( $request->get_route(), '/blank/v1/' ) ) {
+				echo wp_json_encode(
+					$result->get_data(),
+					JSON_UNESCAPED_SLASHES
+				);
+				return true;
+			}
+
+			return $served;
+		},
+		10,
+		4);*/
+
+		add_filter( 'rest_json_encode_options', function () {
+			return JSON_UNESCAPED_SLASHES;
+		});
+
 		add_filter(
-	'rest_pre_serve_request',
-	function ( $served, $result, $request, $server ) {
+			'application_password_is_api_request',
+			'__return_true'
+		);
 
-		if ( str_starts_with( $request->get_route(), '/blank/v1/' ) ) {
-			echo wp_json_encode(
-				$result->get_data(),
-				JSON_UNESCAPED_SLASHES
-			);
-			return true;
-		}
+		add_filter( 'rest_pre_dispatch', function ( $result, $server, WP_REST_Request $request ) {
 
-		return $served;
-	},
-	10,
-	4
-);
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
 
-		// Todo: add_filter( 'application_password_is_api_request', '__return_true' );
+			$policy = PolicyRuntime::resolve_for_request( $request );
+
+			if ( empty( $policy['state'] ) ) {
+				return new \WP_Error(
+					'rest_disabled',
+					'This endpoint is disabled',
+					[ 'status' => 404 ]
+				);
+			}
+
+			if ( ! empty( $policy['protect'] ) ) {
+				if ( ! Permissions::permission_check( $request ) ) {
+					return new \WP_Error(
+						'rest_forbidden',
+						'Authentication required',
+						[ 'status' => 401 ]
+					);
+				}
+			}
+
+			return $result;
+		},
+		3,
+		10
+		);
 
 		add_action(
 			'rest_api_init',
@@ -98,8 +137,7 @@ class Routes {
 		);
 	}
 
-
-	public static function set_posts_per_page(): void {
+	private static function set_posts_per_page(): void {
 
 		$allowed_post_types = Options::read_option( 'rest_api_allowed_post_types' );
 
@@ -127,4 +165,5 @@ class Routes {
 
 		}
 	}
+
 }

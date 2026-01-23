@@ -1,5 +1,4 @@
 import { useState, useEffect } from '@wordpress/element';
-import { useTheme } from '@mui/material/styles';
 import { useAdminData } from './contexts/AdminDataContext';
 import useSettingsForm from './contexts/useSettingsForm';
 
@@ -10,27 +9,40 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
-import Divider from '@mui/material/Divider';
-import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid';
+
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Box from '@mui/material/Box';
 
 import Webhook from './components/Webhook';
 import RestContentSettings from './components/RestContentSettings';
 import RestApiSettings from './components/RestApiSettings';
+import CoreSettings from './components/CoreSettings';
+
+import Firewall from './components/Firewall/Firewall';
+
+function TabPanel({ value, index, children }) {
+	return (
+		<div role="tabpanel" hidden={value !== index}>
+			{value === index && <Box sx={{ pt: 2, maxWidth: 600 }}>{children}</Box>}
+		</div>
+	);
+}
 
 export default function App() {
 	const { adminData, updateAdminData } = useAdminData();
-	const theme = useTheme();
 	const { __ } = wp.i18n || {};
 	const [ users, setUsers ] = useState( [] );
 	const [ restApiUser, setRestApiUser ] = useState( [] );
 	const [ postTypes, setPostTypes ] = useState( [] );
+	const [tabIndex, setTabIndex] = useState(0);
+
 
 	const {
 		form,
@@ -46,6 +58,11 @@ export default function App() {
 		updateAdminData,
 		action: 'blank_theme_update_options',
 	} );
+
+
+	const handleTabChange = (_, newValue) => {
+		setTabIndex(newValue);
+	};
 
 	useEffect( () => {
 		if ( form.rest_api_user_id && users ) {
@@ -96,8 +113,6 @@ export default function App() {
 		setSnackbarOpen( false );
 	};
 
-	const valueLabelFormat = ( value ) =>
-		value >= 1024 ? `${ value / 1024 } MB` : `${ value } KB`;
 
 	if ( ! adminData ) {
 		return null;
@@ -106,115 +121,21 @@ export default function App() {
 	return (
 		<>
 			<Paper
-				sx={ { maxWidth: 600, mx: 'auto', my: 4, p: 3 } }
+				sx={ { maxWidth: '100%', mx: 'auto', my: 4, p: 3 } }
 				elevation={ 2 }
 			>
 				<form onSubmit={ handleSubmit }>
-					<Stack spacing={ 3 }>
-						<RestContentSettings
-							form={ form }
-							setField={ setField }
-						/>
-
-						<Divider />
-
-						<RestApiSettings
-							form={ form }
-							setField={ setField }
-							postTypes={ postTypes }
-							users={ users }
-							restApiUser={ restApiUser }
-						/>
-
-						<Divider />
-
-						<Webhook form={ form } setField={ setField } />
-
-						<Divider />
-
-						<Typography variant="h6" sx={ { fontWeight: 600 } }>
-							{ __( 'Core options', 'blank' ) }
+					
+					<Stack spacing={ 3 } justifyContent={'space-between'} direction={ { xs: 'column', sm: 'row' } }>
+						
+						
+						<Stack spacing={ 3 } direction={ 'row' }>
+							<Typography variant="h5" sx={ { fontWeight: 600 } }>
+							{ __( 'REST API Settings', 'blank' ) }
 						</Typography>
-
-						<FormControlLabel
-							control={
-								<Switch
-									checked={
-										!! form.core_disable_gutenberg_enabled
-									}
-									name="core_disable_gutenberg_enabled"
-									onChange={ setField }
-								/>
-							}
-							label={ __( 'Disable Gutenberg', 'blank' ) }
-						/>
-
-						<FormControlLabel
-							control={
-								<Switch
-									checked={
-										!! form.core_disable_comments_enabled
-									}
-									name="core_disable_comments_enabled"
-									onChange={ setField }
-								/>
-							}
-							label={ __( 'Disable Comments', 'blank' ) }
-						/>
-
-						<Box sx={ { px: 1.5 } }>
-							<Stack direction={ { xs: 'column', sm: 'row' } }>
-								<FormControlLabel
-									control={
-										<Switch
-											checked={
-												!! form.core_max_upload_size_enabled
-											}
-											name="core_max_upload_size_enabled"
-											onChange={ setField }
-										/>
-									}
-									label={ __(
-										'Limit Images Weight',
-										'blank'
-									) }
-								/>
-								<Typography
-									sx={ {
-										display: 'flex',
-										alignItems: 'center',
-										mb: 0,
-									} }
-									color={
-										form.core_max_upload_size_enabled
-											? theme.palette.primary.main
-											: theme.palette.text.disabled
-									}
-									id="max-upload-size-slider"
-									gutterBottom
-								>
-									{ __( 'Max Upload Size', 'blank' ) } :{ ' ' }
-									{ valueLabelFormat(
-										form.core_max_upload_size
-									) }
-								</Typography>
-							</Stack>
-
-							<Slider
-								value={ form.core_max_upload_size }
-								min={ 1 }
-								max={ 1024 }
-								step={ 1 }
-								disabled={ ! form.core_max_upload_size_enabled }
-								getAriaValueText={ valueLabelFormat }
-								valueLabelFormat={ valueLabelFormat }
-								onChange={ ( _, value ) =>
-									setSlider( 'core_max_upload_size', value )
-								}
-								valueLabelDisplay="auto"
-								aria-labelledby="max-upload-size-slider"
-							/>
-						</Box>
+						<Firewall />
+						
+						</Stack>
 						<Button
 							type="submit"
 							variant="contained"
@@ -222,7 +143,54 @@ export default function App() {
 						>
 							{ __( 'Save Settings', 'blank' ) }
 						</Button>
+						
 					</Stack>
+					<Divider sx={{py:1,mb:2}} />
+					<Tabs
+						value={tabIndex}
+						onChange={handleTabChange}
+						variant="scrollable"
+						scrollButtons="auto"
+						aria-label="REST API settings tabs"
+					>
+						<Tab label={__('Security', 'blank')} />
+						<Tab label={__('Content', 'blank')} />
+						<Tab label={__('Webhooks', 'blank')} />
+						<Tab label={__('Core', 'blank')} />
+					</Tabs>
+
+					<TabPanel value={tabIndex} index={0}>
+						<RestApiSettings
+							form={ form }
+							setField={ setField }
+							users={ users }
+							restApiUser={ restApiUser }
+						/>
+					</TabPanel>
+
+					<TabPanel value={tabIndex} index={1}>
+						<RestContentSettings
+							form={ form }
+							setField={ setField }
+							postTypes={ postTypes }
+						/>
+					</TabPanel>
+					
+
+					<TabPanel value={tabIndex} index={2}>
+						<Webhook 
+						form={ form } 
+						setField={ setField } />
+					</TabPanel>
+
+					<TabPanel value={tabIndex} index={3}>
+						<CoreSettings 
+						form={ form } 
+						setField={ setField } 
+						setSlider={setSlider} />
+					</TabPanel>			
+				
+					
 				</form>
 			</Paper>
 
