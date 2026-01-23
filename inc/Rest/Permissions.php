@@ -48,7 +48,6 @@ class Permissions {
 		if ( str_contains( $route, '/blank/v1/' ) ) {
 			return $result;
 		}
-		if ( str_contains( $route, '/wp/v2/' ) ) {
 			if ( false === self::validate_wp_application_password() ) {
 				return new \WP_Error(
 					'rest_forbidden',
@@ -56,7 +55,7 @@ class Permissions {
 					array( 'status' => 401 )
 				);
 			}
-		}
+	
 
 		return $result;
 	}

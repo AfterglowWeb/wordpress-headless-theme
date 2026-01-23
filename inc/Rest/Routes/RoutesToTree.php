@@ -2,9 +2,7 @@
 
 class RoutesToTree {
 
-	/**
-	 * Public entry point
-	 */
+
 	public static function build_tree( array $flat_routes ): array {
 
 		$tree = [];
@@ -33,7 +31,6 @@ class RoutesToTree {
                 ];
             }
 
-            // Route directly attached to namespace (e.g. /wp/v2).
             if ( empty( $segments ) ) {
                 $tree[ $namespace ]['routes'][] = self::build_route_entry( $route );
                 continue;
@@ -51,44 +48,65 @@ class RoutesToTree {
 		return self::normalize_tree( $tree );
 	}
 
-	/**
-	 * Convert regex route to human-readable segments
-	 * /wp/v2/posts/(?P<id>[\d]+) → ['wp','v2','posts','{id}']
-	 */
 	private static function route_to_segments( string $route ): array {
 
-        $route = trim( $route, '/' );
+		$route = trim( $route, '/' );
+		if ( $route === '' ) {
+			return [];
+		}
 
-        if ( $route === '' ) {
-            return [];
-        }
+		$segments = [];
+		$buffer   = '';
+		$depth    = 0;
+		$length   = strlen( $route );
 
-        $parts = explode( '/', $route );
+		for ( $i = 0; $i < $length; $i++ ) {
+			$char = $route[ $i ];
 
-        if ( count( $parts ) < 2 ) {
-            return [];
-        }
+			if ( $char === '(' ) {
+				$depth++;
+			} elseif ( $char === ')' ) {
+				$depth--;
+			}
 
-        // Merge namespace: wp/v2, blank/v1, batch/v1, etc.
-        $namespace = $parts[0] . '/' . $parts[1];
+			if ( $char === '/' && $depth === 0 ) {
+				$segments[] = $buffer;
+				$buffer = '';
+				continue;
+			}
 
-        $segments = array_slice( $parts, 2 );
+			$buffer .= $char;
+		}
 
-        $segments = array_map(
-            function ( $part ) {
-                if ( preg_match( '#\(\?P<([^>]+)>#', $part, $m ) ) {
-                    return '{' . $m[1] . '}';
-                }
-                return $part;
-            },
-            $segments
-        );
+		if ( $buffer !== '' ) {
+			$segments[] = $buffer;
+		}
 
-        return [
-            'namespace' => $namespace,
-            'segments'  => $segments,
-        ];
-    }
+		// Need at least namespace.
+		if ( count( $segments ) < 2 ) {
+			return [];
+		}
+
+		$namespace = $segments[0] . '/' . $segments[1];
+		$segments  = array_slice( $segments, 2 );
+
+		$segments = array_map(
+			static function ( $segment ) {
+
+				if ( preg_match( '#^\(\?P<([^>]+)>#', $segment, $m ) ) {
+					return '{' . $m[1] . '}';
+				}
+
+				return $segment;
+			},
+			$segments
+		);
+
+		return [
+			'namespace' => $namespace,
+			'segments'  => $segments,
+		];
+	}
 
 	private static function insert_route( 
     array &$tree,
