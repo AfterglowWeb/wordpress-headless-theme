@@ -21,7 +21,7 @@ class Factory {
 
 	public function __construct( Context $context = null ) {
 
-		$this->context = $context ?: Context::from_options();
+		$this->context = $context ? $context : Context::from_options();
 
 		$this->post_model       = new PostModel();
 		$this->term_model       = new TermModel();

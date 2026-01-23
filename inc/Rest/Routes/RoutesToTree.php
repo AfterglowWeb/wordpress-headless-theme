@@ -1,7 +1,8 @@
 <?php namespace cmk\blank\Rest\Routes;
 
-class RoutesToTree {
+defined( 'ABSPATH' ) || exit;
 
+class RoutesToTree {
 
 	public static function build_tree( array $flat_routes ): array {
 
@@ -11,37 +12,34 @@ class RoutesToTree {
 
 			$parsed = self::route_to_segments( $route['route'] );
 
-            if ( empty( $parsed ) ) {
-                continue;
-            }
+			if ( empty( $parsed ) ) {
+				continue;
+			}
 
-            $namespace = $parsed['namespace'];
-            $segments  = $parsed['segments'];
+			$namespace = $parsed['namespace'];
+			$segments  = $parsed['segments'];
 
-            if ( ! isset( $tree[ $namespace ] ) ) {
-                $tree[ $namespace ] = [
-                    'id'       => self::node_id( '/' . $namespace ),
-                    'label'    => $namespace,
-                    'path'     => '/' . $namespace,
-                    'children' => [],
-                    'routes'   => [],
-                    'meta'     => [
-                        'type' => 'namespace',
-                    ],
-                ];
-            }
+			if ( ! isset( $tree[ $namespace ] ) ) {
+				$tree[ $namespace ] = array(
+					'id'       => self::node_id( '/' . $namespace ),
+					'label'    => $namespace,
+					'path'     => '/' . $namespace,
+					'children' => [],
+					'routes'   => [],
+				);
+			}
 
-            if ( empty( $segments ) ) {
-                $tree[ $namespace ]['routes'][] = self::build_route_entry( $route );
-                continue;
-            }
+			if ( empty( $segments ) ) {
+				$tree[ $namespace ]['routes'][] = self::build_route_entry( $route );
+				continue;
+			}
 
-            self::insert_route(
-                $tree[ $namespace ]['children'],
-                $segments,
-                $route,
-                '/' . $namespace
-            );
+			self::insert_route(
+				$tree[ $namespace ]['children'],
+				$segments,
+				$route,
+				'/' . $namespace
+			);
 
 		}
 
@@ -51,7 +49,7 @@ class RoutesToTree {
 	private static function route_to_segments( string $route ): array {
 
 		$route = trim( $route, '/' );
-		if ( $route === '' ) {
+		if ( '' === $route ) {
 			return [];
 		}
 
@@ -63,22 +61,22 @@ class RoutesToTree {
 		for ( $i = 0; $i < $length; $i++ ) {
 			$char = $route[ $i ];
 
-			if ( $char === '(' ) {
-				$depth++;
-			} elseif ( $char === ')' ) {
-				$depth--;
+			if ( '(' === $char ) {
+				++$depth;
+			} elseif ( ')' === $char ) {
+				--$depth;
 			}
 
-			if ( $char === '/' && $depth === 0 ) {
+			if ( '/' === $char && 0 === $depth ) {
 				$segments[] = $buffer;
-				$buffer = '';
+				$buffer     = '';
 				continue;
 			}
 
 			$buffer .= $char;
 		}
 
-		if ( $buffer !== '' ) {
+		if ( '' !== $buffer ) {
 			$segments[] = $buffer;
 		}
 
@@ -102,83 +100,78 @@ class RoutesToTree {
 			$segments
 		);
 
-		return [
+		return array(
 			'namespace' => $namespace,
 			'segments'  => $segments,
-		];
+		);
 	}
 
-	private static function insert_route( 
-    array &$tree,
-    array $segments,
-    array $route,
-    string $base_path = '' ): void {
+	private static function insert_route( array &$tree, array $segments, array $route, string $base_path = '' ): void {
 
 		$current =& $tree;
-		$path = $base_path;
+		$path    = $base_path;
 
 		foreach ( $segments as $index => $segment ) {
 
 			$path .= '/' . $segment;
 
 			if ( ! isset( $current[ $segment ] ) ) {
-				$current[ $segment ] = [
+				$current[ $segment ] = array(
 					'id'       => self::node_id( $path ),
 					'label'    => $segment,
 					'path'     => $path,
 					'children' => [],
 					'routes'   => [],
-				];
+				);
 			}
 
-			$currentNode =& $current[ $segment ];
+			$current_node =& $current[ $segment ];
 
 			if ( $index === count( $segments ) - 1 ) {
 
-				$existingIndex = null;
-				foreach ( $currentNode['routes'] as $i => $r ) {
+				$existing_index = null;
+				foreach ( $current_node['routes'] as $i => $r ) {
 					if ( $r['method'] === $route['method'] && $r['route'] === $route['route'] ) {
-						$existingIndex = $i;
+						$existing_index = $i;
 						break;
 					}
 				}
 
-				if ( $existingIndex !== null ) {
-					$currentNode['routes'][ $existingIndex ]['settings'] = array_merge(
-						$currentNode['routes'][ $existingIndex ]['settings'] ?? [],
-						[
+				if ( null !== $existing_index ) {
+					$current_node['routes'][ $existing_index ]['settings'] = array_merge(
+						$current_node['routes'][ $existing_index ]['settings'] ?? [],
+						array(
 							'protect'  => false,
 							'disabled' => false,
 							'tags'     => [],
-						]
+						)
 					);
 				} else {
-					// Add new route
-					$currentNode['routes'][] = self::build_route_entry( $route );
+					$current_node['routes'][] = self::build_route_entry( $route );
 				}
 			}
 
-			$current =& $currentNode['children'];
+			$current =& $current_node['children'];
 		}
 	}
 
 	private static function build_route_entry( array $route ): array {
 
-		return [
-			'uuid'   => self::route_uuid( $route ),
-			'method' => $route['method'],
-			'route'  => $route['route'],
-			'params' => $route['params'],
-			'settings' => [
+		return array(
+			'uuid'       => self::route_uuid( $route ),
+			'method'     => $route['method'],
+			'route'      => $route['route'],
+			'params'     => $route['params'],
+			'settings'   => array(
 				'protect'  => false,
-				'disabled' => false, // NEW
+				'disabled' => false,
 				'tags'     => [],
-			],
-			'permission' => [
+			),
+			'permission' => array(
 				'type'     => $route['permission_type'],
 				'callback' => $route['permission_callback'],
-			],
-		];
+			),
+		);
 	}
 
 	private static function node_id( string $path ): string {
@@ -214,5 +207,4 @@ class RoutesToTree {
 
 		return $out;
 	}
-    
 }

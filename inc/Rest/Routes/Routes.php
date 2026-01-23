@@ -29,7 +29,8 @@ class Routes {
 			3
 		);
 
-		/*add_filter(
+		/*
+		add_filter(
 		'rest_pre_serve_request',
 		function ( $served, $result, $request, $server ) {
 
@@ -46,45 +47,50 @@ class Routes {
 		10,
 		4);*/
 
-		add_filter( 'rest_json_encode_options', function () {
-			return JSON_UNESCAPED_SLASHES;
-		});
+		add_filter(
+			'rest_json_encode_options',
+			function () {
+				return JSON_UNESCAPED_SLASHES;
+			}
+		);
 
 		add_filter(
 			'application_password_is_api_request',
 			'__return_true'
 		);
 
-		add_filter( 'rest_pre_dispatch', function ( $result, $server, WP_REST_Request $request ) {
+		add_filter(
+			'rest_pre_dispatch',
+			function ( $result, $server, WP_REST_Request $request ) {
 
-			if ( is_wp_error( $result ) ) {
-				return $result;
-			}
+				if ( is_wp_error( $result ) ) {
+					return $result;
+				}
 
-			$policy = PolicyRuntime::resolve_for_request( $request );
+				$policy = PolicyRuntime::resolve_for_request( $request );
 
-			if ( empty( $policy['state'] ) ) {
-				return new \WP_Error(
-					'rest_disabled',
-					'This endpoint is disabled',
-					[ 'status' => 404 ]
-				);
-			}
-
-			if ( ! empty( $policy['protect'] ) ) {
-				if ( ! Permissions::permission_check( $request ) ) {
+				if ( empty( $policy['state'] ) ) {
 					return new \WP_Error(
-						'rest_forbidden',
-						'Authentication required',
-						[ 'status' => 401 ]
+						'rest_disabled',
+						'This endpoint is disabled',
+						array( 'status' => 404 )
 					);
 				}
-			}
 
-			return $result;
-		},
-		3,
-		10
+				if ( ! empty( $policy['protect'] ) ) {
+					if ( ! Permissions::permission_check( $request ) ) {
+						return new \WP_Error(
+							'rest_forbidden',
+							'Authentication required',
+							array( 'status' => 401 )
+						);
+					}
+				}
+
+				return $result;
+			},
+			3,
+			10
 		);
 
 		add_action(
@@ -165,5 +171,4 @@ class Routes {
 
 		}
 	}
-
 }
