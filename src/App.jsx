@@ -199,6 +199,7 @@ export default function App() {
 				onClose={ closeConfirm }
 				aria-labelledby="confirm-dialog-title"
 				maxWidth="xs"
+				sx={{'&': {pl:{xs:0, md:'160px'}}}}
 			>
 				<DialogTitle id="confirm-dialog-title">
 					{ __( 'Confirm Save', 'blank' ) }

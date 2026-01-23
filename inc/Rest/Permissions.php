@@ -43,19 +43,18 @@ class Permissions {
 			return $result;
 		}
 
-		$route = $_SERVER['REQUEST_URI'] ?? '';
+		$route = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 
 		if ( str_contains( $route, '/blank/v1/' ) ) {
 			return $result;
 		}
-			if ( false === self::validate_wp_application_password() ) {
-				return new \WP_Error(
-					'rest_forbidden',
-					__( 'Authentication required.', 'blank' ),
-					array( 'status' => 401 )
-				);
-			}
-	
+		if ( false === self::validate_wp_application_password() ) {
+			return new \WP_Error(
+				'rest_forbidden',
+				__( 'Authentication required.', 'blank' ),
+				array( 'status' => 401 )
+			);
+		}
 
 		return $result;
 	}
@@ -88,7 +87,6 @@ class Permissions {
 		return $user->has_cap( 'blank_api_access' );
 	}
 
-
 	public static function is_post_type_allowed( string $post_type ): bool {
 
 		if ( false === Options::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
@@ -101,7 +99,7 @@ class Permissions {
 
 		$allowed_post_types = Options::read_option( 'rest_api_allowed_post_types' );
 
-		if ( empty( $allowed_post_types ) ) { // If option is not set, all posts are allowed
+		if ( empty( $allowed_post_types ) ) { // If option is not set, all posts are allowed.
 			return true;
 		}
 

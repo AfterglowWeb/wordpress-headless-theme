@@ -145,7 +145,7 @@ class ModelRepository {
 			return false;
 		}
 
-		return unlink( $file );
+		return wp_delete_file( $file );
 	}
 
 	private static function sanitize_model_instance( array $input, array $existing = array() ): array {

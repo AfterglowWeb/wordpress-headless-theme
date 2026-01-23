@@ -7,10 +7,10 @@ use cmk\blank\Rest\Routes\RoutesToTree;
 
 class RoutesRepository {
 
-    protected static $instance = null;
+	protected static $instance = null;
 
 	private const OPTION_KEY = 'blank_rest_policy_diff';
-	
+
 	private static ?array $diff_cache = null;
 
 
@@ -27,12 +27,12 @@ class RoutesRepository {
 	}
 
 
-    public function ajax_list_wp_v2_routes() {
-        if ( false === Permissions::validate_ajax_crud_theme_options() ) {
-            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
-        }
+	public function ajax_list_wp_v2_routes() {
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
 
-        $routes_tree = self::get_rest_routes_tree();
+		$routes_tree = self::get_rest_routes_tree();
 		wp_send_json_success( $routes_tree, 200 );
 	}
 
@@ -50,42 +50,42 @@ class RoutesRepository {
 			$server = rest_get_server();
 			$routes = $server->get_routes();
 
-			$output = [];
+			$output = array();
 
-			foreach ( $routes as $route => $endpoints ) {
+		foreach ( $routes as $route => $endpoints ) {
 
-				foreach ( $endpoints as $endpoint ) {
+			foreach ( $endpoints as $endpoint ) {
 
-					$methods = array_keys( $endpoint['methods'] ?? [] );
-					if ( empty( $methods ) ) {
-						continue;
-					}
+				$methods = array_keys( $endpoint['methods'] ?? array() );
+				if ( empty( $methods ) ) {
+					continue;
+				}
 
-					foreach ( $methods as $method ) {
+				foreach ( $methods as $method ) {
 
-						$permission_cb = $endpoint['permission_callback'] ?? null;
-						$route_params = self::extract_route_params( $route );
+					$permission_cb = $endpoint['permission_callback'] ?? null;
+					$route_params  = self::extract_route_params( $route );
 
-						$output[] = [
-							'route' => $route,
-							'params' => $route_params,
-							'method' => $method,
-							'callback' => self::normalize_callable(
-								$endpoint['callback'] ?? null
-							),
-							'permission_callback' => self::normalize_callable(
-								$permission_cb
-							),
-							'permission_type' => self::describe_permission_callback(
-								$permission_cb
-							),
-							'show_in_index' => (bool) ( $endpoint['show_in_index'] ?? false ),
-							'namespace' => explode( '/', trim( $route, '/' ) )[0] ?? '',
-						];
+					$output[] = array(
+						'route'               => $route,
+						'params'              => $route_params,
+						'method'              => $method,
+						'callback'            => self::normalize_callable(
+							$endpoint['callback'] ?? null
+						),
+						'permission_callback' => self::normalize_callable(
+							$permission_cb
+						),
+						'permission_type'     => self::describe_permission_callback(
+							$permission_cb
+						),
+						'show_in_index'       => (bool) ( $endpoint['show_in_index'] ?? false ),
+						'namespace'           => explode( '/', trim( $route, '/' ) )[0] ?? '',
+					);
 
-					}
 				}
 			}
+		}
 
 			return $output;
 	}
@@ -119,11 +119,11 @@ class RoutesRepository {
 			return 'public';
 		}
 
-		if ( $cb === '__return_true' ) {
+		if ( '__return_true' === $cb ) {
 			return 'public';
 		}
 
-		if ( $cb === '__return_false' ) {
+		if ( '__return_false' === $cb ) {
 			return 'forbidden';
 		}
 
@@ -147,13 +147,13 @@ class RoutesRepository {
 			PREG_SET_ORDER
 		);
 
-		$params = [];
+		$params = array();
 
 		foreach ( $matches as $match ) {
-			$params[] = [
+			$params[] = array(
 				'name'  => $match[1],
 				'regex' => $match[2],
-			];
+			);
 		}
 
 		return $params;
@@ -173,7 +173,7 @@ class RoutesRepository {
 		// Node-level override
 		if ( isset( $node['uuid'], $diff['nodes'][ $node['uuid'] ] ) ) {
 			$node['settings'] = array_merge(
-				$node['settings'] ?? [],
+				$node['settings'] ?? array(),
 				$diff['nodes'][ $node['uuid'] ]
 			);
 		}
@@ -183,7 +183,7 @@ class RoutesRepository {
 			foreach ( $node['routes'] as &$route ) {
 				if ( isset( $diff['routes'][ $route['uuid'] ] ) ) {
 					$route['settings'] = array_merge(
-						$route['settings'] ?? [],
+						$route['settings'] ?? array(),
 						$diff['routes'][ $route['uuid'] ]
 					);
 				}
@@ -198,12 +198,12 @@ class RoutesRepository {
 		}
 	}
 
-		public static function save_diff( array $diff ): void {
+	public static function save_diff( array $diff ): void {
 
-		$diff = [
-			'nodes'  => $diff['nodes']  ?? [],
-			'routes' => $diff['routes'] ?? [],
-		];
+		$diff = array(
+			'nodes'  => $diff['nodes'] ?? array(),
+			'routes' => $diff['routes'] ?? array(),
+		);
 
 		update_option( self::OPTION_KEY, $diff, false );
 
@@ -212,17 +212,17 @@ class RoutesRepository {
 
 	public static function get_diff(): array {
 
-		if ( self::$diff_cache !== null ) {
+		if ( null !== self::$diff_cache ) {
 			return self::$diff_cache;
 		}
 
 		$stored = get_option( self::OPTION_KEY, null );
 
 		if ( ! is_array( $stored ) ) {
-			$stored = [
-				'nodes'  => [],
-				'routes' => [],
-			];
+			$stored = array(
+				'nodes'  => array(),
+				'routes' => array(),
+			);
 		}
 
 		self::$diff_cache = $stored;
@@ -233,5 +233,4 @@ class RoutesRepository {
 	public static function flush(): void {
 		self::$diff_cache = null;
 	}
-
 }

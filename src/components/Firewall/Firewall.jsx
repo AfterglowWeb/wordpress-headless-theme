@@ -6,7 +6,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import RoutesTreeDrawer from './RoutesTreeDrawer';
+import RoutesTree from './RoutesTree';
 
 export default function Firewall() {
 	const { adminData } = useAdminData();
@@ -53,20 +53,16 @@ export default function Firewall() {
 			<Dialog
 				open={ dialogOpen }
 				onClose={ () => setDialogOpen(false) }
-				aria-labelledby="routes-status-dialog-title"
-				maxWidth={false}
-				fullScreen
-				fullWidth
-				sx={{
-					zIndex:999999
-				}}
+				aria-labelledby="firewall-dialog-title"
+				maxWidth={'xl'}
+				sx={{'&': {pl:{xs:0, md:'160px'}}}}
 			>
 				<DialogTitle 
-				id="routes-status-dialog-title">
-					{ __( 'Routes status', 'blank' ) }
+				id="firewall-dialog-title">
+					{ __( 'Firewall Settings', 'blank' ) }
 				</DialogTitle>
 				<DialogContent dividers >
-					<RoutesTreeDrawer treeData={restRoutes} />
+					<RoutesTree treeData={restRoutes} />
 				</DialogContent>
 				<DialogActions>
 					<Button

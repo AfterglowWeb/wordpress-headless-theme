@@ -1,15 +1,16 @@
-<?php
+<?php namespace cmk\blank\Rest\Routes;
 
+defined( 'ABSPATH' ) || exit;
 
-namespace cmk\blank\Rest\Routes;
+use WP_REST_Request;
 
 class PolicyRuntime {
 
-	protected static $cache = [];
+	protected static $cache = array();
 
-	public static function resolve_for_request( \WP_REST_Request $request ): array {
+	public static function resolve_for_request( WP_REST_Request $request ): array {
 
-		$route = $request->get_route();
+		$route  = $request->get_route();
 		$method = $request->get_method();
 
 		$cache_key = $method . ':' . $route;
@@ -25,14 +26,13 @@ class PolicyRuntime {
 		return $policy;
 	}
 
-	protected static function resolve_for_route( string $route, string $method
-	): array {
+	protected static function resolve_for_route( string $route, string $method ): array {
 
 		$tree = RoutesRepository::get_rest_routes_tree();
 
 		$node_chain = self::find_node_chain( $tree, $route );
 
-		$node_settings = [];
+		$node_settings = array();
 
 		foreach ( $node_chain as $node ) {
 			if ( ! empty( $node['settings'] ) ) {
@@ -54,17 +54,14 @@ class PolicyRuntime {
 		return $effective;
 	}
 
-	protected static function find_node_chain(
-	array $tree,
-	string $route
-	): array {
+	protected static function find_node_chain( array $tree, string $route ): array {
 
 		$segments = explode( '/', trim( $route, '/' ) );
 
 		$namespace = $segments[0] . '/' . $segments[1];
 		$path      = '/' . $namespace;
 
-		$chain = [];
+		$chain = array();
 
 		foreach ( $tree as $node ) {
 			if ( $node['path'] === $path ) {
@@ -81,11 +78,7 @@ class PolicyRuntime {
 		return $chain;
 	}
 
-	protected static function walk_chain(
-		array $node,
-		array $segments,
-		array &$chain
-	): void {
+	protected static function walk_chain( array $node, array $segments, array &$chain ): void {
 
 		if ( empty( $segments ) || empty( $node['children'] ) ) {
 			return;
@@ -102,39 +95,32 @@ class PolicyRuntime {
 		}
 	}
 
-	protected static function find_route_settings(
-		array $node_chain,
-		string $route,
-		string $method
-	): array {
+	protected static function find_route_settings( array $node_chain, string $route, string $method ): array {
 
 		$uuid = md5( $route . '|' . $method );
 
 		$leaf = end( $node_chain );
 
 		if ( empty( $leaf['routes'] ) ) {
-			return [];
+			return array();
 		}
 
 		foreach ( $leaf['routes'] as $route_entry ) {
 			if ( $route_entry['uuid'] === $uuid ) {
-				return $route_entry['settings'] ?? [];
+				return $route_entry['settings'] ?? array();
 			}
 		}
 
-		return [];
+		return array();
 	}
 
-	protected static function resolve_settings(
-		array $node_settings_chain,
-		array $route_settings
-	): array {
+	protected static function resolve_settings( array $node_settings_chain, array $route_settings ): array {
 
-		$resolved = [
-			'disabled'   => true,
-			'protect' => false,
-			'tags'    => [],
-		];
+		$resolved = array(
+			'disabled' => true,
+			'protect'  => false,
+			'tags'     => array(),
+		);
 
 		foreach ( $node_settings_chain as $settings ) {
 			$resolved = self::merge_settings( $resolved, $settings );
@@ -147,14 +133,14 @@ class PolicyRuntime {
 
 		foreach ( $override as $key => $value ) {
 
-			if ( $value === null ) {
+			if ( null === $value ) {
 				continue;
 			}
 
 			if ( is_array( $value ) ) {
 				$base[ $key ] = array_values(
 					array_unique(
-						array_merge( $base[ $key ] ?? [], $value )
+						array_merge( $base[ $key ] ?? array(), $value )
 					)
 				);
 			} else {
@@ -164,5 +150,4 @@ class PolicyRuntime {
 
 		return $base;
 	}
-
 }
