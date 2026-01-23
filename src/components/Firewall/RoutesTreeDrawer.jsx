@@ -27,6 +27,8 @@ export default function RoutesTreeDrawer({ treeData = [] }) {
     { depth: 0, nodes: treeData || [], parentId: null, parentLabel: null },
     ]);
 
+    console.log(routes);
+
     const openChildDrawer = (depth, node) => {
     if (!node.children || node.children.length === 0) return;
 
@@ -101,7 +103,7 @@ export default function RoutesTreeDrawer({ treeData = [] }) {
                 ) : <Typography
                 variant='h6'
                 >
-{__('REST API Protect routes','blank')}
+                {__('REST API Protect routes','blank')}
                 </Typography>}
             </Toolbar>
 
@@ -121,7 +123,11 @@ export default function RoutesTreeDrawer({ treeData = [] }) {
                   divider
                    key={node.id}>
                         <ListItemText 
-                        primary={node.label}
+                        primary={
+                        <Stack direction="row" spacing={1} mt={0.5} flexWrap="wrap">
+                            <Typography variant="caption">{node.label}</Typography>
+					        <Typography variant="caption">{node.path}</Typography>
+                        </Stack>}
                         secondary={
                             <>
                             {node.routes && node.routes.length > 0 && (
@@ -135,18 +141,19 @@ export default function RoutesTreeDrawer({ treeData = [] }) {
                                     }
 
                                     return (
+                                        <>
                                         <Stack
                                         key={method}
                                         direction="row"
                                         spacing={0.5}
                                         alignItems="flex-start"
                                         >
-                                        <Typography
-                                            variant="subtitle.2"
-                                            sx={{ py:'2px',width: 40, color: isAvailable ? 'text.primary' : 'grey.400' }}
-                                        >
-                                            {method}
-                                        </Typography>
+                                            <Typography
+                                                variant="subtitle.2"
+                                                sx={{ py:'2px',width: 40, color: isAvailable ? 'text.primary' : 'grey.400' }}
+                                            >
+                                                {method}
+                                            </Typography>
 
             
                                             <FormControl>
@@ -179,6 +186,18 @@ export default function RoutesTreeDrawer({ treeData = [] }) {
     
                                             </FormControl>
                                         </Stack>
+                                        <Stack
+                                        key={method}
+                                        direction="row"
+                                        spacing={0.5}
+                                        alignItems="flex-start"
+                                        >
+					        <Typography variant="caption">{route?.permission.route}</Typography>
+
+                                            <Typography variant="caption">{route?.permission.type}</Typography>
+					        <Typography variant="caption">{route?.permission.callback}</Typography>
+                                        </Stack>
+                                            </>
                                     );
                                     })}
                                 </Stack>
