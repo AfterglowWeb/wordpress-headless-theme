@@ -152,20 +152,20 @@ export default function Webhook( { form, setField } ) {
 				{ __( 'Application Webhook', 'blank' ) }
 			</Typography>
 			
-			<Box mt={ 3 }>
+			<Box py={ 3 }>
 			<TextField
-				label={ __( 'Application Host', 'blank' ) }
+				label={ __( 'Application URL', 'blank' ) }
 				name="application_host"
 				helperText={ __(
-					'The full application URL, including the protocol (e.g., https://example.com).',
+					'Full application URL with protocol and port (e.g., https://example.local:5001).',
 					'blank'
 				) }
 				value={ form.application_host }
 				onChange={ setField }
 				fullWidth
 			/>
-	
-
+			</Box>
+			<Box py={ 3 }>
 			<TextField
 				label={ __( 'Application Webhook Endpoint', 'blank' ) }
 				name="application_webhook_endpoint"
@@ -177,7 +177,7 @@ export default function Webhook( { form, setField } ) {
 				onChange={ setField }
 				fullWidth
 			/>
-						</Box>
+			</Box>
 
 
 			<Box mt={ 2 }>

@@ -1,303 +1,474 @@
-import { useState } from '@wordpress/element';
-
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import Collapse from '@mui/material/Collapse';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
+import { useReducer, forwardRef, useMemo, useEffect } from '@wordpress/element';
+import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';
 import Checkbox from '@mui/material/Checkbox';
-import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Divider from '@mui/material/Divider';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
+import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
+import { TreeItem, TreeItemContent } from '@mui/x-tree-view/TreeItem';
+import { useTreeItem } from '@mui/x-tree-view/useTreeItem';
 
-export default function RoutesTree({ treeData = [] }) {
-  const [routes, setRoutes] = useState(treeData);
-  
-  const onToggle = (uuid, key, value = null) => {
-    const update = (nodes) =>
-      nodes.map((node) => {
-        if (node.uuid === uuid) {
-          node.settings = {
-            ...node.settings,
-            [key]: value !== null ? value : !node.settings?.[key],
-          };
-        }
+function normalizeTree( nodes, parentPath = '', parentSettings = null ) {
+	if ( ! nodes || ! Array.isArray( nodes ) ) {
+		return [];
+	}
 
-        if (node.routes) {
-          node.routes = node.routes.map((r) =>
-            r.uuid === uuid
-              ? {
-                  ...r,
-                  settings: {
-                    ...r.settings,
-                    [key]: value !== null ? value : !r.settings?.[key],
-                  },
-                }
-              : r
-          );
-        }
+	return nodes.map( ( node ) => {
+		const nodePath = node.path || `${ parentPath }/${ node.label }`;
+		const nodeSettings = {
+			protect: { value: false, inherited: parentSettings?.protect?.value ?? false },
+			disabled: { value: false, inherited: parentSettings?.disabled?.value ?? false },
+			applyToChildren: false,
+		};
 
-        if (node.children) node.children = update(node.children);
-        return node;
-      });
+		if ( node.settings ) {
+			if ( node.settings.protect !== undefined ) {
+				nodeSettings.protect = { value: node.settings.protect, inherited: false };
+			}
+			if ( node.settings.disabled !== undefined ) {
+				nodeSettings.disabled = { value: node.settings.disabled, inherited: false };
+			}
+			if ( node.settings.applyToChildren !== undefined ) {
+				nodeSettings.applyToChildren = node.settings.applyToChildren;
+			}
+		}
 
-    setRoutes(update(routes));
-  };
+		const normalizedNode = {
+			id: node.id ?? node.uuid ?? crypto.randomUUID(),
+			label: node.label,
+			path: nodePath,
+			settings: nodeSettings,
+			permission: node.permission,
+			isMethod: node.isMethod ?? false,
+			method: node.method,
+			route: node.route,
+			params: node.params,
+			children: [],
+		};
 
-  return (
-    <List>
-      {routes.map((node) => (
-        <RouteNode
-          key={node.id}
-          node={node}
-          depth={0}
-          defaultOpen={false}
-          onToggle={onToggle}
-        />
-      ))}
-    </List>
-  );
+		if ( node.children && node.children.length > 0 ) {
+			normalizedNode.children = normalizeTree( node.children, nodePath, nodeSettings );
+		}
+
+		return normalizedNode;
+	} );
 }
 
-function RouteNode({ node, depth, defaultOpen, onToggle }) {
-  const { __ } = wp.i18n || {};
+function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNodeById, node, enforceAuth, ...props } ) {
+	useTreeItem( props );
+	const { __ } = wp.i18n || {};
 
-  const [openChildren, setOpenChildren] = useState(defaultOpen);
-  const [openMethods, setOpenMethods] = useState(false);
+	if ( ! node?.id ) {
+		return <TreeItemContent { ...props }>{ children }</TreeItemContent>;
+	}
 
-  const hasChildren = node.children?.length > 0;
-  const hasRoutes = node.routes?.length > 0;
+	const nodeSettings = node.settings ?? {
+		protect: { value: false, inherited: false },
+		disabled: { value: false, inherited: false },
+	};
 
-  const applyAll = node.settings?.applyAll ?? true;
+	const hasChildren = node.children && node.children.length > 0;
 
-  return (
-    <>
-      <ListItem divider sx={{ pl: depth * 2 }} alignItems="flex-start">
-        <Stack spacing={0.5} sx={{ width: '100%' }}>
- 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title={node.path} >
-                <Typography variant="overline" 
-                sx={{
-                    width:100, 
-                    whiteSpace: 'nowrap', 
-                    overflow:'hidden', 
-                    textOverflow:'ellipsis'}}>
-                    {node.label}
-                </Typography>
-            </Tooltip>
-            <Stack direction="row" 
-            spacing={1} 
-            alignItems="center"
-            sx={{px:3, py:1, justifyContent:'center', backgroundColor:'#dedede', borderRadius:'4px'}}
-            >
-            <FormControl size="small">
-              <FormControlLabel
-                control={
-                  <Switch
-                    size="small"
-                    checked={node.settings?.protect || false}
-                    onChange={() => onToggle(node.uuid, 'protect')}
-                  />
-                }
-                label={<Typography color={'text.secondary'} sx={{ whiteSpace: 'nowrap', fontSize:'12px' }}>
-                    {__('Enforce Auth.', 'blank')}
-                </Typography>}
-              />
-            </FormControl>
+	const getDescendantsMatchState = () => {
+		if ( ! hasChildren ) return null;
 
-            <FormControl size="small">
-              <FormControlLabel
-                control={
-                  <Switch
-                    size="small"
-                    checked={!node.settings?.state && node.settings?.disabled}
-                    onChange={() => onToggle(node.uuid, 'disable')}
-                  />
-                }
-                label={<Typography color={'text.secondary'} sx={{ whiteSpace: 'nowrap', fontSize:'12px' }}>
-                    {__('Disable', 'blank')}
-                </Typography>}
-              />
-            </FormControl>
+		let allMatch = true;
+		let noneMatch = true;
 
-            <FormControl size="small">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={applyAll}
-                    onChange={(e) =>
-                      onToggle(node.uuid, 'applyAll', e.target.checked)
-                    }
-                  />
-                }
-                label={<Typography color={'text.secondary'} sx={{ whiteSpace: 'nowrap', fontSize:'12px' }}>
-                    {__('Apply to All', 'blank')}
-                </Typography>}
-              />
-            </FormControl>
-            </Stack>
+		const checkDescendants = ( childNodes ) => {
+			for ( const child of childNodes ) {
+				const childMatchesProtect =
+					child.settings?.protect?.value === nodeSettings.protect.value;
+				const childMatchesDisabled =
+					child.settings?.disabled?.value === nodeSettings.disabled.value;
+				const childMatches = childMatchesProtect && childMatchesDisabled;
 
-            <Stack direction="row" 
-            spacing={1} 
-            alignItems="center"
-            sx={{px:3, py:1, width:400, justifyContent:'flex-end'}}
-            >
-            <ListItemButton
-            onClick={() => true === hasRoutes && setOpenMethods((v) => !v)}
-            sx={{ ml: 'auto', minWidth: 36, maxWidth:140, display:'flex', gap:1 }}
-            disabled={!hasRoutes}
-            >
-       
-                {true === hasRoutes ? (
-                <>
-                    <span>{__('Methods','blank')}</span>{openMethods ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </>)
-                : (__('No methods','blank'))}
-            </ListItemButton>
-        
-            <ListItemButton
-            onClick={() => true === hasChildren && setOpenChildren((v) => !v)}
-            sx={{ ml: 'auto', minWidth: 36, maxWidth:140, display:'flex', gap:1 }}
-            disabled={!hasChildren}
-            >
+				if ( childMatches ) {
+					noneMatch = false;
+				} else {
+					allMatch = false;
+				}
 
-                {true === hasChildren ? (
-                <>
-                    <span>{__('Children','blank')}</span>{openChildren ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </>)
-                : (__('No children','blank'))}
-            </ListItemButton>
-            </Stack>
+				if ( child.children && child.children.length > 0 ) {
+					checkDescendants( child.children );
+				}
+			}
+		};
 
-          </Stack>
+		checkDescendants( node.children );
 
-          {/* Methods */}
-          {hasRoutes && (
-            <Collapse in={openMethods} timeout="auto" unmountOnExit>
-              <Divider sx={{ my: 0.5 }} />
-              <NodeRoutes
-                node={node}
-                applyAll={applyAll}
-                onToggle={onToggle}
-              />
-            </Collapse>
-          )}
-        </Stack>
-      </ListItem>
+		if ( allMatch ) return 'all';
+		if ( noneMatch ) return 'none';
+		return 'partial';
+	};
 
-      {/* Children */}
-      {hasChildren && (
-        <Collapse in={openChildren} timeout="auto" unmountOnExit>
-          <List disablePadding>
-            {node.children.map((child) => (
-              <RouteNode
-                key={child.id}
-                node={child}
-                depth={depth + 1}
-                defaultOpen={false}
-                onToggle={onToggle}
-              />
-            ))}
-          </List>
-        </Collapse>
-      )}
-    </>
-  );
+	const descendantsMatchState = getDescendantsMatchState();
+	const isApplyToChildrenChecked = nodeSettings.applyToChildren;
+
+	const handleSwitchClick = ( e ) => {
+		e.stopPropagation();
+	};
+
+	const handleToggle = ( key ) => ( e ) => {
+		e.stopPropagation();
+		toggleNodeSetting( node.id, key );
+	};
+
+	const handleApplyToAll = ( e ) => {
+		e.stopPropagation();
+		const shouldApply = ! isApplyToChildrenChecked;
+		applyToAllChildren( node.id, shouldApply );
+	};
+
+	const handleCopyPath = ( e ) => {
+		e.stopPropagation();
+		navigator.clipboard.writeText( node.path || node.route || '' );
+	};
+
+	const getPermissionColor = ( type ) => {
+		switch ( type ) {
+			case 'public':
+				return 'success';
+			case 'protected':
+				return 'warning';
+			case 'forbidden':
+				return 'error';
+			case 'custom':
+				return 'info';
+			default:
+				return 'default';
+		}
+	};
+
+	// When enforceAuth is enabled globally, show auth as enforced
+	const isAuthEnforced = enforceAuth || nodeSettings.protect.value;
+
+	return (
+		<TreeItemContent { ...props }>
+			<Stack direction="column" spacing={ 0.5 } sx={ { flex: 1, py: 1 } }>
+				<Stack direction="row" spacing={ 1 } alignItems="center">
+					{ children }
+
+					{ node.isMethod && (
+						<Chip
+							label={ node.method || node.label }
+							size="small"
+							sx={ { ml: 1 } }
+							color={
+								node.method === 'GET'
+									? 'primary'
+									: node.method === 'POST'
+									? 'success'
+									: node.method === 'PUT'
+									? 'warning'
+									: node.method === 'DELETE'
+									? 'error'
+									: 'default'
+							}
+						/>
+					) }
+
+					{ node.permission && (
+						<Chip
+							label={ node.permission.type || 'unknown' }
+							size="small"
+							variant="outlined"
+							color={ getPermissionColor( node.permission.type ) }
+						/>
+					) }
+
+					{ ( node.path || node.route ) && (
+						<Stack direction="row" spacing={ 0.5 } alignItems="center">
+							<Typography
+								variant="caption"
+								sx={ { color: 'text.secondary', fontFamily: 'monospace' } }
+							>
+								{ node.route || node.path }
+							</Typography>
+							<Tooltip title="Copy path">
+								<IconButton size="small" onClick={ handleCopyPath } sx={ { p: 0.25 } }>
+									<ContentCopyIcon sx={ { fontSize: 14 } } />
+								</IconButton>
+							</Tooltip>
+						</Stack>
+					) }
+				</Stack>
+
+				{ node.permission?.callback && (
+					<Typography
+						variant="caption"
+						sx={ { color: 'text.secondary', fontSize: '0.7rem', ml: 4 } }
+					>
+						Permission: { node.permission.callback }
+					</Typography>
+				) }
+			</Stack>
+
+			<Stack direction="row" spacing={ 1 } alignItems="center" onClick={ handleSwitchClick }>
+				<FormControlLabel
+					control={
+						<Switch
+							size="small"
+							checked={ isAuthEnforced }
+							onChange={ handleToggle( 'protect' ) }
+							disabled={ enforceAuth }
+							sx={ {
+								opacity: enforceAuth || nodeSettings.protect.inherited ? 0.6 : 1,
+							} }
+						/>
+					}
+					label={
+						<Typography variant="body2" sx={ { fontSize: '0.875rem' } }>
+							Auth { ( enforceAuth || nodeSettings.protect.inherited ) && '↓' }
+						</Typography>
+					}
+				/>
+
+				<FormControlLabel
+					control={
+						<Switch
+							size="small"
+							checked={ nodeSettings.disabled.value }
+							onChange={ handleToggle( 'disabled' ) }
+							sx={ {
+								opacity: nodeSettings.disabled.inherited ? 0.6 : 1,
+							} }
+						/>
+					}
+					label={
+						<Typography variant="body2" sx={ { fontSize: '0.875rem' } }>
+							Disable { nodeSettings.disabled.inherited && '↓' }
+						</Typography>
+					}
+				/>
+
+				{ hasChildren && (
+					<Tooltip
+						title={
+							isApplyToChildrenChecked
+								? __( 'Settings applied to all descendants. Click to unlink.', 'blank' )
+								: descendantsMatchState === 'all'
+								? __( 'All descendants have same settings', 'blank' )
+								: descendantsMatchState === 'partial'
+								? __(
+										'Some descendants have different settings. Click to apply to all.',
+										'blank'
+								  )
+								: __(
+										'Descendants have different settings. Click to apply to all.',
+										'blank'
+								  )
+						}
+					>
+						<FormControlLabel
+							control={
+								<Checkbox
+									size="small"
+									checked={ isApplyToChildrenChecked }
+									indeterminate={
+										! isApplyToChildrenChecked && descendantsMatchState === 'partial'
+									}
+									onChange={ handleApplyToAll }
+									sx={ { py: 0 } }
+								/>
+							}
+							label={
+								<Typography variant="body2" sx={ { fontSize: '0.75rem' } }>
+									{ __( 'Apply to children', 'blank' ) }
+								</Typography>
+							}
+						/>
+					</Tooltip>
+				) }
+			</Stack>
+		</TreeItemContent>
+	);
 }
 
-function NodeRoutes({ node, applyAll, onToggle }) {
-  return (
-    <Stack spacing={0.5} sx={{ pl: 2 }}>
-      {HTTP_METHODS.map((method) => {
-        const route = node.routes.find((r) => r.method === method);
-        if (!route) return null;
+const CustomTreeItem = forwardRef( function CustomTreeItem( props, ref ) {
+	const node = props.getNodeById ? props.getNodeById( props.itemId ) : null;
 
-        return (
-          <RouteSettings
-            key={route.uuid}
-            method={method}
-            route={route}
-            disabled={applyAll}
-            nodeSettings={node.settings}
-            nodePath={node.path}
-            nodeLabel={node.label}
-            onToggle={onToggle}
-          />
-        );
-      })}
-    </Stack>
-  );
+	return (
+		<TreeItem
+			{ ...props }
+			ref={ ref }
+			slots={ { content: NodeContent } }
+			slotProps={ {
+				content: {
+					toggleNodeSetting: props.toggleNodeSetting,
+					applyToAllChildren: props.applyToAllChildren,
+					getNodeById: props.getNodeById,
+					node: node,
+					enforceAuth: props.enforceAuth,
+				},
+			} }
+		/>
+	);
+} );
+
+function treeReducer( state, action ) {
+	switch ( action.type ) {
+		case 'TOGGLE_NODE':
+			return toggleNode( state, action.id, action.key );
+		case 'APPLY_TO_ALL_DESCENDANTS':
+			return applyToAllDescendants( state, action.id, action.shouldApply );
+		case 'RESET':
+			return action.payload;
+		default:
+			return state;
+	}
 }
 
-function RouteSettings({ method, route, disabled, nodeSettings, nodePath, nodeLabel, onToggle }) {
-    const { __ } = wp.i18n || {};
-    const effectiveProtect = disabled
-    ? nodeSettings?.protect
-    : route.settings?.protect;
+function toggleNode( items, id, key ) {
+	return items.map( ( item ) => {
+		if ( item.id === id ) {
+			return {
+				...item,
+				settings: {
+					...item.settings,
+					[ key ]: {
+						value: ! item.settings[ key ].value,
+						inherited: false,
+					},
+				},
+			};
+		}
+		if ( item.children ) {
+			return { ...item, children: toggleNode( item.children, id, key ) };
+		}
+		return item;
+	} );
+}
 
-  const effectiveDisable = disabled
-    ? !nodeSettings?.state && nodeSettings?.disabled
-    : !route.settings?.state && route.settings?.disabled;
+function applyToAllDescendants( items, parentId, shouldApply ) {
+	return items.map( ( item ) => {
+		if ( item.id === parentId ) {
+			const parentSettings = item.settings;
 
-  return (
-    <Stack direction="row" spacing={1} alignItems="center">
-        <Tooltip title={nodePath} >
-            <Typography variant="subtitle1" sx={{ width: 120, overflow:'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                {nodeLabel}
-            </Typography>
-            <Typography variant="caption" sx={{ width: 120, overflow:'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                {method}
-            </Typography>
-        </Tooltip>
+			const updateDescendants = ( children, applySettings ) => {
+				return ( children || [] ).map( ( child ) => {
+					const hasGrandchildren = child.children && child.children.length > 0;
 
-      <FormControl size="small">
-        <FormControlLabel
-          control={
-            <Switch
-              size="small"
-              checked={!!effectiveProtect}
-              disabled={disabled}
-              onChange={() => onToggle(route.uuid, 'protect')}
-            />
-          }
-          label={<Typography color={'text.secondary'} sx={{ whiteSpace: 'nowrap', fontSize:'12px' }}>
-                    {__('Enforce Auth.', 'blank')}
-                </Typography>}
-        />
-      </FormControl>
+					if ( applySettings ) {
+						return {
+							...child,
+							settings: {
+								protect: {
+									value: parentSettings.protect.value,
+									inherited: false,
+								},
+								disabled: {
+									value: parentSettings.disabled.value,
+									inherited: false,
+								},
+								applyToChildren: hasGrandchildren,
+							},
+							children: updateDescendants( child.children, true ),
+						};
+					} else {
+						return {
+							...child,
+							settings: {
+								...child.settings,
+								applyToChildren: false,
+							},
+							children: updateDescendants( child.children, false ),
+						};
+					}
+				} );
+			};
 
-      <FormControl size="small">
-        <FormControlLabel
-          control={
-            <Switch
-              size="small"
-              checked={!!effectiveDisable}
-              disabled={disabled}
-              onChange={() => onToggle(route.uuid, 'disable')}
-            />
-          }
-          label={<Typography color={'text.secondary'} sx={{ whiteSpace: 'nowrap', fontSize:'12px' }}>
-                    {__('Disable', 'blank')}
-                </Typography>}
-        />
-      </FormControl>
+			return {
+				...item,
+				settings: {
+					...item.settings,
+					applyToChildren: shouldApply,
+				},
+				children: updateDescendants( item.children, shouldApply ),
+			};
+		}
+		if ( item.children ) {
+			return { ...item, children: applyToAllDescendants( item.children, parentId, shouldApply ) };
+		}
+		return item;
+	} );
+}
 
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-      >
-        {route.permission?.type} · {route.permission?.callback}
-      </Typography>
-    </Stack>
-  );
+function findNodeById( items, id ) {
+	for ( const item of items ) {
+		if ( item.id === id ) return item;
+		if ( item.children ) {
+			const found = findNodeById( item.children, id );
+			if ( found ) return found;
+		}
+	}
+	return null;
+}
+
+export default function RoutesTree( { treeData = [], onSettingsChange, enforceAuth = false } ) {
+	const [ nodes, dispatch ] = useReducer( treeReducer, treeData || [], normalizeTree );
+	const { __ } = wp.i18n || {};
+
+	useEffect( () => {
+		if ( treeData && Array.isArray( treeData ) ) {
+			dispatch( { type: 'RESET', payload: normalizeTree( treeData ) } );
+		}
+	}, [ treeData ] );
+
+	const handleToggle = ( id, key ) => {
+		dispatch( { type: 'TOGGLE_NODE', id, key } );
+	};
+
+	const handleApplyToAll = ( id, shouldApply ) => {
+		dispatch( { type: 'APPLY_TO_ALL_DESCENDANTS', id, shouldApply } );
+	};
+
+	const getNodeById = ( id ) => findNodeById( nodes, id );
+
+	useMemo( () => {
+		if ( onSettingsChange ) {
+			onSettingsChange( nodes );
+		}
+	}, [ nodes, onSettingsChange ] );
+
+	if ( ! treeData || treeData.length === 0 ) {
+		return (
+			<Box
+				sx={ {
+					minHeight: 352,
+					minWidth: 250,
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+				} }
+			>
+				<Typography variant="body2" color="text.secondary">
+					{ treeData === null ? __( 'Loading routes...', 'blank' ) : __( 'No routes found', 'blank' ) }
+				</Typography>
+			</Box>
+		);
+	}
+
+	return (
+		<Box sx={ { minHeight: 352, minWidth: '100%' } }>
+			<RichTreeView
+				items={ nodes }
+				slots={ { item: CustomTreeItem } }
+				slotProps={ {
+					item: {
+						toggleNodeSetting: handleToggle,
+						applyToAllChildren: handleApplyToAll,
+						getNodeById: getNodeById,
+						enforceAuth: enforceAuth,
+					},
+				} }
+			/>
+		</Box>
+	);
 }

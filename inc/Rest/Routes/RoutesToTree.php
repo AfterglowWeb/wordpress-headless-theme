@@ -164,7 +164,7 @@ class RoutesToTree {
 			'params'     => $route['params'],
 			'settings'   => array(
 				'protect'  => false,
-				'disabled' => false,
+				'disabled' => false, // NEW
 				'tags'     => [],
 			),
 			'permission' => array(
@@ -183,19 +183,48 @@ class RoutesToTree {
 	}
 
 	private static function normalize_tree( array $tree ): array {
-
 		$out = [];
 
 		foreach ( $tree as $node ) {
-
-			if ( ! empty( $node['children'] ) ) {
-				$node['children'] = self::normalize_tree( $node['children'] );
-			} else {
-				unset( $node['children'] );
+			if ( ! isset( $node['id'] ) || ! $node['id'] ) {
+				$node['id'] = self::node_id( $node['path'] ?? uniqid() );
 			}
 
-			if ( empty( $node['routes'] ) ) {
+			$all_children = [];
+
+			// Flatten routes as children (HTTP methods)
+			if ( ! empty( $node['routes'] ) ) {
+				foreach ( $node['routes'] as $route ) {
+					$all_children[] = array(
+						'id'         => $route['uuid'],
+						'label'      => $route['method'],
+						'path'       => $node['path'],
+						'method'     => $route['method'],
+						'route'      => $route['route'],
+						'params'     => $route['params'],
+						'isMethod'   => true,
+						'permission' => $route['permission'],
+						'settings'   => $route['settings'],
+						'children'   => [],
+					);
+				}
+				// Remove routes from node since they're now children
 				unset( $node['routes'] );
+			}
+
+			// Add regular children nodes
+			if ( ! empty( $node['children'] ) ) {
+				$all_children = array_merge(
+					$all_children,
+					self::normalize_tree( $node['children'] )
+				);
+			}
+
+			// Set children or remove if empty
+			if ( ! empty( $all_children ) ) {
+				$node['children'] = $all_children;
+			} else {
+				unset( $node['children'] );
 			}
 
 			if ( empty( $node['meta'] ) ) {
@@ -207,4 +236,5 @@ class RoutesToTree {
 
 		return $out;
 	}
+
 }
