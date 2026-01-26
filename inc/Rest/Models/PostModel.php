@@ -2,13 +2,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Rest\Context;
+use cmk\blank\Rest\Models\ModelContext;
 use cmk\blank\Rest\Controllers\AttachmentController;
 use WP_Post;
 
 class PostModel {
 
-	public function build( WP_Post $post, Context $context ): array {
+	public function build( WP_Post $post, ModelContext $context ): array {
 
 		$context = apply_filters(
 			'blank_rest_post_context',
@@ -40,7 +40,7 @@ class PostModel {
 		);
 	}
 
-	protected function base_fields( WP_Post $post, Context $context ): array {
+	protected function base_fields( WP_Post $post, ModelContext $context ): array {
 
 		$post = sanitize_post( $post );
 

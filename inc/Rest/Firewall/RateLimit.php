@@ -1,8 +1,8 @@
-<?php namespace cmk\blank\Rest;
+<?php namespace cmk\blank\Rest\Firewall;
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Rest\Routes\FirewallOptions;
+use cmk\blank\Rest\Firewall\FirewallOptions;
 
 class RateLimit {
 
@@ -20,7 +20,6 @@ class RateLimit {
 		$key              = 'blank_rl_' . md5( $client_id . $request->get_route() );
 		$firewall_options = FirewallOptions::get_options();
 
-		// Use provided values or fall back to global settings
 		$rate_limit = ( $rate_limit !== false ) ? (int) $rate_limit : (int) $firewall_options['rate_limit'];
 		$time_limit = ( $time_limit !== false ) ? (int) $time_limit : (int) $firewall_options['rate_limit_time'];
 

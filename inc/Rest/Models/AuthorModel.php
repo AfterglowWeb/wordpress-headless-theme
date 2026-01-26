@@ -2,13 +2,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Rest\Context;
+use cmk\blank\Rest\Models\ModelContext;
 use WP_User;
 use WP_Post;
 
 class AuthorModel {
 
-	public function build( WP_User $author, WP_Post $parent_post, Context $context ): array {
+	public function build( WP_User $author, WP_Post $parent_post, ModelContext $context ): array {
 
 		$context = apply_filters(
 			'blank_rest_author_context',
@@ -41,7 +41,7 @@ class AuthorModel {
 		);
 	}
 
-	protected function base_fields( WP_User $user, Context $context ): array {
+	protected function base_fields( WP_User $user, ModelContext $context ): array {
 
 		$data = array(
 			'nickname'     => $user->get( 'nickname' ),

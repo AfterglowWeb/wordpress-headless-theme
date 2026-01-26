@@ -1,8 +1,8 @@
-<?php namespace cmk\blank\Rest;
+<?php namespace cmk\blank\Rest\Models;
 
 use cmk\blank\Admin\Options;
 
-class Context {
+class ModelContext {
 
 	public bool $use_core_rest;
 	public bool $with_acf;

@@ -1,10 +1,10 @@
 <?php
-namespace cmk\blank\Rest\Routes;
+namespace cmk\blank\Rest\Firewall;
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin\Options;
-use cmk\blank\Rest\Permissions;
+use cmk\blank\Rest\Firewall\Permissions;
+use cmk\blank\Admin\Permissions as AdminPermissions;
 
 class FirewallOptions {
 
@@ -106,7 +106,7 @@ class FirewallOptions {
 	}
 
 	public function ajax_get_firewall_options(): void {
-		if ( false === \cmk\blank\Admin\Permissions::validate_ajax_crud_theme_options() ) {
+		if ( false === AdminPermissions::validate_ajax_crud_theme_options() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
@@ -125,7 +125,7 @@ class FirewallOptions {
 	}
 
 	public function ajax_save_firewall_options(): void {
-		if ( false === \cmk\blank\Admin\Permissions::validate_ajax_crud_theme_options() ) {
+		if ( false === AdminPermissions::validate_ajax_crud_theme_options() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 

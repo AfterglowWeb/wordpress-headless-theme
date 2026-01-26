@@ -1,10 +1,10 @@
 <?php namespace cmk\blank\Rest\Models;
 
-use cmk\blank\Rest\Context;
+use cmk\blank\Rest\Models\ModelContext;
 
 class AttachmentModel {
 
-	public function build( int $attachment_id, Context $context, ?int $parent_id = null, string $field_key = '' ): array {
+	public function build( int $attachment_id, ModelContext $context, ?int $parent_id = null, string $field_key = '' ): array {
 
 		$context = apply_filters(
 			'blank_rest_attachment_context',
@@ -36,7 +36,7 @@ class AttachmentModel {
 		);
 	}
 
-	protected function base_fields( int $attachment_id, Context $context, ?int $parent_id, string $field_key ): array {
+	protected function base_fields( int $attachment_id, ModelContext $context, ?int $parent_id, string $field_key ): array {
 
 		$meta = wp_get_attachment_metadata( $attachment_id );
 		$url  = wp_get_attachment_url( $attachment_id );

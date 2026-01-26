@@ -1,9 +1,9 @@
-<?php namespace cmk\blank\Rest;
+<?php namespace cmk\blank\Rest\Firewall;
 
 defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Options;
-use cmk\blank\Rest\Routes\FirewallOptions;
+use cmk\blank\Rest\Firewall\FirewallOptions;
 
 class Permissions {
 
