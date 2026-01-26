@@ -11,7 +11,7 @@ final class WebhookClient {
 		$options = Options::read_options();
 		$host    = rtrim( $options['application_host'], '/' );
 		$route   = ltrim( $route, '/' );
-		$secret  = sanitize_text_field( $options['application_webhook_secret'] );
+		$secret  = get_option('blank_theme_application_webhook_secret');
 
 		if ( ! $host || ! $secret ) {
 			return new \WP_Error( 'config', 'Webhook not configured' );

@@ -142,6 +142,8 @@ class RoutesToTree {
 						$current_node['routes'][ $existing_index ]['settings'] ?? [],
 						array(
 							'protect'  => false,
+							'rate_limit' => false,
+							'rate_limit_time' => false,
 							'disabled' => false,
 							'tags'     => [],
 						)
@@ -163,10 +165,13 @@ class RoutesToTree {
 			'route'      => $route['route'],
 			'params'     => $route['params'],
 			'settings'   => array(
-				'protect'  => false,
-				'disabled' => false, // NEW
+				'protect'    => false,
+				'rate_limit' => false,
+				'rate_limit_time' => false,
+				'disabled'   => false,
 				'tags'     => [],
 			),
+			'callback' => $route['callback'],
 			'permission' => array(
 				'type'     => $route['permission_type'],
 				'callback' => $route['permission_callback'],
@@ -192,7 +197,6 @@ class RoutesToTree {
 
 			$all_children = [];
 
-			// Flatten routes as children (HTTP methods)
 			if ( ! empty( $node['routes'] ) ) {
 				foreach ( $node['routes'] as $route ) {
 					$all_children[] = array(
@@ -203,16 +207,15 @@ class RoutesToTree {
 						'route'      => $route['route'],
 						'params'     => $route['params'],
 						'isMethod'   => true,
+						'callback'   => $route['callback'],
 						'permission' => $route['permission'],
 						'settings'   => $route['settings'],
 						'children'   => [],
 					);
 				}
-				// Remove routes from node since they're now children
 				unset( $node['routes'] );
 			}
 
-			// Add regular children nodes
 			if ( ! empty( $node['children'] ) ) {
 				$all_children = array_merge(
 					$all_children,
@@ -220,7 +223,6 @@ class RoutesToTree {
 				);
 			}
 
-			// Set children or remove if empty
 			if ( ! empty( $all_children ) ) {
 				$node['children'] = $all_children;
 			} else {

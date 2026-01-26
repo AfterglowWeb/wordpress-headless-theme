@@ -29,6 +29,7 @@ class OptionsPage {
 		add_action( 'admin_footer', array( $this, 'print_inline_styles' ), 20 );
 
 		add_action( 'wp_ajax_blank_theme_update_options', array( $this, 'ajax_update_options' ) );
+		add_action( 'wp_ajax_blank_theme_update_option', array( $this, 'ajax_update_option' ) );
 		add_action( 'wp_ajax_blank_theme_read_options', array( $this, 'ajax_read_options' ) );
 		add_action( 'wp_ajax_blank_theme_documentation', array( $this, 'ajax_documentation' ) );
 	}
@@ -77,6 +78,38 @@ class OptionsPage {
 		} else {
 			$options = Options::read_options();
 			wp_send_json_success( $options );
+		}
+	}
+
+	public function ajax_update_option() {
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		if ( isset( $_POST['action'] ) && 'blank_theme_update_option' === $_POST['action'] && isset( $_POST['option'] ) ) {
+
+			$option = json_decode( sanitize_text_field( wp_unslash( $_POST['option'] ) ), true );
+			if ( ! is_array( $option ) ) {
+				wp_send_json_error( array( 'error' => esc_html__( 'Invalid option data', 'blank' ) ), 422 );
+			}
+
+			$key = isset( $option['key'] ) && ! empty( $option['key'] ) ? $option['key'] : '';
+			$value = isset( $option['value'] ) && ! empty( $option['value'] ) ? $option['value'] : null;
+
+			if ( empty( $key ) || empty( $value ) ) {
+				wp_send_json_error( array( 'error' => esc_html__( 'Invalid option data', 'blank' ) ), 422 );
+			}
+
+			$option = Options::update_option( $key,  $value );
+
+			wp_send_json_success(
+				array(
+					'message' => esc_html__( 'Options saved', 'blank' ),
+					'option' => $option,
+				)
+			);
+		} else {
+			wp_send_json_error( 'Unknown parameter', 422 );
 		}
 	}
 

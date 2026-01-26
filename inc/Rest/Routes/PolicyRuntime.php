@@ -3,6 +3,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use WP_REST_Request;
+use cmk\blank\Rest\Routes\FirewallOptions;
 
 class PolicyRuntime {
 
@@ -116,23 +117,46 @@ class PolicyRuntime {
 
 	protected static function resolve_settings( array $node_settings_chain, array $route_settings ): array {
 
+		// Load global firewall options
+		$firewall_options        = FirewallOptions::get_options();
+		$global_enforce_auth     = (bool) ( $firewall_options['enforce_auth'] ?? false );
+		$global_enforce_rate     = (bool) ( $firewall_options['enforce_rate_limit'] ?? false );
+		$global_rate_limit       = (int) ( $firewall_options['rate_limit'] ?? 30 );
+		$global_rate_limit_time  = (int) ( $firewall_options['rate_limit_time'] ?? 60 );
+
 		$resolved = array(
-			'disabled' => false,  // By default, routes are enabled
-			'protect'  => false,  // By default, no authentication required
-			'tags'     => array(),
+			'disabled'        => false,
+			'protect'         => $global_enforce_auth, // Start with global setting
+			'rate_limit'      => $global_enforce_rate ? $global_rate_limit : false,
+			'rate_limit_time' => $global_enforce_rate ? $global_rate_limit_time : false,
+			'tags'            => array(),
 		);
 
+		// Apply node settings chain (can override global)
 		foreach ( $node_settings_chain as $settings ) {
 			$resolved = self::merge_settings( $resolved, $settings );
 		}
 
+		// Apply route-specific settings (highest priority)
 		$final = self::merge_settings( $resolved, $route_settings );
+
+		// Global enforcement overrides per-route settings
+		if ( $global_enforce_auth ) {
+			$final['protect'] = true;
+		}
+
+		if ( $global_enforce_rate ) {
+			$final['rate_limit']      = $global_rate_limit;
+			$final['rate_limit_time'] = $global_rate_limit_time;
+		}
 
 		// Return in the format expected by Routes.php
 		return array(
-			'state'   => ! $final['disabled'],  // state = enabled (inverse of disabled)
-			'protect' => $final['protect'],
-			'tags'    => $final['tags'] ?? array(),
+			'state'           => ! $final['disabled'],  // state = enabled (inverse of disabled)
+			'protect'         => $final['protect'],
+			'rate_limit'      => $final['rate_limit'],
+			'rate_limit_time' => $final['rate_limit_time'],
+			'tags'            => $final['tags'] ?? array(),
 		);
 	}
 

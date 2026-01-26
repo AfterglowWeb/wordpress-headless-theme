@@ -4,16 +4,11 @@ defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Permissions;
 use cmk\blank\Rest\Routes\RoutesToTree;
+use cmk\blank\Rest\Routes\FirewallOptions;
 
 class RoutesRepository {
 
 	protected static $instance = null;
-
-	private const OPTION_KEY = 'blank_rest_policy';
-
-	private static ?array $diff_cache = null;
-
-
 
 	public static function get_instance() {
 		if ( null === static::$instance ) {
@@ -23,12 +18,12 @@ class RoutesRepository {
 	}
 
 	private function __construct() {
-		add_action( 'wp_ajax_list_wp_v2_routes', array( $this, 'ajax_list_wp_v2_routes' ) );
-		add_action( 'wp_ajax_save_rest_policy', array( $this, 'ajax_save_rest_policy' ) );
+		add_action( 'wp_ajax_list_rest_api_routes', array( $this, 'ajax_list_rest_api_routes' ) );
+		add_action( 'wp_ajax_save_rest_api_policy', array( $this, 'ajax_save_rest_api_policy' ) );
 	}
 
 
-	public function ajax_list_wp_v2_routes() {
+	public function ajax_list_rest_api_routes(): void {
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
@@ -37,7 +32,7 @@ class RoutesRepository {
 		wp_send_json_success( $routes_tree, 200 );
 	}
 
-	public function ajax_save_rest_policy() {
+	public function ajax_save_rest_api_policy(): void {
 		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
@@ -49,11 +44,6 @@ class RoutesRepository {
 		}
 
 		$diff = self::extract_diff_from_tree( $tree );
-
-		// Debug logging
-		error_log( 'Saving diff with ' . count( $diff['nodes'] ?? [] ) . ' nodes and ' . count( $diff['routes'] ?? [] ) . ' routes' );
-		error_log( 'Diff data: ' . wp_json_encode( $diff ) );
-
 		self::save_diff( $diff );
 
 		wp_send_json_success( array( 'message' => 'Policy saved successfully' ), 200 );
@@ -64,16 +54,12 @@ class RoutesRepository {
 		$flat = self::list_all_rest_routes();
 		$tree = RoutesToTree::build_tree( $flat );
 		$diff = self::get_diff();
-
-		// Debug logging
-		error_log( 'Diff has ' . count( $diff['nodes'] ?? [] ) . ' nodes and ' . count( $diff['routes'] ?? [] ) . ' routes' );
-
 		$result = self::apply_diff( $tree, $diff );
 		return $result;
 	}
 
-	private static function list_all_rest_routes() {
-		// Try to get from cache first
+	private static function list_all_rest_routes(): array {
+
 		$cached = get_transient( 'blank_rest_routes_list' );
 		if ( false !== $cached && is_array( $cached ) ) {
 			return $cached;
@@ -121,7 +107,6 @@ class RoutesRepository {
 			}
 		}
 
-		// Cache for 1 hour
 		set_transient( 'blank_rest_routes_list', $output, HOUR_IN_SECONDS );
 
 		return $output;
@@ -251,46 +236,23 @@ class RoutesRepository {
 	}
 
 	public static function save_diff( array $diff ): void {
-
 		$diff = array(
 			'nodes'  => $diff['nodes'] ?? array(),
 			'routes' => $diff['routes'] ?? array(),
 		);
 
-		update_option( self::OPTION_KEY, $diff, false );
-
-		self::$diff_cache = $diff;
+		FirewallOptions::save_policy( $diff );
 	}
 
 	public static function get_diff(): array {
-
-		if ( null !== self::$diff_cache ) {
-			return self::$diff_cache;
-		}
-
-		$stored = get_option( self::OPTION_KEY, null );
-
-		if ( ! is_array( $stored ) ) {
-			$stored = array(
-				'nodes'  => array(),
-				'routes' => array(),
-			);
-		}
-
-		self::$diff_cache = $stored;
-
-		return self::$diff_cache;
+		return FirewallOptions::get_policy();
 	}
 
 	public static function flush(): void {
-		self::$diff_cache = null;
+		FirewallOptions::flush();
 		delete_transient( 'blank_rest_routes_list' );
 	}
 
-	/**
-	 * Extract diff from tree structure (recursively)
-	 * Only extracts settings that have been explicitly set (not inherited)
-	 */
 	private static function extract_diff_from_tree( array $tree ): array {
 		$diff = array(
 			'nodes'  => array(),
