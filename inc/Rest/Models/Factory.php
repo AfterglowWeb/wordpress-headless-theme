@@ -1,6 +1,6 @@
 <?php namespace cmk\blank\Rest\Models;
 
-use cmk\blank\Rest\Context;
+use cmk\blank\Rest\Models\ModelContext;
 use cmk\blank\Rest\Models\PostModel;
 use cmk\blank\Rest\Models\TermModel;
 use cmk\blank\Rest\Models\AttachmentModel;
@@ -12,16 +12,16 @@ use WP_User;
 
 class Factory {
 
-	protected Context $context;
+	protected ModelContext $context;
 	protected PostModel $post_model;
 	protected TermModel $term_model;
 	protected AttachmentModel $attachment_model;
 	protected AuthorModel $author_model;
 	protected MenuItemModel $menu_item_model;
 
-	public function __construct( Context $context = null ) {
+	public function __construct( ModelContext $context = null ) {
 
-		$this->context = $context ? $context : Context::from_options();
+		$this->context = $context ? $context : ModelContext::from_options();
 
 		$this->post_model       = new PostModel();
 		$this->term_model       = new TermModel();
@@ -55,7 +55,7 @@ class Factory {
 		return $this->menu_item_model->build( $post, $this->context );
 	}
 
-	public function context(): Context {
+	public function context(): ModelContext {
 		return $this->context;
 	}
 }

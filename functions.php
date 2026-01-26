@@ -43,7 +43,7 @@ Core\Acf::get_instance();
 Admin\OptionsPage::get_instance();
 Rest\Routes\Routes::register();
 Rest\Routes\RoutesRepository::get_instance();
-Rest\Routes\FirewallOptions::get_instance();
+Rest\Firewall\FirewallOptions::get_instance();
 
 Application\WebhookService::get_instance();
 

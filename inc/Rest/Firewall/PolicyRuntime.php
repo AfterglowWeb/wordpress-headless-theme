@@ -1,13 +1,14 @@
-<?php namespace cmk\blank\Rest\Routes;
+<?php namespace cmk\blank\Rest\Firewall;
 
 defined( 'ABSPATH' ) || exit;
 
 use WP_REST_Request;
-use cmk\blank\Rest\Routes\FirewallOptions;
+use cmk\blank\Rest\Routes\RoutesRepository;
+use cmk\blank\Rest\Firewall\FirewallOptions;
 
 class PolicyRuntime {
 
-	protected static $cache = array();
+	protected static $cache = [];
 
 	public static function resolve_for_request( WP_REST_Request $request ): array {
 
@@ -33,7 +34,7 @@ class PolicyRuntime {
 
 		$node_chain = self::find_node_chain( $tree, $route );
 
-		$node_settings = array();
+		$node_settings = [];
 
 		foreach ( $node_chain as $node ) {
 			if ( ! empty( $node['settings'] ) ) {
@@ -62,7 +63,7 @@ class PolicyRuntime {
 		$namespace = $segments[0] . '/' . $segments[1];
 		$path      = '/' . $namespace;
 
-		$chain = array();
+		$chain = [];
 
 		foreach ( $tree as $node ) {
 			if ( $node['path'] === $path ) {
@@ -103,21 +104,20 @@ class PolicyRuntime {
 		$leaf = end( $node_chain );
 
 		if ( empty( $leaf['routes'] ) ) {
-			return array();
+			return [];
 		}
 
 		foreach ( $leaf['routes'] as $route_entry ) {
 			if ( $route_entry['uuid'] === $uuid ) {
-				return $route_entry['settings'] ?? array();
+				return $route_entry['settings'] ?? [];
 			}
 		}
 
-		return array();
+		return [];
 	}
 
 	protected static function resolve_settings( array $node_settings_chain, array $route_settings ): array {
 
-		// Load global firewall options
 		$firewall_options        = FirewallOptions::get_options();
 		$global_enforce_auth     = (bool) ( $firewall_options['enforce_auth'] ?? false );
 		$global_enforce_rate     = (bool) ( $firewall_options['enforce_rate_limit'] ?? false );
@@ -126,21 +126,18 @@ class PolicyRuntime {
 
 		$resolved = array(
 			'disabled'        => false,
-			'protect'         => $global_enforce_auth, // Start with global setting
+			'protect'         => $global_enforce_auth,
 			'rate_limit'      => $global_enforce_rate ? $global_rate_limit : false,
 			'rate_limit_time' => $global_enforce_rate ? $global_rate_limit_time : false,
-			'tags'            => array(),
+			'tags'            => [],
 		);
 
-		// Apply node settings chain (can override global)
 		foreach ( $node_settings_chain as $settings ) {
 			$resolved = self::merge_settings( $resolved, $settings );
 		}
 
-		// Apply route-specific settings (highest priority)
 		$final = self::merge_settings( $resolved, $route_settings );
 
-		// Global enforcement overrides per-route settings
 		if ( $global_enforce_auth ) {
 			$final['protect'] = true;
 		}
@@ -150,13 +147,12 @@ class PolicyRuntime {
 			$final['rate_limit_time'] = $global_rate_limit_time;
 		}
 
-		// Return in the format expected by Routes.php
 		return array(
-			'state'           => ! $final['disabled'],  // state = enabled (inverse of disabled)
+			'state'           => ! $final['disabled'],
 			'protect'         => $final['protect'],
 			'rate_limit'      => $final['rate_limit'],
 			'rate_limit_time' => $final['rate_limit_time'],
-			'tags'            => $final['tags'] ?? array(),
+			'tags'            => $final['tags'] ?? [],
 		);
 	}
 
@@ -168,21 +164,17 @@ class PolicyRuntime {
 				continue;
 			}
 
-			// Handle new format with 'value' and 'inherited' properties
 			if ( is_array( $value ) && isset( $value['value'] ) ) {
-				// Only apply if not inherited or if explicitly set
 				if ( ! ( $value['inherited'] ?? false ) || isset( $base[ $key ] ) === false ) {
 					$base[ $key ] = $value['value'];
 				}
 			} elseif ( is_array( $value ) && $key === 'tags' ) {
-				// Tags are merged as arrays
 				$base[ $key ] = array_values(
 					array_unique(
-						array_merge( $base[ $key ] ?? array(), $value )
+						array_merge( $base[ $key ] ?? [], $value )
 					)
 				);
 			} else {
-				// Direct value assignment for backward compatibility
 				$base[ $key ] = $value;
 			}
 		}

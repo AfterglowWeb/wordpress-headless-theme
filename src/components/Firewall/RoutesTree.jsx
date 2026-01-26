@@ -14,6 +14,8 @@ import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { TreeItem, TreeItemContent } from '@mui/x-tree-view/TreeItem';
 import { useTreeItem } from '@mui/x-tree-view/useTreeItem';
 
+import TestPolicy from './TestPolicy';
+
 function normalizeTree( nodes, parentPath = '', parentSettings = null ) {
 	if ( ! nodes || ! Array.isArray( nodes ) ) {
 		return [];
@@ -169,13 +171,8 @@ function NodeContent( {
 		}
 	};
 
-	// When enforceAuth is enabled globally, show auth as enforced
 	const isAuthEnforced = enforceAuth || nodeSettings.protect.value;
-
-	// When enforceRateLimit is enabled globally, show rate limit as enforced
 	const isRateLimitEnforced = enforceRateLimit || nodeSettings.rate_limit.value;
-
-	// Get effective rate limit values (use node-specific or fall back to global)
 	const effectiveRateLimit = nodeSettings.rate_limit.value || globalRateLimit;
 	const effectiveRateLimitTime = nodeSettings.rate_limit_time.value || globalRateLimitTime;
 
@@ -210,6 +207,14 @@ function NodeContent( {
 							size="small"
 							variant="outlined"
 							color={ getPermissionColor( node.permission.type ) }
+						/>
+					) }
+
+					{ node.isMethod && node.route && (
+						<TestPolicy
+							route={ node.route }
+							method={ node.method || 'GET' }
+							hasChildren={ hasChildren }
 						/>
 					) }
 

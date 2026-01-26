@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Permissions;
 use cmk\blank\Rest\Routes\RoutesToTree;
-use cmk\blank\Rest\Routes\FirewallOptions;
+use cmk\blank\Rest\Firewall\FirewallOptions;
 
 class RoutesRepository {
 

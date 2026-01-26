@@ -2,12 +2,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Rest\Context;
+use cmk\blank\Rest\Models\ModelContext;
 use WP_Post;
 
 class MenuItemModel {
 
-	public function build( WP_Post $menu_item, Context $context ): array {
+	public function build( WP_Post $menu_item, ModelContext $context ): array {
 
 		$context = apply_filters(
 			'blank_rest_menu_item_context',
@@ -39,7 +39,7 @@ class MenuItemModel {
 		);
 	}
 
-	protected function base_fields( WP_Post $menu_item, Context $context ): array {
+	protected function base_fields( WP_Post $menu_item, ModelContext $context ): array {
 
 		$menu_item = sanitize_post( $menu_item );
 

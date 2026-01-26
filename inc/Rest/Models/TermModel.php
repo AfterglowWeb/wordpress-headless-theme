@@ -2,12 +2,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Rest\Context;
+use cmk\blank\Rest\Models\ModelContext;
 use WP_Term;
 
 class TermModel {
 
-	public function build( WP_Term $term, Context $context ): array {
+	public function build( WP_Term $term, ModelContext $context ): array {
 
 		$context = apply_filters(
 			'blank_rest_term_context',
@@ -39,7 +39,7 @@ class TermModel {
 		);
 	}
 
-	protected function base_fields( WP_Term $term, Context $context ): array {
+	protected function base_fields( WP_Term $term, ModelContext $context ): array {
 
 		$term = sanitize_term( $term, $term->taxonomy );
 
