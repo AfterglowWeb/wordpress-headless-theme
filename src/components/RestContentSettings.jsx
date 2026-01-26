@@ -12,13 +12,13 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 
-
 export default function RestContentSettings( { form, setField, postTypes } ) {
 	const { __ } = wp.i18n || {};
 
 	return (
-		<Stack spacing={ 3 }>
-			<Typography variant="h6" sx={ { fontWeight: 600 } }>
+		<Stack spacing={ 3 } maxWidth="sm">
+
+			<Typography variant="subtitle1" fontWeight={600} sx={ { mb: 2 } }>
 				{ __( 'Collections', 'blank' ) }
 			</Typography>
 
@@ -87,7 +87,7 @@ export default function RestContentSettings( { form, setField, postTypes } ) {
 				/>
 			</Stack>
 
-			<Typography variant="h6" sx={ { fontWeight: 600 } }>
+			<Typography variant="subtitle1" fontWeight={600} sx={ { mb: 2 } }>
 				{ __( 'Posts and Terms', 'blank' ) }
 			</Typography>
 
@@ -241,6 +241,7 @@ export default function RestContentSettings( { form, setField, postTypes } ) {
 					) }
 				</FormHelperText>
 			</FormControl>
+
 		</Stack>
 	);
 }

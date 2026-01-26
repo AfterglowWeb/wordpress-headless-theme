@@ -9,7 +9,7 @@ class RoutesRepository {
 
 	protected static $instance = null;
 
-	private const OPTION_KEY = 'blank_rest_policy_diff';
+	private const OPTION_KEY = 'blank_rest_policy';
 
 	private static ?array $diff_cache = null;
 
@@ -24,6 +24,7 @@ class RoutesRepository {
 
 	private function __construct() {
 		add_action( 'wp_ajax_list_wp_v2_routes', array( $this, 'ajax_list_wp_v2_routes' ) );
+		add_action( 'wp_ajax_save_rest_policy', array( $this, 'ajax_save_rest_policy' ) );
 	}
 
 
@@ -36,21 +37,54 @@ class RoutesRepository {
 		wp_send_json_success( $routes_tree, 200 );
 	}
 
+	public function ajax_save_rest_policy() {
+		if ( false === Permissions::validate_ajax_crud_theme_options() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		$tree = isset( $_POST['tree'] ) ? json_decode( stripslashes( $_POST['tree'] ), true ) : null;
+
+		if ( ! is_array( $tree ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid tree data' ), 400 );
+		}
+
+		$diff = self::extract_diff_from_tree( $tree );
+
+		// Debug logging
+		error_log( 'Saving diff with ' . count( $diff['nodes'] ?? [] ) . ' nodes and ' . count( $diff['routes'] ?? [] ) . ' routes' );
+		error_log( 'Diff data: ' . wp_json_encode( $diff ) );
+
+		self::save_diff( $diff );
+
+		wp_send_json_success( array( 'message' => 'Policy saved successfully' ), 200 );
+	}
+
 	public static function get_rest_routes_tree(): array {
 
 		$flat = self::list_all_rest_routes();
 		$tree = RoutesToTree::build_tree( $flat );
 		$diff = self::get_diff();
-		return self::apply_diff( $tree, $diff );
+
+		// Debug logging
+		error_log( 'Diff has ' . count( $diff['nodes'] ?? [] ) . ' nodes and ' . count( $diff['routes'] ?? [] ) . ' routes' );
+
+		$result = self::apply_diff( $tree, $diff );
+		return $result;
 	}
 
 	private static function list_all_rest_routes() {
-			do_action( 'rest_api_init' );
+		// Try to get from cache first
+		$cached = get_transient( 'blank_rest_routes_list' );
+		if ( false !== $cached && is_array( $cached ) ) {
+			return $cached;
+		}
 
-			$server = rest_get_server();
-			$routes = $server->get_routes();
+		do_action( 'rest_api_init' );
 
-			$output = array();
+		$server = rest_get_server();
+		$routes = $server->get_routes();
+
+		$output = array();
 
 		foreach ( $routes as $route => $endpoints ) {
 
@@ -87,7 +121,10 @@ class RoutesRepository {
 			}
 		}
 
-			return $output;
+		// Cache for 1 hour
+		set_transient( 'blank_rest_routes_list', $output, HOUR_IN_SECONDS );
+
+		return $output;
 	}
 
 	private static function normalize_callable( $callable ) {
@@ -170,27 +207,42 @@ class RoutesRepository {
 
 	private static function apply_node_diff( array &$node, array $diff ): void {
 
-		// Node-level override
-		if ( isset( $node['uuid'], $diff['nodes'][ $node['uuid'] ] ) ) {
-			$node['settings'] = array_merge(
-				$node['settings'] ?? array(),
-				$diff['nodes'][ $node['uuid'] ]
-			);
-		}
+		// Check if this is a route (HTTP method) or a path node
+		$is_method = isset( $node['isMethod'] ) && $node['isMethod'];
 
-		// Route-level override
-		if ( ! empty( $node['routes'] ) ) {
-			foreach ( $node['routes'] as &$route ) {
-				if ( isset( $diff['routes'][ $route['uuid'] ] ) ) {
-					$route['settings'] = array_merge(
-						$route['settings'] ?? array(),
-						$diff['routes'][ $route['uuid'] ]
-					);
+		if ( $is_method ) {
+			// This is an HTTP method - check routes diff
+			if ( isset( $node['id'], $diff['routes'][ $node['id'] ] ) ) {
+				$saved_settings = $diff['routes'][ $node['id'] ];
+
+				// Initialize settings array if it doesn't exist
+				if ( ! isset( $node['settings'] ) ) {
+					$node['settings'] = array();
+				}
+
+				// Merge saved settings into node settings structure
+				foreach ( $saved_settings as $key => $value ) {
+					$node['settings'][ $key ] = $value;
+				}
+			}
+		} else {
+			// This is a path node - check nodes diff
+			if ( isset( $node['id'], $diff['nodes'][ $node['id'] ] ) ) {
+				$saved_settings = $diff['nodes'][ $node['id'] ];
+
+				// Initialize settings array if it doesn't exist
+				if ( ! isset( $node['settings'] ) ) {
+					$node['settings'] = array();
+				}
+
+				// Merge saved settings into node settings structure
+				foreach ( $saved_settings as $key => $value ) {
+					$node['settings'][ $key ] = $value;
 				}
 			}
 		}
 
-		// Recurse
+		// Recurse into children (both route methods and path nodes are now in children)
 		if ( ! empty( $node['children'] ) ) {
 			foreach ( $node['children'] as &$child ) {
 				self::apply_node_diff( $child, $diff );
@@ -232,5 +284,72 @@ class RoutesRepository {
 
 	public static function flush(): void {
 		self::$diff_cache = null;
+		delete_transient( 'blank_rest_routes_list' );
+	}
+
+	/**
+	 * Extract diff from tree structure (recursively)
+	 * Only extracts settings that have been explicitly set (not inherited)
+	 */
+	private static function extract_diff_from_tree( array $tree ): array {
+		$diff = array(
+			'nodes'  => array(),
+			'routes' => array(),
+		);
+
+		foreach ( $tree as $node ) {
+			self::extract_node_diff( $node, $diff );
+		}
+
+		return $diff;
+	}
+
+	private static function extract_node_diff( array $node, array &$diff ): void {
+		// Extract node settings if they exist and are not default
+		if ( isset( $node['id'], $node['settings'] ) ) {
+			$settings = array();
+
+			// Only save settings that are not inherited (explicitly set by user)
+			if ( isset( $node['settings']['protect'] ) ) {
+				$protect = $node['settings']['protect'];
+				// JavaScript sends: { value: true, inherited: false }
+				if ( is_array( $protect ) && isset( $protect['value'] ) ) {
+					// Only save if NOT inherited (user explicitly set it)
+					if ( ! ( $protect['inherited'] ?? false ) ) {
+						$settings['protect'] = (bool) $protect['value'];
+					}
+				}
+			}
+
+			if ( isset( $node['settings']['disabled'] ) ) {
+				$disabled = $node['settings']['disabled'];
+				// JavaScript sends: { value: true, inherited: false }
+				if ( is_array( $disabled ) && isset( $disabled['value'] ) ) {
+					// Only save if NOT inherited (user explicitly set it)
+					if ( ! ( $disabled['inherited'] ?? false ) ) {
+						$settings['disabled'] = (bool) $disabled['value'];
+					}
+				}
+			}
+
+			// Save to appropriate array based on node type
+			if ( ! empty( $settings ) ) {
+				$is_method = isset( $node['isMethod'] ) && $node['isMethod'];
+				if ( $is_method ) {
+					// This is an HTTP method (route)
+					$diff['routes'][ $node['id'] ] = $settings;
+				} else {
+					// This is a path node
+					$diff['nodes'][ $node['id'] ] = $settings;
+				}
+			}
+		}
+
+		// Recurse into children
+		if ( ! empty( $node['children'] ) && is_array( $node['children'] ) ) {
+			foreach ( $node['children'] as $child ) {
+				self::extract_node_diff( $child, $diff );
+			}
+		}
 	}
 }

@@ -117,8 +117,8 @@ class PolicyRuntime {
 	protected static function resolve_settings( array $node_settings_chain, array $route_settings ): array {
 
 		$resolved = array(
-			'disabled' => true,
-			'protect'  => false,
+			'disabled' => false,  // By default, routes are enabled
+			'protect'  => false,  // By default, no authentication required
 			'tags'     => array(),
 		);
 
@@ -126,7 +126,14 @@ class PolicyRuntime {
 			$resolved = self::merge_settings( $resolved, $settings );
 		}
 
-		return self::merge_settings( $resolved, $route_settings );
+		$final = self::merge_settings( $resolved, $route_settings );
+
+		// Return in the format expected by Routes.php
+		return array(
+			'state'   => ! $final['disabled'],  // state = enabled (inverse of disabled)
+			'protect' => $final['protect'],
+			'tags'    => $final['tags'] ?? array(),
+		);
 	}
 
 	private static function merge_settings( array $base, array $override ): array {
@@ -137,13 +144,21 @@ class PolicyRuntime {
 				continue;
 			}
 
-			if ( is_array( $value ) ) {
+			// Handle new format with 'value' and 'inherited' properties
+			if ( is_array( $value ) && isset( $value['value'] ) ) {
+				// Only apply if not inherited or if explicitly set
+				if ( ! ( $value['inherited'] ?? false ) || isset( $base[ $key ] ) === false ) {
+					$base[ $key ] = $value['value'];
+				}
+			} elseif ( is_array( $value ) && $key === 'tags' ) {
+				// Tags are merged as arrays
 				$base[ $key ] = array_values(
 					array_unique(
 						array_merge( $base[ $key ] ?? array(), $value )
 					)
 				);
 			} else {
+				// Direct value assignment for backward compatibility
 				$base[ $key ] = $value;
 			}
 		}

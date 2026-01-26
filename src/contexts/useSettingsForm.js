@@ -20,7 +20,7 @@ export default function useSettingsForm( {
 		rest_api_attachments_per_page: 100,
 		rest_api_restrict_post_types_enabled: false,
 		rest_api_allowed_post_types: [],
-		rest_api_protect_wp_rest_routes: false,
+		rest_api_enforce_auth: false,
 		rest_api_user_id: '',
 		rest_api_rate_limit: 30,
 		rest_api_rate_limit_time: 60,
@@ -28,15 +28,13 @@ export default function useSettingsForm( {
 		application_host: '',
 		application_webhook_endpoint: '',
 
+		core_redirect_templates:false,
+		core_redirect_templates_url: '',
 		core_disable_gutenberg_enabled: false,
 		core_disable_comments_enabled: false,
 		core_max_upload_size: 1024,
 		core_max_upload_size_enabled: false,
 	} );
-
-	const [ confirmOpen, setConfirmOpen ] = useState( false );
-	const [ saving, setSaving ] = useState( false );
-	const [ justSaved, setJustSaved ] = useState( false );
 
 	useEffect( () => {
 		if ( ! adminData?.admin_options ) {
@@ -76,8 +74,8 @@ export default function useSettingsForm( {
 				adminOptions.blank_with_acf_enabled
 			),
 
-			rest_api_protect_wp_rest_routes: Boolean(
-				adminOptions.rest_api_protect_wp_rest_routes
+			rest_api_enforce_auth: Boolean(
+				adminOptions.rest_api_enforce_auth
 			),
 			rest_api_allowed_post_types: Array.isArray(
 				adminOptions.rest_api_allowed_post_types
@@ -102,8 +100,12 @@ export default function useSettingsForm( {
 			),
 
 			application_host: adminOptions.application_host ?? '',
-			application_webhook_endpoint:
-				adminOptions.application_webhook_endpoint ?? '',
+			application_webhook_endpoint: adminOptions.application_webhook_endpoint ?? '',
+
+			core_redirect_templates: Boolean(
+				adminOptions.core_redirect_templates
+			),
+			core_redirect_templates_url: adminOptions.core_redirect_templates_url ?? '',
 
 			core_disable_gutenberg_enabled: Boolean(
 				adminOptions.core_disable_gutenberg_enabled
@@ -154,37 +156,39 @@ export default function useSettingsForm( {
 	}, [] );
 
 	const mapFormToAdminOptions = useCallback(
-		( form ) => ( {
-			blank_use_core_rest_enabled: form.blank_use_core_rest_enabled,
+		( formData ) => ( {
+			blank_use_core_rest_enabled: formData.blank_use_core_rest_enabled,
 			blank_embed_featured_attachment_enabled:
-				form.blank_embed_featured_attachment_enabled,
-			blank_relative_url_enabled: form.blank_relative_url_enabled,
+				formData.blank_embed_featured_attachment_enabled,
+			blank_relative_url_enabled: formData.blank_relative_url_enabled,
 			blank_embed_post_attachments_enabled:
-				form.blank_embed_post_attachments_enabled,
+				formData.blank_embed_post_attachments_enabled,
 			blank_relative_attachment_url_enabled:
-				form.blank_relative_attachment_url_enabled,
-			blank_embed_terms_enabled: form.blank_embed_terms_enabled,
-			blank_embed_authors_enabled: form.blank_embed_authors_enabled,
-			blank_with_acf_enabled: form.blank_with_acf_enabled,
+				formData.blank_relative_attachment_url_enabled,
+			blank_embed_terms_enabled: formData.blank_embed_terms_enabled,
+			blank_embed_authors_enabled: formData.blank_embed_authors_enabled,
+			blank_with_acf_enabled: formData.blank_with_acf_enabled,
 
-			rest_api_protect_wp_rest_routes:
-				form.rest_api_protect_wp_rest_routes,
-			rest_api_allowed_post_types: form.rest_api_allowed_post_types,
+			rest_api_enforce_auth:
+				formData.rest_api_enforce_auth,
+			rest_api_allowed_post_types: formData.rest_api_allowed_post_types,
 			rest_api_restrict_post_types_enabled:
-				form.rest_api_restrict_post_types_enabled,
-			rest_api_user_id: form.rest_api_user_id,
-			rest_api_rate_limit: form.rest_api_rate_limit,
-			rest_api_rate_limit_time: form.rest_api_rate_limit_time,
-			rest_api_posts_per_page: form.rest_api_posts_per_page,
-			rest_api_attachments_per_page: form.rest_api_attachments_per_page,
+				formData.rest_api_restrict_post_types_enabled,
+			rest_api_user_id: formData.rest_api_user_id,
+			rest_api_rate_limit: formData.rest_api_rate_limit,
+			rest_api_rate_limit_time: formData.rest_api_rate_limit_time,
+			rest_api_posts_per_page: formData.rest_api_posts_per_page,
+			rest_api_attachments_per_page: formData.rest_api_attachments_per_page,
 
-			application_host: form.application_host,
-			application_webhook_endpoint: form.application_webhook_endpoint,
+			application_host: formData.application_host,
+			application_webhook_endpoint: formData.application_webhook_endpoint,
 
-			core_max_upload_size: form.core_max_upload_size,
-			core_max_upload_size_enabled: form.core_max_upload_size_enabled,
-			core_disable_gutenberg_enabled: form.core_disable_gutenberg_enabled,
-			core_disable_comments_enabled: form.core_disable_comments_enabled,
+			core_redirect_templates: formData.core_redirect_templates,
+			core_redirect_templates_url: formData.core_redirect_templates_url,
+			core_max_upload_size: formData.core_max_upload_size,
+			core_max_upload_size_enabled: formData.core_max_upload_size_enabled,
+			core_disable_gutenberg_enabled: formData.core_disable_gutenberg_enabled,
+			core_disable_comments_enabled: formData.core_disable_comments_enabled,
 		} ),
 		[]
 	);
@@ -193,8 +197,6 @@ export default function useSettingsForm( {
 		if ( ! adminData?.nonce || ! adminData?.ajaxurl ) {
 			throw new Error( 'Missing AJAX configuration' );
 		}
-
-		setSaving( true );
 
 		const response = await fetch( adminData.ajaxurl, {
 			method: 'POST',
@@ -212,7 +214,6 @@ export default function useSettingsForm( {
 		const data = await response.json();
 
 		if ( ! data.success ) {
-			setSaving( false );
 			throw new Error( data.data?.error || 'Unknown error' );
 		}
 
@@ -222,10 +223,6 @@ export default function useSettingsForm( {
 				...mapFormToAdminOptions( form ),
 			},
 		} );
-
-		setJustSaved( true );
-		setTimeout( () => setJustSaved( false ), 1200 );
-		setSaving( false );
 	}, [
 		adminData,
 		form,
@@ -240,10 +237,5 @@ export default function useSettingsForm( {
 		setField,
 		setSlider,
 		submit,
-		confirmOpen,
-		openConfirm: () => setConfirmOpen( true ),
-		closeConfirm: () => setConfirmOpen( false ),
-		saving,
-		justSaved,
 	};
 }
