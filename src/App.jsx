@@ -3,11 +3,10 @@ import { useAdminData } from './contexts/AdminDataContext';
 import { DialogProvider, useDialog, DIALOG_TYPES } from './contexts/DialogContext';
 import useSettingsForm from './contexts/useSettingsForm';
 
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
+import Button from '@mui/material/Button';
 
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -16,13 +15,13 @@ import Box from '@mui/material/Box';
 import ConfirmDialog from './components/ConfirmDialog';
 import Webhook from './components/Webhook';
 import RestContentSettings from './components/RestContentSettings';
-import RestApiSettings from './components/RestApiSettings';
 import CoreSettings from './components/CoreSettings';
+import Firewall from './components/Firewall/Firewall';
 
 function TabPanel({ value, index, children }) {
 	return (
 		<div role="tabpanel" hidden={value !== index}>
-			{value === index && <Box sx={{ pt: 2, maxWidth: 600 }}>{children}</Box>}
+			{value === index && <Box maxWidth="xl" py={2}>{children}</Box>}
 		</div>
 	);
 }
@@ -100,31 +99,10 @@ function AppContent() {
 
 	return (
 		<Paper
-			sx={ { maxWidth: '100%', mx: 'auto', my: 4, p: 3 } }
+			sx={ { maxWidth: '100%', mx: 'auto', px: 3, pb:3 } }
 			elevation={ 2 }
 		>
 			<form onSubmit={ handleSubmit }>
-
-				<Stack spacing={ 3 } justifyContent={'space-between'} direction={ { xs: 'column', sm: 'row' } }>
-
-
-					<Stack spacing={ 3 } direction={ 'row' }>
-						<Typography variant="h5" sx={ { fontWeight: 600 } }>
-						{ __( 'REST API Settings', 'blank' ) }
-					</Typography>
-					
-
-					</Stack>
-					<Button
-						type="submit"
-						variant="contained"
-						color="primary"
-					>
-						{ __( 'Save Settings', 'blank' ) }
-					</Button>
-
-				</Stack>
-				<Divider sx={{py:1,mb:2}} />
 				<Tabs
 					value={tabIndex}
 					onChange={handleTabChange}
@@ -132,17 +110,28 @@ function AppContent() {
 					scrollButtons="auto"
 					aria-label="REST API settings tabs"
 				>
-					<Tab label={__('Security', 'blank')} />
-					<Tab label={__('Content', 'blank')} />
-					<Tab label={__('Webhooks', 'blank')} />
-					<Tab label={__('Core', 'blank')} />
+					<Tab label={__('REST API Firewall', 'blank')} />
+					<Tab label={__('REST API Content', 'blank')} />
+					<Tab label={__('Application Webhook', 'blank')} />
+					<Tab label={__('Core Options', 'blank')} />
 				</Tabs>
 
 				<TabPanel value={tabIndex} index={0}>
-					<RestApiSettings />
+					<Firewall />
 				</TabPanel>
 
 				<TabPanel value={tabIndex} index={1}>
+					<Stack direction={"row"} justifyContent={"space-between"} gap={2} py={3} flexWrap={"wrap"} alignItems={"center"}>
+						<Typography variant="h6" fontWeight={600}>
+							{ __( 'REST API Content', 'blank' ) }
+						</Typography>
+						<Button
+							type="submit"
+							variant="contained"
+							>
+							{ __( 'Save Content Settings', 'blank' ) }
+						</Button>
+					</Stack>
 					<RestContentSettings
 						form={ form }
 						setField={ setField }
@@ -152,12 +141,29 @@ function AppContent() {
 
 
 				<TabPanel value={tabIndex} index={2}>
+					<Stack direction={"row"} justifyContent={"space-between"} gap={2} py={3} flexWrap={"wrap"} alignItems={"center"}>
+						<Typography variant="h6" fontWeight={600}>
+							{ __( 'Application Webhook', 'blank' ) }
+						</Typography>
+					</Stack>
 					<Webhook
 					form={ form }
 					setField={ setField } />
 				</TabPanel>
 
 				<TabPanel value={tabIndex} index={3}>
+					<Stack direction={"row"} justifyContent={"space-between"} gap={2} py={3} flexWrap={"wrap"} alignItems={"center"}>
+						<Typography variant="h6" fontWeight={600}>
+							{ __( 'Core Options', 'blank' ) }
+						</Typography>
+						<Button
+							type="submit"
+							variant="contained"
+							sx={{ml:3}}
+							>
+							{ __( 'Save Core Options', 'blank' ) }
+						</Button>
+					</Stack>
 					<CoreSettings
 					form={ form }
 					setField={ setField }

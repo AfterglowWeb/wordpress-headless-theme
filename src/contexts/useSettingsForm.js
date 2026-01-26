@@ -28,6 +28,8 @@ export default function useSettingsForm( {
 		application_host: '',
 		application_webhook_endpoint: '',
 
+		core_redirect_templates:false,
+		core_redirect_templates_url: '',
 		core_disable_gutenberg_enabled: false,
 		core_disable_comments_enabled: false,
 		core_max_upload_size: 1024,
@@ -98,8 +100,12 @@ export default function useSettingsForm( {
 			),
 
 			application_host: adminOptions.application_host ?? '',
-			application_webhook_endpoint:
-				adminOptions.application_webhook_endpoint ?? '',
+			application_webhook_endpoint: adminOptions.application_webhook_endpoint ?? '',
+
+			core_redirect_templates: Boolean(
+				adminOptions.core_redirect_templates
+			),
+			core_redirect_templates_url: adminOptions.core_redirect_templates_url ?? '',
 
 			core_disable_gutenberg_enabled: Boolean(
 				adminOptions.core_disable_gutenberg_enabled
@@ -177,6 +183,8 @@ export default function useSettingsForm( {
 			application_host: formData.application_host,
 			application_webhook_endpoint: formData.application_webhook_endpoint,
 
+			core_redirect_templates: formData.core_redirect_templates,
+			core_redirect_templates_url: formData.core_redirect_templates_url,
 			core_max_upload_size: formData.core_max_upload_size,
 			core_max_upload_size_enabled: formData.core_max_upload_size_enabled,
 			core_disable_gutenberg_enabled: formData.core_disable_gutenberg_enabled,

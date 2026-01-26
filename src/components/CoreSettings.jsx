@@ -1,5 +1,6 @@
 import { useTheme } from '@mui/material/styles';
 
+import Button from '@mui/material/Button';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
@@ -8,6 +9,9 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
+import Divider from '@mui/material/Divider';
+
+
 
 export default function CoreSettings( { form, setField, setSlider } ) {
 	const { __ } = wp.i18n || {};
@@ -17,10 +21,23 @@ export default function CoreSettings( { form, setField, setSlider } ) {
 		value >= 1024 ? `${ value / 1024 } MB` : `${ value } KB`;
 
 	return (
-		<Stack spacing={ 3 }>
-			<Typography variant="h6" sx={ { fontWeight: 600 } }>
-				{ __( 'Core options', 'blank' ) }
-			</Typography>
+		<Stack spacing={ 3 } maxWidth="sm">
+
+			<FormControl>
+				<FormControlLabel
+					control={
+						<Switch
+							checked={
+								!! form.core_disable_gutenberg_enabled
+							}
+							name="core_disable_gutenberg_enabled"
+							onChange={ setField }
+						/>
+					}
+					label={ __( 'Redirect Templates', 'blank' ) }
+				/>
+				<FormHelperText>{ __( 'Redirect front templates to home page, login page or a custom url', 'blank' ) }</FormHelperText>
+			</FormControl>
 			
 			<FormControl>
 				<FormControlLabel
@@ -54,7 +71,7 @@ export default function CoreSettings( { form, setField, setSlider } ) {
 				<FormHelperText>{ __( 'Deactivate comments site wide', 'blank' ) }</FormHelperText>
 			</FormControl>
 
-			<Box sx={ { px: 1.5 } }>
+			<Box>
 				<FormControl>
 
 					<Stack direction={ { xs: 'column', sm: 'row' } }>
@@ -118,6 +135,7 @@ export default function CoreSettings( { form, setField, setSlider } ) {
 
 				</FormControl>
 			</Box>
+
 		</Stack>
 	);
 }

@@ -24,6 +24,8 @@ function normalizeTree( nodes, parentPath = '', parentSettings = null ) {
 		const nodeSettings = {
 			protect: { value: false, inherited: parentSettings?.protect?.value ?? false },
 			disabled: { value: false, inherited: parentSettings?.disabled?.value ?? false },
+			rate_limit: { value: false, inherited: parentSettings?.rate_limit?.value ?? false },
+			rate_limit_time: { value: false, inherited: parentSettings?.rate_limit_time?.value ?? false },
 			applyToChildren: false,
 		};
 
@@ -33,6 +35,12 @@ function normalizeTree( nodes, parentPath = '', parentSettings = null ) {
 			}
 			if ( node.settings.disabled !== undefined ) {
 				nodeSettings.disabled = { value: node.settings.disabled, inherited: false };
+			}
+			if ( node.settings.rate_limit !== undefined ) {
+				nodeSettings.rate_limit = { value: node.settings.rate_limit, inherited: false };
+			}
+			if ( node.settings.rate_limit_time !== undefined ) {
+				nodeSettings.rate_limit_time = { value: node.settings.rate_limit_time, inherited: false };
 			}
 			if ( node.settings.applyToChildren !== undefined ) {
 				nodeSettings.applyToChildren = node.settings.applyToChildren;
@@ -60,7 +68,18 @@ function normalizeTree( nodes, parentPath = '', parentSettings = null ) {
 	} );
 }
 
-function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNodeById, node, enforceAuth, ...props } ) {
+function NodeContent( {
+	children,
+	toggleNodeSetting,
+	applyToAllChildren,
+	getNodeById,
+	node,
+	enforceAuth,
+	enforceRateLimit,
+	globalRateLimit,
+	globalRateLimitTime,
+	...props
+} ) {
 	useTreeItem( props );
 	const { __ } = wp.i18n || {};
 
@@ -71,6 +90,8 @@ function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNode
 	const nodeSettings = node.settings ?? {
 		protect: { value: false, inherited: false },
 		disabled: { value: false, inherited: false },
+		rate_limit: { value: false, inherited: false },
+		rate_limit_time: { value: false, inherited: false },
 	};
 
 	const hasChildren = node.children && node.children.length > 0;
@@ -87,7 +108,9 @@ function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNode
 					child.settings?.protect?.value === nodeSettings.protect.value;
 				const childMatchesDisabled =
 					child.settings?.disabled?.value === nodeSettings.disabled.value;
-				const childMatches = childMatchesProtect && childMatchesDisabled;
+				const childMatchesRateLimit =
+					child.settings?.rate_limit?.value === nodeSettings.rate_limit.value;
+				const childMatches = childMatchesProtect && childMatchesDisabled && childMatchesRateLimit;
 
 				if ( childMatches ) {
 					noneMatch = false;
@@ -149,6 +172,13 @@ function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNode
 	// When enforceAuth is enabled globally, show auth as enforced
 	const isAuthEnforced = enforceAuth || nodeSettings.protect.value;
 
+	// When enforceRateLimit is enabled globally, show rate limit as enforced
+	const isRateLimitEnforced = enforceRateLimit || nodeSettings.rate_limit.value;
+
+	// Get effective rate limit values (use node-specific or fall back to global)
+	const effectiveRateLimit = nodeSettings.rate_limit.value || globalRateLimit;
+	const effectiveRateLimitTime = nodeSettings.rate_limit_time.value || globalRateLimitTime;
+
 	return (
 		<TreeItemContent { ...props }>
 			<Stack direction="column" spacing={ 0.5 } sx={ { flex: 1, py: 1 } }>
@@ -187,7 +217,7 @@ function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNode
 						<Stack direction="row" spacing={ 0.5 } alignItems="center">
 							<Typography
 								variant="caption"
-								sx={ { color: 'text.secondary', fontFamily: 'monospace' } }
+								sx={ { color: 'text.secondary', fontFamily: 'monospace', whiteSpace: 'nowrap' } }
 							>
 								{ node.route || node.path }
 							</Typography>
@@ -229,6 +259,35 @@ function NodeContent( { children, toggleNodeSetting, applyToAllChildren, getNode
 						</Typography>
 					}
 				/>
+
+				<Tooltip
+					title={
+						enforceRateLimit
+							? __( 'Rate limiting enforced globally', 'blank' )
+							: isRateLimitEnforced
+							? `${ effectiveRateLimit } requests / ${ effectiveRateLimitTime }s`
+							: __( 'Enable rate limiting for this route', 'blank' )
+					}
+				>
+					<FormControlLabel
+						control={
+							<Switch
+								size="small"
+								checked={ isRateLimitEnforced }
+								onChange={ handleToggle( 'rate_limit' ) }
+								disabled={ enforceRateLimit }
+								sx={ {
+									opacity: enforceRateLimit || nodeSettings.rate_limit.inherited ? 0.6 : 1,
+								} }
+							/>
+						}
+						label={
+							<Typography variant="body2" sx={ { fontSize: '0.875rem' } }>
+								Rate { ( enforceRateLimit || nodeSettings.rate_limit.inherited ) && '↓' }
+							</Typography>
+						}
+					/>
+				</Tooltip>
 
 				<FormControlLabel
 					control={
@@ -306,6 +365,9 @@ const CustomTreeItem = forwardRef( function CustomTreeItem( props, ref ) {
 					getNodeById: props.getNodeById,
 					node: node,
 					enforceAuth: props.enforceAuth,
+					enforceRateLimit: props.enforceRateLimit,
+					globalRateLimit: props.globalRateLimit,
+					globalRateLimitTime: props.globalRateLimitTime,
 				},
 			} }
 		/>
@@ -367,6 +429,14 @@ function applyToAllDescendants( items, parentId, shouldApply ) {
 									value: parentSettings.disabled.value,
 									inherited: false,
 								},
+								rate_limit: {
+									value: parentSettings.rate_limit.value,
+									inherited: false,
+								},
+								rate_limit_time: {
+									value: parentSettings.rate_limit_time.value,
+									inherited: false,
+								},
 								applyToChildren: hasGrandchildren,
 							},
 							children: updateDescendants( child.children, true ),
@@ -411,7 +481,14 @@ function findNodeById( items, id ) {
 	return null;
 }
 
-export default function RoutesTree( { treeData = [], onSettingsChange, enforceAuth = false } ) {
+export default function RoutesTree( {
+	treeData = [],
+	onSettingsChange,
+	enforceAuth = false,
+	enforceRateLimit = false,
+	globalRateLimit = 30,
+	globalRateLimitTime = 60,
+} ) {
 	const [ nodes, dispatch ] = useReducer( treeReducer, treeData || [], normalizeTree );
 	const { __ } = wp.i18n || {};
 
@@ -466,6 +543,9 @@ export default function RoutesTree( { treeData = [], onSettingsChange, enforceAu
 						applyToAllChildren: handleApplyToAll,
 						getNodeById: getNodeById,
 						enforceAuth: enforceAuth,
+						enforceRateLimit: enforceRateLimit,
+						globalRateLimit: globalRateLimit,
+						globalRateLimitTime: globalRateLimitTime,
 					},
 				} }
 			/>

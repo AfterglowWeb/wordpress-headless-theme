@@ -19,8 +19,6 @@ import Snackbar from '@mui/material/Snackbar';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
-import Typography from '@mui/material/Typography';
-import FormControl from '@mui/material/FormControl';
 
 export default function Webhook( { form, setField } ) {
 	const { adminData } = useAdminData();
@@ -147,38 +145,33 @@ export default function Webhook( { form, setField } ) {
 	};
 
 	return (
-		<Stack>
-			<Typography variant="h6" sx={ { fontWeight: 600 } }>
-				{ __( 'Application Webhook', 'blank' ) }
-			</Typography>
-			
+		<Stack maxWidth="sm">
 			<Box py={ 3 }>
-			<TextField
-				label={ __( 'Application URL', 'blank' ) }
-				name="application_host"
-				helperText={ __(
-					'Full application URL with protocol and port (e.g., https://example.local:5001).',
-					'blank'
-				) }
-				value={ form.application_host }
-				onChange={ setField }
-				fullWidth
-			/>
+				<TextField
+					label={ __( 'Application URL', 'blank' ) }
+					name="application_host"
+					helperText={ __(
+						'Full application URL with protocol and port (e.g., https://example.local:5001).',
+						'blank'
+					) }
+					value={ form.application_host }
+					onChange={ setField }
+					fullWidth
+				/>
 			</Box>
 			<Box py={ 3 }>
-			<TextField
-				label={ __( 'Application Webhook Endpoint', 'blank' ) }
-				name="application_webhook_endpoint"
-				helperText={ __(
-					'The application endpoint used to trigger a webhook.',
-					'blank'
-				) }
-				value={ form.application_webhook_endpoint }
-				onChange={ setField }
-				fullWidth
-			/>
+				<TextField
+					label={ __( 'Application Webhook Endpoint', 'blank' ) }
+					name="application_webhook_endpoint"
+					helperText={ __(
+						'The application endpoint used to trigger a webhook.',
+						'blank'
+					) }
+					value={ form.application_webhook_endpoint }
+					onChange={ setField }
+					fullWidth
+				/>
 			</Box>
-
 
 			<Box mt={ 2 }>
 				<Stack spacing={ 1.5 }>

@@ -2,17 +2,12 @@ import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useAdminData } from '../../contexts/AdminDataContext';
 import { useDialog, DIALOG_TYPES } from '../../contexts/DialogContext';
 
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import IconButton from '@mui/material/IconButton';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Tooltip from '@mui/material/Tooltip';
 import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -24,10 +19,13 @@ import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+
 import RoutesTree from './RoutesTree';
 
 const defaultFirewallOptions = {
 	enforce_auth: false,
+	enforce_rate_limit: false,
 	user_id: 0,
 	rate_limit: 30,
 	rate_limit_time: 60,
@@ -37,22 +35,33 @@ export default function Firewall() {
 	const { adminData } = useAdminData();
 	const { __ } = wp.i18n || {};
 	const [ restRoutes, setRestRoutes ] = useState( null );
-	const [ dialogOpen, setDialogOpen ] = useState( false );
 	const [ treeState, setTreeState ] = useState( null );
 	const [ loading, setLoading ] = useState( false );
 	const [ firewallOptions, setFirewallOptions ] = useState( defaultFirewallOptions );
 	const [ users, setUsers ] = useState( [] );
+	const [ restApiUser, setRestApiUser ] = useState( [] );
+
 
 	const { openDialog, updateDialog } = useDialog();
 
 	const minDelay = ( ms ) => new Promise( ( resolve ) => setTimeout( resolve, ms ) );
 
-	// Load users from adminData
 	useEffect( () => {
 		if ( Array.isArray( adminData?.users ) ) {
 			setUsers( adminData.users );
 		}
 	}, [ adminData ] );
+
+	useEffect( () => {
+		if ( firewallOptions.user_id && users ) {
+			const currentUser = users.filter(
+				( user ) => firewallOptions.user_id === user.value
+			);
+			if ( currentUser && currentUser.length > 0 ) {
+				setRestApiUser( currentUser[ 0 ] );
+			}
+		}
+	}, [ users, firewallOptions.user_id ] );
 
 	const loadRoutes = useCallback( async () => {
 		setLoading( true );
@@ -98,6 +107,7 @@ export default function Firewall() {
 			if ( result?.success && result?.data ) {
 				setFirewallOptions( {
 					enforce_auth: result.data.enforce_auth ?? false,
+					enforce_rate_limit: result.data.enforce_rate_limit ?? false,
 					user_id: result.data.user_id ?? 0,
 					rate_limit: result.data.rate_limit ?? 30,
 					rate_limit_time: result.data.rate_limit_time ?? 60,
@@ -149,6 +159,7 @@ export default function Firewall() {
 								action: 'save_firewall_options',
 								nonce: adminData.nonce,
 								enforce_auth: firewallOptions.enforce_auth ? '1' : '0',
+								enforce_rate_limit: firewallOptions.enforce_rate_limit ? '1' : '0',
 								user_id: String( firewallOptions.user_id ),
 								rate_limit: String( firewallOptions.rate_limit ),
 								rate_limit_time: String( firewallOptions.rate_limit_time ),
@@ -204,44 +215,23 @@ export default function Firewall() {
 	};
 
 	return (
-		<>
-			<Button
-				onClick={ () => setDialogOpen( true ) }
-				variant="contained"
-				color="primary"
-			>
-				{ __( 'Firewall Setup', 'blank' ) }
-			</Button>
+		<Stack maxWidth="xl">
+			<Stack direction={"row"} justifyContent={"space-between"} gap={2} py={3} flexWrap={"wrap"} alignItems={"center"}>
+				<Typography variant="h6" fontWeight={600}>
+					{ __( 'REST API Firewall', 'blank' ) }
+				</Typography>
+				<Button color="primary" variant="contained" onClick={ handleSave }>
+					{ __( 'Save Firewall Settings', 'blank' ) }
+				</Button>
+			</Stack>
 
-			<Dialog
-				open={ dialogOpen }
-				onClose={ () => setDialogOpen( false ) }
-				aria-labelledby="firewall-dialog-title"
-				maxWidth="xl"
-				fullWidth
-				keepMounted
-				sx={ {
-					'& .MuiPaper-root': {
-						minHeight: 'calc(100vh - 64px)',
-					},
-				} }
-			>
-				<DialogTitle id="firewall-dialog-title">
-					<Stack direction="row" alignItems="center" justifyContent="space-between">
-						<span>{ __( 'Firewall Settings', 'blank' ) }</span>
-						<Tooltip title={ __( 'Refresh routes from server', 'blank' ) }>
-							<IconButton onClick={ loadRoutes } disabled={ loading } size="small">
-								<RefreshIcon />
-							</IconButton>
-						</Tooltip>
-					</Stack>
-				</DialogTitle>
-				<DialogContent dividers>
-					{ /* Firewall Options Form */ }
-					<Box sx={ { mb: 3 } }>
-						<Typography variant="subtitle1" sx={ { fontWeight: 600, mb: 2 } }>
-							{ __( 'Global Settings', 'blank' ) }
-						</Typography>
+			<Stack>
+				<Stack my={3}>
+					<Typography variant="subtitle1" fontWeight={600} sx={ { mb: 2 } }>
+						{ __( 'Bulk Settings', 'blank' ) }
+					</Typography>
+
+					<Stack spacing={ 3 } direction={{xs:'column', xl:'row'}} gap={ 2 }>
 
 						<Stack spacing={ 3 }>
 							<FormControl component="fieldset">
@@ -250,16 +240,19 @@ export default function Firewall() {
 										<Switch
 											checked={ !! firewallOptions.enforce_auth }
 											name="enforce_auth"
+											size="small"
 											onChange={ handleOptionChange }
 										/>
 									}
-									label={ __( 'Protect REST API', 'blank' ) }
+									label={ __( 'Enforce Authentication', 'blank' ) }
 								/>
 								<FormHelperText>
-									{ __(
-										'Enforce authorization on all REST API routes.',
-										'blank'
-									) }
+									<Typography
+									variant="caption"
+									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
+									>
+										{ __('Enforce authentication on all routes', 'blank') }
+									</Typography>
 								</FormHelperText>
 							</FormControl>
 
@@ -287,11 +280,70 @@ export default function Firewall() {
 									) }
 								</Select>
 								<FormHelperText>
-									{ __( 'Restrict REST API authentication to this user.', 'blank' ) }
+									<Typography
+									variant="caption"
+									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
+									>
+										{ __( 'Restrict authentication to this user',
+											'blank'
+										) }
+									</Typography>
+									<Typography
+									variant="caption"
+									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
+									>
+										{ __( 'You must first create an application password for a user',
+											'blank'
+										) }
+									</Typography>
+									{ firewallOptions.user_id &&
+										restApiUser &&
+										restApiUser?.admin_url ? (
+											<Typography
+												component="a"
+												href={ restApiUser.admin_url }
+												variant="body.2"
+												target="_blank"
+												sx={ {
+													display: 'flex',
+													alignItems: 'center',
+													gap: '4px',
+													px: '14px',
+													fontSize: '12px',
+												} }
+											>
+												{ __( 'User profile', 'blank' ) }
+												<OpenInNewIcon fontSize="inherut" />
+											</Typography>
+										) : null }
+								</FormHelperText>
+							</FormControl>
+						</Stack>
+
+						<Stack spacing={ 3 }>
+							
+							<FormControl component="fieldset">
+								<FormControlLabel
+									control={
+										<Switch
+											checked={ !! firewallOptions.enforce_rate_limit }
+											name="enforce_rate_limit"
+											onChange={ handleOptionChange }
+											size="small"
+										/>
+									}
+									label={ __( 'Enforce Rate Limiting', 'blank' ) }
+								/>
+								<FormHelperText>
+									{ __(
+										'Apply rate limiting to all routes',
+										'blank'
+									) }
 								</FormHelperText>
 							</FormControl>
 
-							<Stack direction="row" gap={ 2 }>
+
+							<Stack direction={{xs:'column', sm:'row'}} gap={ 2 }>
 								<TextField
 									label={ __( 'Rate Limit Requests', 'blank' ) }
 									type="number"
@@ -309,7 +361,7 @@ export default function Firewall() {
 									label={ __( 'Rate Limit Window (seconds)', 'blank' ) }
 									type="number"
 									helperText={ __(
-										'Time window for the request limit.',
+										'Time window for the request limit',
 										'blank'
 									) }
 									name="rate_limit_time"
@@ -318,46 +370,42 @@ export default function Firewall() {
 									fullWidth
 								/>
 							</Stack>
+
 						</Stack>
-					</Box>
+					</Stack>
+				</Stack>
 
-					<Divider sx={ { my: 2 } } />
+				<Divider sx={ { my: 2 } } />
 
-					<Typography variant="subtitle1" sx={ { fontWeight: 600, mb: 2 } }>
-						{ __( 'Route Policies', 'blank' ) }
-					</Typography>
+				<Typography variant="subtitle1" fontWeight={600} sx={ { mb: 2 } }>
+					<span>{ __( 'Per Route Settings', 'blank' ) }</span>
+					<Tooltip title={ __( 'Refresh routes from server', 'blank' ) }>
+						<IconButton onClick={ loadRoutes } disabled={ loading } size="small">
+							<RefreshIcon />
+						</IconButton>
+					</Tooltip>
+				</Typography>
 
-					{ /* Routes Tree */ }
-					{ loading ? (
-						<Stack
-							direction="row"
-							justifyContent="center"
-							alignItems="center"
-							sx={ { minHeight: 352 } }
-						>
-							<CircularProgress />
-						</Stack>
-					) : (
-						<RoutesTree
-							treeData={ restRoutes }
-							onSettingsChange={ handleTreeChange }
-							enforceAuth={ firewallOptions.enforce_auth }
-						/>
-					) }
-				</DialogContent>
-				<DialogActions>
-					<Button
-						color="default"
-						variant="outlined"
-						onClick={ () => setDialogOpen( false ) }
+				{ loading ? (
+					<Stack
+						direction="row"
+						justifyContent="center"
+						alignItems="center"
+						sx={ { minHeight: 352 } }
 					>
-						{ __( 'Close', 'blank' ) }
-					</Button>
-					<Button color="primary" variant="contained" onClick={ handleSave }>
-						{ __( 'Save', 'blank' ) }
-					</Button>
-				</DialogActions>
-			</Dialog>
-		</>
+						<LinearProgress />
+					</Stack>
+				) : (
+					<RoutesTree
+						treeData={ restRoutes }
+						onSettingsChange={ handleTreeChange }
+						enforceAuth={ firewallOptions.enforce_auth }
+						enforceRateLimit={ firewallOptions.enforce_rate_limit }
+						globalRateLimit={ firewallOptions.rate_limit }
+						globalRateLimitTime={ firewallOptions.rate_limit_time }
+					/>
+				) }
+			</Stack>
+		</Stack>
 	);
 }
