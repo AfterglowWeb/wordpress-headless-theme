@@ -3,6 +3,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Options;
+use cmk\blank\Rest\Routes\FirewallOptions;
 
 class Permissions {
 
@@ -33,21 +34,16 @@ class Permissions {
 		}
 	}
 
-	public static function protect_wp_rest_route( $result ) {
+	public static function rest_api_enforce_auth( $result ) {
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
-		if ( ! Options::read_option( 'rest_api_protect_wp_rest_routes' ) ) {
+		if ( false === FirewallOptions::get_option( 'rest_api_enforce_auth' ) ) {
 			return $result;
 		}
 
-		$route = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-
-		if ( str_contains( $route, '/blank/v1/' ) ) {
-			return $result;
-		}
 		if ( false === self::validate_wp_application_password() ) {
 			return new \WP_Error(
 				'rest_forbidden',
@@ -59,17 +55,38 @@ class Permissions {
 		return $result;
 	}
 
-	public static function permission_check( \WP_REST_Request $request ) {
+	public static function rest_api_enforce_pre_dispatch_auth ( $result ) {
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( true === FirewallOptions::get_option( 'rest_api_enforce_auth' ) ) {
+			return $result;
+		}
 
 		if ( false === self::validate_wp_application_password() ) {
 			return new \WP_Error(
 				'rest_forbidden',
-				__( 'Invalid application password.', 'blank' ),
+				__( 'Authentication required.', 'blank' ),
 				array( 'status' => 401 )
 			);
 		}
 
-		$rate = RateLimit::check( $request );
+		return $result;
+	}
+
+	/**
+	 * Check rate limit for a REST request.
+	 *
+	 * @param \WP_REST_Request $request    The REST request.
+	 * @param int|false        $rate_limit Optional rate limit (requests).
+	 * @param int|false        $time_limit Optional time window (seconds).
+	 * @return true|\WP_Error
+	 */
+	public static function rest_api_rate_limit_check( \WP_REST_Request $request, $rate_limit = false, $time_limit = false ) {
+
+		$rate = RateLimit::check( $request, $rate_limit, $time_limit );
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
 		}

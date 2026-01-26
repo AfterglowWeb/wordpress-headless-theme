@@ -3,8 +3,6 @@ namespace cmk\blank\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Rest\Permissions;
-
 class Options {
 	protected static $instance = null;
 
@@ -111,34 +109,6 @@ class Options {
 				'rest_expose'       => false,
 			),
 
-			'rest_api_protect_wp_rest_routes'         => array(
-				'default_value'     => true,
-				'type'              => 'bool',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'rest_expose'       => false,
-			),
-
-			'rest_api_user_id'                        => array(
-				'default_value'     => 1,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			),
-
-			'rest_api_rate_limit'                     => array(
-				'default_value'     => 30,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			),
-
-			'rest_api_rate_limit_time'                => array(
-				'default_value'     => 60,
-				'type'              => 'int',
-				'sanitize_callback' => 'absint',
-				'rest_expose'       => false,
-			),
-
 			// Application.
 
 			'application_host'                        => array(
@@ -156,6 +126,20 @@ class Options {
 			),
 
 			// Core.
+
+			'core_redirect_templates'          => array(
+				'default_value'     => false,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'core_redirect_url'                        => array(
+				'default_value'     => '',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'rest_expose'       => false,
+			),
 
 			'core_disable_gutenberg_enabled'          => array(
 				'default_value'     => false,
@@ -197,18 +181,6 @@ class Options {
 				'default'           => self::default_options(),
 				'show_in_rest'      => self::show_in_rest() ? self::rest_schema() : false,
 			)
-		);
-
-		add_action(
-			'blank_admin_option_updated',
-			function ( string $key, $new, $old ) {
-
-				if ( 'rest_api_user_id' === $key ) {
-					Permissions::sync_rest_api_user( $new, $old );
-				}
-			},
-			10,
-			3
 		);
 	}
 
@@ -334,6 +306,7 @@ class Options {
 	}
 
 	public static function read_option( string $option_key ) {
+		$option_key = sanitize_key( $option_key );
 		$options = self::sanitize_options( self::multisite_get_option( 'blank_theme_options', array() ) );
 		return isset( $options[ $option_key ] ) ? $options[ $option_key ] : false;
 	}

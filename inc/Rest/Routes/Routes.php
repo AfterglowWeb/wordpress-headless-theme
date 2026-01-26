@@ -18,7 +18,7 @@ class Routes {
 
 		add_filter(
 			'rest_authentication_errors',
-			array( Permissions::class, 'protect_wp_rest_route' ),
+			array( Permissions::class, 'rest_api_enforce_auth' ),
 			10,
 			3
 		);
@@ -29,24 +29,6 @@ class Routes {
 			10,
 			3
 		);
-
-		/*
-		add_filter(
-		'rest_pre_serve_request',
-		function ( $served, $result, $request, $server ) {
-
-			if ( str_starts_with( $request->get_route(), '/blank/v1/' ) ) {
-				echo wp_json_encode(
-					$result->get_data(),
-					JSON_UNESCAPED_SLASHES
-				);
-				return true;
-			}
-
-			return $served;
-		},
-		10,
-		4);*/
 
 		add_filter(
 			'rest_json_encode_options',
@@ -79,12 +61,20 @@ class Routes {
 				}
 
 				if ( ! empty( $policy['protect'] ) ) {
-					if ( ! Permissions::permission_check( $request ) ) {
-						return new \WP_Error(
-							'rest_forbidden',
-							'Authentication required',
-							array( 'status' => 401 )
-						);
+					$auth_check = Permissions::rest_api_enforce_pre_dispatch_auth( $result );
+					if ( is_wp_error( $auth_check ) ) {
+						return $auth_check;
+					}
+				}
+
+				if ( ! empty( $policy['rate_limit'] ) ) {
+					$rate_check = Permissions::rest_api_rate_limit_check(
+						$request,
+						$policy['rate_limit'],
+						$policy['rate_limit_time']
+					);
+					if ( is_wp_error( $rate_check ) ) {
+						return $rate_check;
 					}
 				}
 
@@ -103,7 +93,7 @@ class Routes {
 					array(
 						'methods'             => 'GET',
 						'callback'            => array( SiteDataController::class, 'site_data' ),
-						'permission_callback' => array( Permissions::class, 'permission_check' ),
+						'permission_callback' => array( Permissions::class, 'rest_api_rate_limit_check' ),
 					)
 				);
 
@@ -113,7 +103,7 @@ class Routes {
 					array(
 						'methods'             => 'GET',
 						'callback'            => array( PostController::class, 'posts_per_post_type' ),
-						'permission_callback' => array( Permissions::class, 'permission_check' ),
+						'permission_callback' => array( Permissions::class, 'rest_api_rate_limit_check' ),
 						'args'                => array(
 							'post_type' => array(
 								'required'          => true,
@@ -130,7 +120,7 @@ class Routes {
 					array(
 						'methods'             => 'GET',
 						'callback'            => array( AttachmentController::class, 'attachments_per_post_type' ),
-						'permission_callback' => array( Permissions::class, 'permission_check' ),
+						'permission_callback' => array( Permissions::class, 'rest_api_rate_limit_check' ),
 						'args'                => array(
 							'post_type' => array(
 								'required'          => true,
