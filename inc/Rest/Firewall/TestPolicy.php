@@ -244,7 +244,7 @@ class TestPolicy {
 		);
 	}
 
-	protected function make_request( string $route, string $method, bool $with_auth = false ): array|\WP_Error {
+	protected function make_request( string $route, string $method, bool $with_auth = false ) {
 		$url = $this->build_rest_url( $route );
 
 		$args = array(

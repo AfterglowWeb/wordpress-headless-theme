@@ -7,7 +7,7 @@ use cmk\blank\Rest\Controllers\PostController;
 use cmk\blank\Rest\Controllers\SiteDataController;
 use cmk\blank\Rest\Controllers\AttachmentController;
 use cmk\blank\Rest\Firewall\PolicyRuntime;
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 use WP_REST_Request;
 
 class Routes {
@@ -136,7 +136,7 @@ class Routes {
 
 	private static function set_posts_per_page(): void {
 
-		$allowed_post_types = Options::read_option( 'rest_api_allowed_post_types' );
+		$allowed_post_types = CoreOptions::read_option( 'rest_api_allowed_post_types' );
 
 		if ( empty( $allowed_post_types ) ) { // Bail early if not post types are enforced.
 			return;
@@ -148,7 +148,7 @@ class Routes {
 				'rest_' . $allowed_post_type . '_collection_params',
 				function ( $query_params ) {
 
-					$posts_per_page = Options::read_option( 'rest_api_posts_per_page' );
+					$posts_per_page = CoreOptions::read_option( 'rest_api_posts_per_page' );
 
 					if ( ! empty( $posts_per_page ) && isset( $query_params['per_page'] ) ) {
 						$query_params['per_page']['default'] = $posts_per_page;

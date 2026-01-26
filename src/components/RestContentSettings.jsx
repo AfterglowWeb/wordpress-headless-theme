@@ -205,6 +205,25 @@ export default function RestContentSettings( { form, setField, postTypes } ) {
 				<FormControlLabel
 					control={
 						<Switch
+							checked={ !! form.blank_embed_terms_enabled }
+							name="blank_embed_author_enabled"
+							onChange={ setField }
+						/>
+					}
+					label={ __( 'Embed Author', 'blank' ) }
+				/>
+				<FormHelperText>
+					{ __(
+						'Replace author id by a simplified author object',
+						'blank'
+					) }
+				</FormHelperText>
+			</FormControl>
+
+			<FormControl>
+				<FormControlLabel
+					control={
+						<Switch
 							checked={ !! form.blank_with_acf_enabled }
 							name="blank_with_acf_enabled"
 							onChange={ setField }
@@ -224,8 +243,27 @@ export default function RestContentSettings( { form, setField, postTypes } ) {
 				<FormControlLabel
 					control={
 						<Switch
-							checked={ !! form.blank_use_core_rest_enabled }
-							name="blank_use_core_rest_enabled"
+							checked={ !! form.blank_sync_acf_fields_to_json_enabled }
+							name="blank_sync_acf_fields_to_json_enabled"
+							onChange={ setField }
+						/>
+					}
+					label={ __( 'Sync ACF Fields to JSON', 'blank' ) }
+				/>
+				<FormHelperText>
+					{ __(
+						'Write JSON files in config directory',
+						'blank'
+					) }
+				</FormHelperText>
+			</FormControl>
+
+			<FormControl>
+				<FormControlLabel
+					control={
+						<Switch
+							checked={ !! form.blank_use_rest_models_enabled }
+							name="blank_use_rest_models_enabled"
 							onChange={ setField }
 						/>
 					}

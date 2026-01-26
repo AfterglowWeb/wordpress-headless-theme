@@ -1,6 +1,6 @@
 <?php namespace cmk\blank\Rest\Models;
 
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 
 class ModelContext {
 
@@ -15,14 +15,15 @@ class ModelContext {
 
 	public static function from_options(): self {
 		$context                            = new self();
-		$context->relative_urls             = (bool) Options::read_option( 'blank_relative_url_enabled' );
-		$context->relative_attachment_urls  = (bool) Options::read_option( 'blank_relative_attachment_url_enabled' );
-		$context->embed_featured_attachment = (bool) Options::read_option( 'blank_embed_featured_attachment_enabled' );
-		$context->embed_attachments         = (bool) Options::read_option( 'blank_embed_post_attachments_enabled' );
-		$context->embed_terms               = (bool) Options::read_option( 'blank_embed_terms_enabled' );
-		$context->embed_author              = (bool) Options::read_option( 'blank_embed_authors_enabled' );
-		$context->with_acf                  = (bool) Options::read_option( 'blank_with_acf_enabled' );
-		$context->use_core_rest             = (bool) Options::read_option( 'blank_use_core_rest_enabled' );
+		$context->use_core_rest             = (bool)CoreOptions::read_option( 'blank_use_rest_models_enabled' );
+		$context->with_acf                  = (bool)CoreOptions::read_option( 'blank_with_acf_enabled' );
+		$context->embed_terms               = (bool)CoreOptions::read_option( 'blank_embed_terms_enabled' );
+		$context->embed_author              = (bool)CoreOptions::read_option( 'blank_embed_author_enabled' );
+		$context->embed_featured_attachment = (bool)CoreOptions::read_option( 'blank_embed_featured_attachment_enabled' );
+		$context->embed_attachments         = (bool)CoreOptions::read_option( 'blank_embed_post_attachments_enabled' );
+		$context->relative_urls             = (bool)CoreOptions::read_option( 'blank_relative_url_enabled' );
+		$context->relative_attachment_urls  = (bool)CoreOptions::read_option( 'blank_relative_attachment_url_enabled' );
+
 		return $context;
 	}
 }

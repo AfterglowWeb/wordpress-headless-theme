@@ -2,7 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 
 class Acf {
 
@@ -21,30 +21,31 @@ class Acf {
 			return;
 		}
 
-		$option = Options::read_option( 'blank_with_acf_enabled' );
-		if ( false === $option['blank_with_acf_enabled'] ) {
-			return;
+		if ( true === CoreOptions::read_option( 'blank_sync_acf_fields_to_json_enabled' ) ) {
+			add_filter(
+				'acf/settings/save_json',
+				function () {
+					return get_stylesheet_directory() . '/config';
+				}
+			);
+
+			add_filter(
+				'acf/settings/load_json',
+				function () {
+					return get_stylesheet_directory() . '/config';
+				}
+			);
 		}
 
-		add_filter(
-			'acf/settings/save_json',
-			function () {
-				return get_stylesheet_directory() . '/config';
-			}
-		);
+		if (true === CoreOptions::read_option( 'blank_with_acf_enabled' ) ) {
+			add_filter( 'blank_rest_post_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
+			add_filter( 'blank_rest_term_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
+			add_filter( 'blank_rest_menu_item_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
+			add_filter( 'blank_rest_image_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
+			add_filter( 'blank_rest_site_data_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
+		}
 
-		add_filter(
-			'acf/settings/load_json',
-			function () {
-				return get_stylesheet_directory() . '/config';
-			}
-		);
-
-		add_filter( 'blank_rest_post_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
-		add_filter( 'blank_rest_term_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
-		add_filter( 'blank_rest_menu_item_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
-		add_filter( 'blank_rest_image_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
-		add_filter( 'blank_rest_site_data_acf', array( self::class, 'get_acf_fields' ), 10, 1 );
+		
 	}
 
 	public static function get_acf_fields( int $object_id ): array {

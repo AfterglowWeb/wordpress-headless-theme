@@ -2,7 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 use cmk\blank\Rest\Firewall\FirewallOptions;
 
 class Permissions {
@@ -40,7 +40,7 @@ class Permissions {
 			return $result;
 		}
 
-		if ( false === FirewallOptions::get_option( 'rest_api_enforce_auth' ) ) {
+		if ( false === FirewallOptions::get_option( 'enforce_auth' ) ) {
 			return $result;
 		}
 
@@ -61,7 +61,7 @@ class Permissions {
 			return $result;
 		}
 
-		if ( true === FirewallOptions::get_option( 'rest_api_enforce_auth' ) ) {
+		if ( true === FirewallOptions::get_option( 'enforce_auth' ) ) {
 			return $result;
 		}
 
@@ -106,7 +106,7 @@ class Permissions {
 
 	public static function is_post_type_allowed( string $post_type ): bool {
 
-		if ( false === Options::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
+		if ( false === CoreOptions::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
 			return true;
 		}
 
@@ -114,7 +114,7 @@ class Permissions {
 			return false;
 		}
 
-		$allowed_post_types = Options::read_option( 'rest_api_allowed_post_types' );
+		$allowed_post_types = CoreOptions::read_option( 'rest_api_allowed_post_types' );
 
 		if ( empty( $allowed_post_types ) ) { // If option is not set, all posts are allowed.
 			return true;
@@ -133,7 +133,7 @@ class Permissions {
 			return $result;
 		}
 
-		if ( false === Options::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
+		if ( false === CoreOptions::read_option( 'rest_api_restrict_post_types_enabled' ) ) {
 			return $result;
 		}
 

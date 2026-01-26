@@ -1,6 +1,6 @@
 <?php namespace cmk\blank\Core;
 
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -17,7 +17,7 @@ class DisableComments {
 
 	private function __construct() {
 
-		$options = Options::read_options();
+		$options = CoreOptions::read_options();
 
 		if ( true === $options['core_disable_comments_enabled'] ) {
 			add_action(

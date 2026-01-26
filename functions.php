@@ -36,17 +36,23 @@ if (file_exists(get_template_directory() . '/vendor/autoload.php')) {
 	require_once realpath(get_template_directory() . '/vendor/autoload.php');
 }
 
-Core\Theme::get_instance();
+Core\CoreOptions::get_instance();
+Admin\AdminPage::get_instance();
+
+Core\PostContent::get_instance();
+Core\ImageFiles::get_instance();
+Core\CoreTheme::get_instance();
+Core\RedirectTemplates::get_instance();
 Core\CustomPosts::get_instance();
 Core\DisableComments::get_instance();
 Core\Acf::get_instance();
-Admin\OptionsPage::get_instance();
+
 Rest\Routes\Routes::register();
 Rest\Routes\RoutesRepository::get_instance();
 Rest\Firewall\FirewallOptions::get_instance();
+Rest\Firewall\TestPolicy::get_instance();
 
 Application\WebhookService::get_instance();
-
                     
 function is_admin_screen( $screen_name ) {
 	if ( ! is_admin() ) {

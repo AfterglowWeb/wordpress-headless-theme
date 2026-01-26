@@ -1,9 +1,9 @@
 <?php
-namespace cmk\blank\Admin;
+namespace cmk\blank\Core;
 
 defined( 'ABSPATH' ) || exit;
 
-class Options {
+class CoreOptions {
 	protected static $instance = null;
 
 	public static function get_instance() {
@@ -21,7 +21,7 @@ class Options {
 		return array(
 
 			// Models
-			'blank_use_core_rest_enabled'             => array(
+			'blank_use_rest_models_enabled'             => array(
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -63,7 +63,7 @@ class Options {
 				'rest_expose'       => false,
 			),
 
-			'blank_embed_authors_enabled'             => array(
+			'blank_embed_author_enabled'             => array(
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -71,6 +71,13 @@ class Options {
 			),
 
 			'blank_with_acf_enabled'                  => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'blank_sync_acf_fields_to_json_enabled'   => array(
 				'default_value'     => true,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -96,7 +103,7 @@ class Options {
 			// Permissions.
 
 			'rest_api_restrict_post_types_enabled'    => array(
-				'default_value'     => true,
+				'default_value'     => false,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
@@ -127,17 +134,31 @@ class Options {
 
 			// Core.
 
-			'core_redirect_templates'          => array(
+			'core_redirect_templates_enabled'          => array(
 				'default_value'     => false,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'rest_expose'       => false,
 			),
 
-			'core_redirect_url'                        => array(
+			'core_redirect_templates_preset_url' => array(
 				'default_value'     => '',
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'sanitize_key',
+				'rest_expose'       => false,
+			),
+
+			'core_redirect_templates_free_url_enabled' => array(
+				'default_value'     => false,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'core_redirect_templates_free_url'       => array(
+				'default_value'     => '',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_url',
 				'rest_expose'       => false,
 			),
 
@@ -155,14 +176,28 @@ class Options {
 				'rest_expose'       => false,
 			),
 
-			'core_max_upload_size'                    => array(
+			'core_remove_empty_p_tags_enabled'        => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'core_svg_webp_support_enabled'           => array(
+				'default_value'     => true,
+				'type'              => 'bool',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'rest_expose'       => false,
+			),
+
+			'core_max_upload_weight'                    => array(
 				'default_value'     => 1024, // KB.
 				'type'              => 'int',
 				'sanitize_callback' => 'absint',
 				'rest_expose'       => false,
 			),
 
-			'core_max_upload_size_enabled'            => array(
+			'core_max_upload_weight_enabled'            => array(
 				'default_value'     => false,
 				'type'              => 'bool',
 				'sanitize_callback' => 'rest_sanitize_boolean',
