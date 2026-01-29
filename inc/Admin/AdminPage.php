@@ -3,10 +3,12 @@ namespace cmk\blank\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use cmk\blank\Core\CoreOptions;
 use cmk\blank\Admin\Permissions;
+use cmk\blank\Core\RedirectTemplates;
 use cmk\blank\Core\Utils;
 
-class OptionsPage {
+class AdminPage {
 	protected static $instance = null;
 
 	public static function get_instance() {
@@ -51,7 +53,7 @@ class OptionsPage {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
-		$options = Options::read_options();
+		$options = CoreOptions::read_options();
 		wp_send_json_success( $options );
 	}
 
@@ -67,7 +69,7 @@ class OptionsPage {
 				wp_send_json_error( array( 'error' => esc_html__( 'Invalid options data', 'blank' ) ), 400 );
 			}
 
-			$options = Options::update_options( $options );
+			$options = CoreOptions::update_options( $options );
 
 			wp_send_json_success(
 				array(
@@ -76,7 +78,7 @@ class OptionsPage {
 				)
 			);
 		} else {
-			$options = Options::read_options();
+			$options = CoreOptions::read_options();
 			wp_send_json_success( $options );
 		}
 	}
@@ -100,7 +102,7 @@ class OptionsPage {
 				wp_send_json_error( array( 'error' => esc_html__( 'Invalid option data', 'blank' ) ), 422 );
 			}
 
-			$option = Options::update_option( $key,  $value );
+			$option = CoreOptions::update_option( $key,  $value );
 
 			wp_send_json_success(
 				array(
@@ -164,16 +166,17 @@ class OptionsPage {
 			'blank-theme-admin',
 			'blankThemeAdminData',
 			array(
-				'nonce'         => wp_create_nonce( 'blank_theme_update_options_nonce' ),
-				'ajaxurl'       => admin_url( 'admin-ajax.php' ),
-				'users'         => Utils::list_users(),
-				'post_types'    => Utils::list_post_types(),
-				'admin_options' => Options::read_options(),
-				'theme_name'    => $theme_object ? sanitize_text_field( $theme_object->get( 'Name' ) ) : '',
-				'theme_domain'  => $theme_object ? sanitize_key( $theme->get( 'Domain' ) ) : '',
-				'theme_version' => $theme_object ? sanitize_text_field( $theme_object->get( 'Version' ) ) : '',
-				'theme_uri'     => $theme_object ? sanitize_url( $theme_object->get( 'ThemeURI' ) ) : '',
-				'home_url'      => get_home_url( '/' ),
+				'nonce'                       => wp_create_nonce( 'blank_theme_update_options_nonce' ),
+				'ajaxurl'                     => admin_url( 'admin-ajax.php' ),
+				'users'                       => Utils::list_users(),
+				'post_types'                  => Utils::list_post_types(),
+				'redirect_preset_url_options' => RedirectTemplates::redirect_preset_url_options(),
+				'admin_options'               => CoreOptions::read_options(),
+				'theme_name'                  => $theme_object ? sanitize_text_field( $theme_object->get( 'Name' ) ) : '',
+				'theme_domain'                => $theme_object ? sanitize_key( $theme->get( 'Domain' ) ) : '',
+				'theme_version'               => $theme_object ? sanitize_text_field( $theme_object->get( 'Version' ) ) : '',
+				'theme_uri'                   => $theme_object ? sanitize_url( $theme_object->get( 'ThemeURI' ) ) : '',
+				'home_url'                    => get_home_url( '/' ),
 			)
 		);
 	}

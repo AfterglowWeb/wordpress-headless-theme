@@ -3,7 +3,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use cmk\blank\Admin\Permissions;
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 
 class WebhookService {
 
@@ -41,7 +41,7 @@ class WebhookService {
 			$sanitized_payload[ sanitize_key( $key ) ] = sanitize_text_field( $value );
 		}
 
-		$admin_options = Options::read_options();
+		$admin_options = CoreOptions::read_options();
 
 		try {
 			$response = WebhookClient::post(

@@ -2,7 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 use cmk\blank\Rest\Models\Factory;
 use WP_Post;
 use WP_REST_Request;
@@ -100,7 +100,7 @@ class AttachmentController {
 			)
 		);
 
-		$attachments_per_page = array_slice( $images, 0, Options::read_option( 'rest_api_attachments_per_page' ) );
+		$attachments_per_page = array_slice( $images, 0,CoreOptions::read_option( 'rest_api_attachments_per_page' ) );
 
 		return rest_ensure_response( $attachments_per_page );
 	}
@@ -161,7 +161,7 @@ class AttachmentController {
 
 	private static function get_acf_attachment_ids( int $post_id ): array {
 
-		if ( ! function_exists( 'get_fields' ) || false === Options::read_option( 'blank_with_acf_enabled' ) ) {
+		if ( ! function_exists( 'get_fields' ) || false === CoreOptions::read_option( 'blank_with_acf_enabled' ) ) {
 			return array();
 		}
 

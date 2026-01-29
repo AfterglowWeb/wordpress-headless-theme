@@ -22,6 +22,8 @@ import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import RoutesTree from './RoutesTree';
+import IpFilter from './IpFilter';
+import Grid from '@mui/material/Grid';
 
 const defaultFirewallOptions = {
 	enforce_auth: false,
@@ -33,7 +35,7 @@ const defaultFirewallOptions = {
 
 export default function Firewall() {
 	const { adminData } = useAdminData();
-	const { __ } = wp.i18n || {};
+	const { __, sprintf } = wp.i18n || {};
 	const [ restRoutes, setRestRoutes ] = useState( null );
 	const [ treeState, setTreeState ] = useState( null );
 	const [ loading, setLoading ] = useState( false );
@@ -41,6 +43,8 @@ export default function Firewall() {
 	const [ users, setUsers ] = useState( [] );
 	const [ restApiUser, setRestApiUser ] = useState( [] );
 
+	const adminUrl = adminData?.ajaxurl?.split( 'admin-ajax.php' )[0] || '';
+	const usersPageUrl = `${ adminUrl }users.php`;
 
 	const { openDialog, updateDialog } = useDialog();
 
@@ -226,36 +230,15 @@ export default function Firewall() {
 			</Stack>
 
 			<Stack>
-				<Stack my={3}>
+				<Stack my={3} spacing={3}>
 					<Typography variant="subtitle1" fontWeight={600} sx={ { mb: 2 } }>
-						{ __( 'Bulk Settings', 'blank' ) }
+						{ __( 'Global Settings', 'blank' ) }
 					</Typography>
 
-					<Stack spacing={ 3 } direction={{xs:'column', xl:'row'}} gap={ 2 }>
+					<Grid spacing={ 3 } container>
 
-						<Stack spacing={ 3 }>
-							<FormControl component="fieldset">
-								<FormControlLabel
-									control={
-										<Switch
-											checked={ !! firewallOptions.enforce_auth }
-											name="enforce_auth"
-											size="small"
-											onChange={ handleOptionChange }
-										/>
-									}
-									label={ __( 'Enforce Authentication', 'blank' ) }
-								/>
-								<FormHelperText>
-									<Typography
-									variant="caption"
-									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
-									>
-										{ __('Enforce authentication on all routes', 'blank') }
-									</Typography>
-								</FormHelperText>
-							</FormControl>
-
+						<Grid size={ 4 }>
+							
 							<FormControl fullWidth>
 								<InputLabel id="user-id-label">
 									{ __( 'REST API User', 'blank' ) }
@@ -280,25 +263,25 @@ export default function Firewall() {
 									) }
 								</Select>
 								<FormHelperText>
-									<Typography
-									variant="caption"
-									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
-									>
-										{ __( 'Restrict authentication to this user',
-											'blank'
-										) }
-									</Typography>
-									<Typography
-									variant="caption"
-									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
-									>
-										{ __( 'You must first create an application password for a user',
-											'blank'
-										) }
-									</Typography>
+									<>
+										{ firewallOptions.user_id &&
+										restApiUser &&
+										restApiUser?.label ?
+										<span>
+										{sprintf( __( 'Restrict authentication to %s.', 'blank'), restApiUser.label)}<br/>
+										{__( 'Ensure you safe saved the user application password.', 'blank')}
+										</span>
+										:
+										<span>
+										{__( 'Restrict authentication to one user.', 'blank')}<br/>
+										{__( 'Before selecting a user, you must first create an application password in its profile.', 'blank')}
+										</span>
+
+										}
+									</>
 									{ firewallOptions.user_id &&
 										restApiUser &&
-										restApiUser?.admin_url ? (
+										restApiUser?.admin_url ?
 											<Typography
 												component="a"
 												href={ restApiUser.admin_url }
@@ -315,40 +298,35 @@ export default function Firewall() {
 												{ __( 'User profile', 'blank' ) }
 												<OpenInNewIcon fontSize="inherut" />
 											</Typography>
-										) : null }
+										: <Typography
+												component="a"
+												href={ usersPageUrl }
+												variant="body.2"
+												target="_blank"
+												sx={ {
+													display: 'flex',
+													alignItems: 'center',
+													gap: '4px',
+													px: '14px',
+													fontSize: '12px',
+												} }
+											>
+												{ __( 'Users list', 'blank' ) }
+												<OpenInNewIcon fontSize="inherut" />
+											</Typography> }
 								</FormHelperText>
 							</FormControl>
-						</Stack>
 
-						<Stack spacing={ 3 }>
+						</Grid>
+
+						<Grid size={ 5 }>
 							
-							<FormControl component="fieldset">
-								<FormControlLabel
-									control={
-										<Switch
-											checked={ !! firewallOptions.enforce_rate_limit }
-											name="enforce_rate_limit"
-											onChange={ handleOptionChange }
-											size="small"
-										/>
-									}
-									label={ __( 'Enforce Rate Limiting', 'blank' ) }
-								/>
-								<FormHelperText>
-									{ __(
-										'Apply rate limiting to all routes',
-										'blank'
-									) }
-								</FormHelperText>
-							</FormControl>
-
-
 							<Stack direction={{xs:'column', sm:'row'}} gap={ 2 }>
 								<TextField
 									label={ __( 'Rate Limit Requests', 'blank' ) }
 									type="number"
 									helperText={ __(
-										'Maximum requests before rate-limiting.',
+										'Maximum requests before rate-limiting',
 										'blank'
 									) }
 									name="rate_limit"
@@ -371,9 +349,62 @@ export default function Firewall() {
 								/>
 							</Stack>
 
-						</Stack>
-					</Stack>
+						</Grid>
+					</Grid>
+
+					<Grid spacing={ 3 } container>
+
+						<Grid size={ 4 }>
+							<FormControl>
+								<FormControlLabel
+									control={
+										<Switch
+											checked={ !! firewallOptions.enforce_auth }
+											name="enforce_auth"
+											size="small"
+											onChange={ handleOptionChange }
+										/>
+									}
+									label={ __( 'Enforce Authentication', 'blank' ) }
+								/>
+								<FormHelperText>
+									<Typography
+									variant="caption"
+									sx={ { color: 'text.secondary', fontSize: '0.7rem' } }
+									>
+										{ __('Enforce authentication on all routes', 'blank') }
+									</Typography>
+								</FormHelperText>
+							</FormControl>
+						</Grid>
+
+						<Grid size={ 5 }>
+							<FormControl>
+								<FormControlLabel
+									control={
+										<Switch
+											checked={ !! firewallOptions.enforce_rate_limit }
+											name="enforce_rate_limit"
+											onChange={ handleOptionChange }
+											size="small"
+										/>
+									}
+									label={ __( 'Enforce Rate Limiting', 'blank' ) }
+								/>
+								<FormHelperText>
+									{ __(
+										'Apply rate limiting to all routes',
+										'blank'
+									) }
+								</FormHelperText>
+							</FormControl>
+						</Grid>
+					</Grid>
 				</Stack>
+
+				<Divider sx={ { my: 2 } } />
+
+				<IpFilter />
 
 				<Divider sx={ { my: 2 } } />
 

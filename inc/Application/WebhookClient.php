@@ -2,13 +2,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use cmk\blank\Admin\Options;
+use cmk\blank\Core\CoreOptions;
 
 final class WebhookClient {
 
 	public static function post( string $route, array $payload ): array {
 
-		$options = Options::read_options();
+		$options = CoreOptions::read_options();
 		$host    = rtrim( $options['application_host'], '/' );
 		$route   = ltrim( $route, '/' );
 		$secret  = get_option('blank_theme_application_webhook_secret');
