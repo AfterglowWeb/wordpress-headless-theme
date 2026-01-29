@@ -1,5 +1,7 @@
 # Blank – Headless WordPress Theme
 
+> This repository is no longer maintained. The project has evolved and can now be found here: https://github.com/AfterglowWeb/wordpress-rest-api-firewall
+
 Blank is a WordPress theme designed exclusively for headless usage. It acts as a secure and simplifier data layer for headless WordPress architectures. It integrates seamlessly with external front-end applications built with Next.js, React, Vue, or any other framework capable of consuming a REST API.
 
 Blank can be configured to exposes flattened posts, attachments, menus, and site identity through custom REST API endpoints, protected by reinforced WordPress application authentication. It can also be configured to send data to your application via webhooks.
