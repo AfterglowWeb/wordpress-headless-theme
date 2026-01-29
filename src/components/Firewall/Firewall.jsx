@@ -22,6 +22,7 @@ import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import RoutesTree from './RoutesTree';
+import IpFilter from './IpFilter';
 import Grid from '@mui/material/Grid';
 
 const defaultFirewallOptions = {
@@ -400,6 +401,10 @@ export default function Firewall() {
 						</Grid>
 					</Grid>
 				</Stack>
+
+				<Divider sx={ { my: 2 } } />
+
+				<IpFilter />
 
 				<Divider sx={ { my: 2 } } />
 
